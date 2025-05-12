@@ -1,8 +1,7 @@
-using System.Collections;
 using System.Collections.Generic;
 using UnityEngine;
 
-public class MultiColoredBall : MonoBehaviour
+public class SpikeBall : MonoBehaviour
 {
     public float speed = 5f;
     public float spinFactor = 360f;
@@ -35,7 +34,6 @@ public class MultiColoredBall : MonoBehaviour
         transform.position = _gm.GridToWorld(_gridPos);
 
         PickRandomDir();
-        SetNextTarget();
     }
 
     void Update()
@@ -81,18 +79,24 @@ public class MultiColoredBall : MonoBehaviour
         _dir = choices[Random.Range(0, choices.Count)];
     }
 
-    void SetNextTarget()
-    {
-        _targetWorld = _gm.GridToWorld(_gridPos + _dir);
-    }
-
+    
     void OnTriggerEnter(Collider other)
     {
+        if (other.CompareTag("Player"))
+        {
+            GameManager.Instance.LevelLose();
+        }
+        if (other.CompareTag("Boundary"))
+        {
+            PickRandomDir();
+        }
         if (other.TryGetComponent<Cube>(out Cube cube))
         {
-            _gm.RemoveCubeAt(cube);
+            if (cube.IsFilled)
+            {
+                gameObject.SetActive(false);
+            }
             PickRandomDir();
-            SetNextTarget();
         }
     }
 }

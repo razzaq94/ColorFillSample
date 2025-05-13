@@ -1,11 +1,11 @@
 using UnityEngine;
 using DG.Tweening;
+using System.Collections.Generic;
 
 public class GameManager : MonoBehaviour
 {
     public static GameManager Instance;
     public bool _gameRunning = false;
-    public bool GameRunning => _gameRunning;
 
     public Transform Camera = null;
     public Player Player;
@@ -20,6 +20,14 @@ public class GameManager : MonoBehaviour
 
     private bool _gameStarted = false;
     private int LevelToUse = 1;
+
+
+    [Header("Enemy Prefabs")]
+    public List<GameObject> enemyPrefabs;
+    [Header("Assign Enemy Spawn Positions Here")]
+    public List<Vector2Int> gridPositions;
+    public Vector2 gridOrigin = Vector2.zero;
+    public Vector2 cellSize = Vector2.one;
 
     private void Awake()
     {
@@ -59,6 +67,9 @@ public class GameManager : MonoBehaviour
         Camera.transform.DOMoveZ(-5f, 0.5f);
 
         Player.Init();
+
+        SpawnEnemies();
+
     }
 
     private void Update()
@@ -84,6 +95,25 @@ public class GameManager : MonoBehaviour
         AudioManager.instance?.PlaySFXSound(3);
     }
 
+    public void SpawnEnemies()
+    {
+        int count = Mathf.Min(enemyPrefabs.Count, gridPositions.Count);
+        for (int i = 0; i < count; i++)
+        {
+            GameObject prefab = enemyPrefabs[i];
+            Vector2Int cell = gridPositions[i];
+
+            Vector3 worldpos = new Vector3(gridOrigin.x + cell.x, 0f, gridOrigin.y + cell.y);
+            Instantiate(prefab, worldpos, Quaternion.identity);
+        }
+
+        if (enemyPrefabs.Count == gridPositions.Count)
+        {
+            print($"Enemy Prefabs count {enemyPrefabs.Count} does not match Grid Positions count {gridPositions.Count}");
+        }
+
+    }
+
     public void LevelLose()
     {
         Player.enabled = _gameRunning = false;
@@ -107,8 +137,8 @@ public class LevelData
 {
     public GameObject LevelObject = null;
     public Transform PlayerPos = null;
-    public int Columns = 10;
-    public int Rows = 10;
+    [HideInInspector] public int Columns = 10;
+    [HideInInspector] public int Rows = 20;
     public EnemyCubeGroup[] Groups = null;
 
     private string LevelName = null;

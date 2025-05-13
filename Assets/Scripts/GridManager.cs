@@ -20,9 +20,6 @@ public class GridManager : MonoBehaviour
     private const float PercentFalseCount = 0.1f;
     private float _limitToFill = 0f;
 
-    public int Columns => _gridColumns;
-    public int Rows => _gridRows;
-
     private void Awake()
     {
         Instance = this;
@@ -180,9 +177,6 @@ public class GridManager : MonoBehaviour
         }
         return falseCount;
     }
-
-
-
     
     public Vector2Int WorldToGrid(Vector3 world)
     {
@@ -209,21 +203,4 @@ public class GridManager : MonoBehaviour
 
         CubeGrid.Instance.PutBackInQueue(cube);
     }
-
-    public List<Cube> GetCubesInRadius(Vector2Int center, int radius)
-    {
-        var found = new List<Cube>();
-        // You can optimize by exposing TakenCubes in CubeGrid; for now:
-        foreach (var cube in FindObjectsOfType<Cube>())
-        {
-            if (!cube.IsFilled) continue;
-            var g = WorldToGrid(cube.transform.position);
-            if (Vector2Int.Distance(g, center) <= radius)
-                found.Add(cube);
-        }
-        return found;
-    }
-    public Vector2Int[] GetNeighbors(Vector2Int g)
-      => new[] { g + Vector2Int.up, g + Vector2Int.down, g + Vector2Int.left, g + Vector2Int.right };
-
 }

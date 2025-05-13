@@ -6,25 +6,26 @@ using static UnityEditor.Experimental.GraphView.GraphView;
 public class Player : MonoBehaviour
 {
     [SerializeField] bool _spawnCubes = false;
-    [SerializeField] List<Cube> spawnedCubes = new List<Cube>();
-
-
     [SerializeField] bool _isMoving = false;
-    [SerializeField] float moveSpeed = 10f;
-
-    Vector3 _moveVector = Vector3.zero;
-
     [SerializeField] bool _useKeyboard = true;
-    [SerializeField] Direction _direction = Direction.None;
 
     private const float DistanceThreshold = 1f;
     private const float MaxSwipeTime = 0.5f;
     private const float MinSwipeDistance = 0.10f;
-    private Rigidbody _rigidbody = null;
+    private float _startTime = 0f;
+
+    [SerializeField] float moveSpeed = 10f;
+
     private Vector3 _startPos3 = Vector3.zero;
+    private Vector3 _moveVector = Vector3.zero;
     private Vector3 _targetPos = Vector3.zero;
     private Vector2 _startPos2 = Vector2.zero;
-    private float _startTime = 0f;
+
+    [SerializeField] List<Cube> spawnedCubes = new List<Cube>();
+
+    private Rigidbody _rigidbody = null;
+
+    [SerializeField] Direction _direction = Direction.None;
     public bool IsMoving
     {
         get => _isMoving;

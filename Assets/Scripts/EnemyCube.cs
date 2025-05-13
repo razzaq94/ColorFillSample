@@ -3,7 +3,7 @@ using UnityEngine;
 public class EnemyCube : MonoBehaviour
 {
     private EnemyCubeGroup enemyCubeGroup;
-    //public ParticleManager particleManager;
+    public ParticleSystem particle;
     private void Start()
     {
         enemyCubeGroup = GetComponentInParent<EnemyCubeGroup>();
@@ -16,7 +16,7 @@ public class EnemyCube : MonoBehaviour
         {
             if(cube.IsFilled)
             {
-                //particleManager?.PlayParticle("Destroy", transform.position);
+                particle.Play();
                 enemyCubeGroup.CubeDestroyed();
                 gameObject.SetActive(false);
             }

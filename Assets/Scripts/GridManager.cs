@@ -46,19 +46,49 @@ public class GridManager : MonoBehaviour
         //if (AudioManager.instance)
         //    AudioManager.instance?.PlaySFXSound(1);
         Haptics.Generate(HapticTypes.LightImpact);
+
+        // 1) keep old grid snapshot
+        bool[,] oldGrid = (bool[,])_grid.Clone();
+
         for (int i = 0; i < 2; i++)
         {
-            bool[,] gridCopy = new bool[_gridColumns, _gridRows];
-            bool[,] gridCopySecond = new bool[_gridColumns, _gridRows];
-            gridCopy = (bool[,])_grid.Clone();
-            gridCopySecond = (bool[,])_grid.Clone();
-            bool[,] gridToPrint = FloodFill(gridCopy, gridCopySecond);
-            SetProgressBar(gridToPrint);
-            _grid = (bool[,])gridToPrint.Clone();
+            bool[,] gridCopy = (bool[,])_grid.Clone();
+            bool[,] gridCopySecond = (bool[,])_grid.Clone();
+            bool[,] newGrid = FloodFill(gridCopy, gridCopySecond);
+
+            DestroyEnemiesInNewlyFilledCells(oldGrid, newGrid);
+
+            SetProgressBar(newGrid);
+            _grid = (bool[,])newGrid.Clone();
+
+            oldGrid = (bool[,])_grid.Clone();
         }
 
         if (_progress >= 1f)
             GameManager.Instance.LevelComplete();
+    }
+    
+ void DestroyEnemiesInNewlyFilledCells(bool[,] oldGrid, bool[,] newGrid)
+    {
+        int cols = _gridColumns;
+        int rows = _gridRows;
+
+        // Find all enemies in the scene
+        var enemies = GameObject.FindObjectsOfType<EnemyBehaviors>();
+        foreach (var enemy in enemies)
+        {
+            Vector3 pos = enemy.transform.position;
+            int col = Mathf.RoundToInt(pos.x + cols / 2f);
+            int row = Mathf.Abs(Mathf.RoundToInt(pos.z - rows / 2f));
+
+            if (col < 0 || col >= cols || row < 0 || row >= rows)
+                continue;
+
+            if (!oldGrid[col, row] && newGrid[col, row])
+            {
+                Destroy(enemy.gameObject);
+            }
+        }
     }
 
     private void SetProgressBar(bool[,] _grid)

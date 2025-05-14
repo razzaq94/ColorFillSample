@@ -27,29 +27,39 @@ public class EnemyBehaviors : MonoBehaviour
     {
         rb.linearVelocity = dir * speed;
     }
-    
+
     private void OnCollisionEnter(Collision collision)
     {
         if (collision.gameObject.TryGetComponent<Cube>(out Cube cube))
         {
-                    print("2");
-            switch (enemyType)
+            if (cube.IsFilled)
             {
-                case EnemyType.CubeDestroyer:
-                    print(enemyType);
-                    gridManager.RemoveCubeAt(cube);
-                    Vector3 normal = collision.contacts[0].normal;
-                    dir = Vector3.Reflect(dir, normal).normalized;
+                switch (enemyType)
+                {
+                    case EnemyType.CubeDestroyer:
+                        print(enemyType);
+                        gridManager.RemoveCubeAt(cube);
+                        Vector3 normal = collision.contacts[0].normal;
+                        dir = Vector3.Reflect(dir, normal).normalized;
 
-                    float jitter = Random.Range(-bounceAngle, bounceAngle);
-                    dir = Quaternion.Euler(0f, jitter, 0f) * dir;
-                    dir = dir.normalized;
+                        float jitter = Random.Range(-bounceAngle, bounceAngle);
+                        dir = Quaternion.Euler(0f, jitter, 0f) * dir;
+                        dir = dir.normalized;
 
-                    rb.linearVelocity = dir * speed;
-                    break;
-                case EnemyType.CubeEater:
-                    gridManager.RemoveCubeAt(cube);
-                    break;
+                        rb.linearVelocity = dir * speed;
+                        break;
+                    case EnemyType.CubeEater:
+                        gridManager.RemoveCubeAt(cube);
+                        break;
+                }
+            }
+            else
+            {
+                if (cube.CanHarm)
+                {
+                    GameManager.Instance.LevelLose();
+                }
+
             }
         }
         if (collision.transform.gameObject.CompareTag("Player"))

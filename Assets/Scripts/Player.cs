@@ -88,17 +88,63 @@ public class Player : MonoBehaviour
 
     private void OnCollisionEnter(Collision collision)
     {
-        if(collision.gameObject.CompareTag("Boundary"))
+        if (collision.gameObject.CompareTag("Boundary"))
         {
             IsMoving = false;
             transform.DOMove(RoundPos(), 0.1f);
-            if(_spawnCubes)
+            if (_spawnCubes)
             {
                 SpawnCube();
                 _spawnCubes = false;
                 FillCubes();
                 GridManager.Instance.PerformFloodFill();
             }
+        }
+    }
+    private void OnTriggerEnter(Collider other)
+    {
+        if (other.TryGetComponent<Cube>(out Cube cube))
+        {
+            if (cube.IsFilled)
+            {
+                FillCubes();
+                if (_spawnCubes)
+                    GridManager.Instance.PerformFloodFill();
+            }
+            else
+            {
+                if (cube.CanHarm)
+                {
+                    Haptics.Generate(HapticTypes.HeavyImpact);
+                    GameManager.Instance.LevelLose();
+                }
+            }
+        }
+        else if (other.TryGetComponent<EnemyCube>(out EnemyCube enemyCube))
+        {
+            IsMoving = false;
+            transform.position = RoundPos();
+            GameManager.Instance.LevelLose();
+        }
+    }
+
+    private void OnTriggerStay(Collider other)
+    {
+        if (other.TryGetComponent<Cube>(out Cube cube))
+        {
+            if (cube.IsFilled)
+                _spawnCubes = false;
+        }
+    }
+
+    private void OnTriggerExit(Collider other)
+    {
+        if (other.TryGetComponent<Cube>(out Cube cube))
+        {
+            if (cube.IsFilled)
+                _spawnCubes = true;
+            else
+                cube.CanHarm = true;
         }
     }
     private void DetectInput()
@@ -196,52 +242,7 @@ public class Player : MonoBehaviour
         _targetPos = transform.position + _moveVector;
         _startPos3 = transform.position;
     }
-    private void OnTriggerEnter(Collider other)
-    {
-        if(other.TryGetComponent<Cube>(out Cube cube))
-        {
-            if(cube.IsFilled)
-            {
-                FillCubes();
-                if(_spawnCubes)
-                    GridManager.Instance.PerformFloodFill();
-            }
-            else
-            {
-                if(cube.CanHarm)
-                {
-                    Haptics.Generate(HapticTypes.HeavyImpact);
-                    GameManager.Instance.LevelLose();
-                }
-            }
-        }
-        else if(other.TryGetComponent<EnemyCube>(out EnemyCube enemyCube))
-        {
-            IsMoving = false;
-            transform.position = RoundPos();
-            GameManager.Instance.LevelLose();
-        }
-    }
-
-    private void OnTriggerStay(Collider other)
-    {
-        if(other.TryGetComponent<Cube>(out Cube cube))
-        {
-            if(cube.IsFilled)
-                _spawnCubes = false;
-        }
-    }
-
-    private void OnTriggerExit(Collider other)
-    {
-        if(other.TryGetComponent<Cube>(out Cube cube))
-        {
-            if(cube.IsFilled)
-                _spawnCubes = true;
-            else
-                cube.CanHarm = true;
-        }
-    }
+    
     public void Restart()
     {
         SpawnCubes = _isMoving = false;

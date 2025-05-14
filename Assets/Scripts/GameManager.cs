@@ -5,27 +5,23 @@ using System.Collections.Generic;
 public class GameManager : MonoBehaviour
 {
     public static GameManager Instance;
-    public bool _gameRunning = false;
 
+    public bool _gameRunning = false;
+    public bool Debug = false;
+    private bool _gameStarted = false;
     public Transform Camera = null;
     public Player Player;
 
-    public bool Debug = false;
     public int StartLevel = 0;
-    [Space]
     public int CurrentLevel = 1;
-    public LevelData[] Levels = null;
-
-    public int GetCurrentLevel => CurrentLevel;
-
-    private bool _gameStarted = false;
     private int LevelToUse = 1;
-
+    public int GetCurrentLevel => CurrentLevel;
+    [Space]
+    public LevelData[] Levels = null;
 
     [Header("Enemy Prefabs")]
     public List<GameObject> enemyPrefabs;
     [Header("Assign Enemy Spawn Positions Here")]
-    public List<Vector2Int> gridPositions;
     public Vector2 gridOrigin = Vector2.zero;
     public Vector2 cellSize = Vector2.one;
 
@@ -33,14 +29,6 @@ public class GameManager : MonoBehaviour
     {
         Instance = this;
         DOTween.Init();
-    }
-#if UNITY_EDITOR
-    private int TotalLevels(int value, GUIContent label) => (int)UnityEditor.EditorGUILayout.Slider(label, value, 1, this.Levels.Length);
-#endif
-    private void SetLevels()
-    {
-        for (int i = 0; i < Levels.Length; i++)
-            Levels[i].SetLevel($"Level {i + 1}");
     }
 
     private void Start()
@@ -54,7 +42,7 @@ public class GameManager : MonoBehaviour
             LevelToUse = 1;
 
         GridManager.Instance.InitGrid(Levels[LevelToUse - 1].Columns, Levels[LevelToUse - 1].Rows);
-        Levels[LevelToUse - 1].ResetGroups();
+        //Levels[LevelToUse - 1].ResetGroups();
         Levels[LevelToUse - 1].LevelObject.SetActive(true);
         if (Levels[LevelToUse - 1].PlayerPos)
             Player.transform.position = Levels[LevelToUse - 1].PlayerPos.position;
@@ -68,7 +56,6 @@ public class GameManager : MonoBehaviour
 
         Player.Init();
 
-        SpawnEnemies();
 
     }
 
@@ -84,6 +71,7 @@ public class GameManager : MonoBehaviour
         AudioManager.instance?.PlaySFXSound(2);
         UIManager.Instance?.StartGame();
         _gameRunning = true;
+        SpawnEnemies();
     }
 
     public void LevelComplete()
@@ -97,28 +85,27 @@ public class GameManager : MonoBehaviour
 
     public void SpawnEnemies()
     {
-        int count = Mathf.Min(enemyPrefabs.Count, gridPositions.Count);
+        int count = Levels[CurrentLevel].gridPositions.Count;
         for (int i = 0; i < count; i++)
         {
             GameObject prefab = enemyPrefabs[i];
-            Vector2Int cell = gridPositions[i];
+            Vector2Int cell = Levels[CurrentLevel].gridPositions[i];
 
             Vector3 worldpos = new Vector3(gridOrigin.x + cell.x, 0f, gridOrigin.y + cell.y);
             Instantiate(prefab, worldpos, Quaternion.identity);
         }
 
-        if (enemyPrefabs.Count == gridPositions.Count)
+        if (enemyPrefabs.Count == Levels[CurrentLevel].gridPositions.Count)
         {
-            print($"Enemy Prefabs count {enemyPrefabs.Count} does not match Grid Positions count {gridPositions.Count}");
+            print($"Enemy Prefabs count {enemyPrefabs.Count} does not match Grid Positions count {Levels[CurrentLevel].gridPositions.Count}");
         }
-
     }
 
     public void LevelLose()
     {
         Player.enabled = _gameRunning = false;
         UIManager.Instance?.LevelLose();
-        AudioManager.instance.BGAudioSource.Stop(); 
+        AudioManager.instance.BGAudioSource.Stop();
         AudioManager.instance?.PlaySFXSound(4);
     }
 
@@ -129,7 +116,18 @@ public class GameManager : MonoBehaviour
         UIManager.Instance.Start();
         Start();
         Player.Restart();
+        DeleteEnemies();
+        SpawnEnemies();
     }
+
+    public void DeleteEnemies()
+    {
+        EnemyBehaviors[] enemies = FindObjectsOfType<EnemyBehaviors>();
+        foreach (EnemyBehaviors enemy in enemies)
+        {
+            Destroy(enemy.gameObject);
+        }
+    } 
 }
 
 [System.Serializable]
@@ -139,15 +137,8 @@ public class LevelData
     public Transform PlayerPos = null;
     [HideInInspector] public int Columns = 10;
     [HideInInspector] public int Rows = 20;
-    public EnemyCubeGroup[] Groups = null;
+    public List<Vector2Int> gridPositions;
 
     private string LevelName = null;
-
     public void SetLevel(string levelName) => LevelName = levelName;
-
-    public void ResetGroups()
-    {
-        for (int i = 0; i < Groups.Length; i++)
-            Groups[i].Restart();
-    }
 }

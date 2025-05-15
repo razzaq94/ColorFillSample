@@ -156,3 +156,8 @@ MonoBehaviour:
   enemyType: 1
   bounceAngle: 3
   minInitial: 0.3
+  cubeLayer:
+    serializedVersion: 2
+    m_Bits: 8192
+  gridCellSize: 1
+  useGridMovement: 0

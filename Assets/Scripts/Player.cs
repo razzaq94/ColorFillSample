@@ -1,7 +1,6 @@
 using UnityEngine;
 using DG.Tweening;
 using System.Collections.Generic;
-using static UnityEditor.Experimental.GraphView.GraphView;
 
 public class Player : MonoBehaviour
 {

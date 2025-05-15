@@ -19,7 +19,8 @@ public class GridManager : MonoBehaviour
 
     private const float PercentFalseCount = 0.1f;
     private float _limitToFill = 0f;
-
+    public int Columns => _gridColumns;
+    public int Rows => _gridRows;
     private void Awake()
     {
         Instance = this;
@@ -29,6 +30,7 @@ public class GridManager : MonoBehaviour
         _gridColumns = col;
         _gridRows = row;
         _grid = new bool[_gridColumns, _gridRows];
+
         _totalCount = _gridColumns * _gridRows;
         _limitToFill = _totalCount * PercentFalseCount;
     }

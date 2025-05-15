@@ -99,6 +99,11 @@ MonoBehaviour:
   enemyType: 0
   bounceAngle: 3
   minInitial: 0.3
+  cubeLayer:
+    serializedVersion: 2
+    m_Bits: 8192
+  gridCellSize: 1
+  useGridMovement: 0
 --- !u!1 &7704841571989536366
 GameObject:
   m_ObjectHideFlags: 0

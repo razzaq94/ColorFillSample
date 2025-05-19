@@ -153,11 +153,6 @@ MonoBehaviour:
   m_Name: 
   m_EditorClassIdentifier: 
   speed: 5
-  enemyType: 1
+  enemyType: 2
   bounceAngle: 3
   minInitial: 0.3
-  cubeLayer:
-    serializedVersion: 2
-    m_Bits: 8192
-  gridCellSize: 1
-  useGridMovement: 0

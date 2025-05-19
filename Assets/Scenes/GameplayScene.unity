@@ -1000,6 +1000,7 @@ MonoBehaviour:
   _poolSizeX: 10
   _poolSizeY: 20
   _cubePrefab: {fileID: 1447953011980686203, guid: 2b4767fb84ff6684b828f47be4fbce5f, type: 3}
+  _gridManager: {fileID: 1978593150}
 --- !u!4 &1211061209
 Transform:
   m_ObjectHideFlags: 0
@@ -1055,8 +1056,8 @@ BoxCollider:
   m_ProvidesContacts: 0
   m_Enabled: 1
   serializedVersion: 3
-  m_Size: {x: 0.65, y: 0.65, z: 0.65}
-  m_Center: {x: 0, y: 0, z: 0}
+  m_Size: {x: 0.65, y: 1.7438132, z: 0.65}
+  m_Center: {x: 0, y: 0.54690665, z: 0}
 --- !u!23 &1251781439
 MeshRenderer:
   m_ObjectHideFlags: 0
@@ -1787,13 +1788,15 @@ MonoBehaviour:
     Columns: 10
     Rows: 20
     gridPositions:
-    - {x: 4, y: 5}
+    - {x: 0, y: 0}
+    - {x: 4, y: -5}
     - {x: -3, y: 2}
-    - {x: 0, y: 8}
+    - {x: 0, y: -5}
   enemyPrefabs:
-  - {fileID: 6463248537698701024, guid: 63d4d3a867727184aa3508d8fab1f153, type: 3}
-  - {fileID: 3177776736236344567, guid: 46241dbec9ab5534fab1d0b1d95af41d, type: 3}
+  - {fileID: 5659256095017627701, guid: 782f990439ac48348914309a13bcb2f3, type: 3}
   - {fileID: 3894694730842590426, guid: e9012740744441a418298c461f3a5075, type: 3}
+  - {fileID: 3177776736236344567, guid: 46241dbec9ab5534fab1d0b1d95af41d, type: 3}
+  - {fileID: 6463248537698701024, guid: 63d4d3a867727184aa3508d8fab1f153, type: 3}
   gridOrigin: {x: 0, y: 0}
   cellSize: {x: 1, y: 1}
 --- !u!4 &1425309783

@@ -184,6 +184,7 @@ GameObject:
   - component: {fileID: 1152587881229560556}
   - component: {fileID: 5382941032772256156}
   - component: {fileID: 1171206823421702728}
+  - component: {fileID: 5451501013949391858}
   m_Layer: 0
   m_Name: Cube Eater
   m_TagString: Enemy
@@ -262,15 +263,29 @@ MonoBehaviour:
   m_PrefabInstance: {fileID: 0}
   m_PrefabAsset: {fileID: 0}
   m_GameObject: {fileID: 3894694730842590426}
-  m_Enabled: 1
+  m_Enabled: 0
   m_EditorHideFlags: 0
   m_Script: {fileID: 11500000, guid: e6d6a88ce065f204780c275b364dcc89, type: 3}
   m_Name: 
   m_EditorClassIdentifier: 
   speed: 5
-  enemyType: 2
+  enemyType: 3
   bounceAngle: 3
   minInitial: 0.3
+--- !u!114 &5451501013949391858
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 3894694730842590426}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: dc08480a6875632448999a51e907ce13, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: 
+  speed: 5
+  gridSize: 1
 --- !u!1 &4116133941259958173
 GameObject:
   m_ObjectHideFlags: 0

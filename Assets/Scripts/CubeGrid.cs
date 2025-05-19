@@ -10,6 +10,8 @@ public class CubeGrid : MonoBehaviour
 
     private Queue<Cube> _cubeQueue = new Queue<Cube>();
     private List<Cube> TakenCubes = new List<Cube>();
+    public List<Cube> AllCubes;
+    public GridManager _gridManager;
     private void Awake()
     {
         Instance = this;
@@ -21,10 +23,12 @@ public class CubeGrid : MonoBehaviour
         {
             for (int y = 0; y < _poolSizeY; y++)
             {
-                Vector3 position = new Vector3(x, 0f, y);
-
-                Cube cube = Instantiate(_cubePrefab.gameObject, position, Quaternion.identity).GetComponent<Cube>();
+                Vector3 worldPos = _gridManager.GridToWorld(new Vector2Int(x, y));
+                worldPos.y = 0f;              
+                Cube cube = Instantiate(_cubePrefab, worldPos, Quaternion.identity)
+                                .GetComponent<Cube>();
                 cube.gameObject.SetActive(false);
+                AllCubes.Add(cube);
                 _cubeQueue.Enqueue(cube);
             }
         }

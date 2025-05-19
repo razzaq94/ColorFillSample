@@ -25,6 +25,12 @@ public class GridManager : MonoBehaviour
     {
         Instance = this;
     }
+    public Cube[] allCubes;
+
+    void Start()
+    {
+        allCubes = GameObject.FindObjectsByType<Cube>(FindObjectsSortMode.None);
+    }
     public void InitGrid(int col, int row)
     {
         _gridColumns = col;
@@ -69,8 +75,8 @@ public class GridManager : MonoBehaviour
         if (_progress >= 1f)
             GameManager.Instance.LevelComplete();
     }
-    
- void DestroyEnemiesInNewlyFilledCells(bool[,] oldGrid, bool[,] newGrid)
+
+    void DestroyEnemiesInNewlyFilledCells(bool[,] oldGrid, bool[,] newGrid)
     {
         int cols = _gridColumns;
         int rows = _gridRows;
@@ -209,21 +215,21 @@ public class GridManager : MonoBehaviour
         }
         return falseCount;
     }
-    
+
     public Vector2Int WorldToGrid(Vector3 world)
     {
         int col = Mathf.RoundToInt(world.x + (_gridColumns / 2f));
         int row = Mathf.Abs(Mathf.RoundToInt(world.z - (_gridRows / 2f)));
         return new Vector2Int(col, row);
     }
-    
+
     public Vector3 GridToWorld(Vector2Int grid)
     {
         float x = grid.x - _gridColumns / 2f;
         float z = (_gridRows / 2f) - grid.y;
         return new Vector3(x, transform.position.y, z);
     }
-    
+
     public void RemoveCubeAt(Cube cube)
     {
         Vector2Int idx = WorldToGrid(cube.transform.position);
@@ -235,4 +241,21 @@ public class GridManager : MonoBehaviour
 
         CubeGrid.Instance.PutBackInQueue(cube);
     }
+
+
+    public List<Cube> GetAllFilledCells()
+    {
+        var filled = new List<Cube>();
+
+        foreach (var cube in CubeGrid.Instance.AllCubes)
+        {
+            if (cube.IsFilled)
+            {
+                filled.Add(cube);
+            }
+        }
+        return filled;
+    }
+
+
 }

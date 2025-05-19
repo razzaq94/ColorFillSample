@@ -47,12 +47,9 @@ public class CubeEater : MonoBehaviour
                 Vector3 start = transform.position;
                 Vector3 target = start + currentDir * gridSize;
 
-                // 1) check the target cell for ANY collider
-                //    center the box in the cell, half-extents just under gridSize/2
                 Vector3 boxCenter = target + Vector3.up * 0.5f;
                 Vector3 halfExtents = new Vector3(gridSize * 0.45f, 0.45f, gridSize * 0.45f);
 
-                // NOTE: no layerMask specified => default includes both triggers and solids
                 Collider[] hits = Physics.OverlapBox(
                     boxCenter,
                     halfExtents,

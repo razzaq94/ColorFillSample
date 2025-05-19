@@ -1,6 +1,7 @@
 using UnityEngine;
 using DG.Tweening;
 using System.Collections.Generic;
+using System.Linq;
 
 public class GameManager : MonoBehaviour
 {
@@ -71,7 +72,7 @@ public class GameManager : MonoBehaviour
         AudioManager.instance?.PlaySFXSound(2);
         UIManager.Instance?.StartGame();
         _gameRunning = true;
-        SpawnEnemies();
+        Invoke(nameof(SpawnEnemies), 5f);
     }
 
     public void LevelComplete()
@@ -85,19 +86,37 @@ public class GameManager : MonoBehaviour
 
     public void SpawnEnemies()
     {
-        int count = Levels[CurrentLevel].gridPositions.Count;
-        for (int i = 0; i < count; i++)
-        {
-            GameObject prefab = enemyPrefabs[i];
-            Vector2Int cell = Levels[CurrentLevel].gridPositions[i];
+        var availableFilled = new List<Cube>(GridManager.Instance.GetAllFilledCells());
+        var availableEmpty = new List<Cube>(Levels[CurrentLevel].gridPositions);   
+        int killerCount = enemyPrefabs
+            .Count(p => p.GetComponent<EnemyBehaviors>().enemyType == EnemyType.Killer);
 
-            Vector3 worldpos = new Vector3(gridOrigin.x + cell.x, 0f, gridOrigin.y + cell.y);
-            Instantiate(prefab, worldpos, Quaternion.identity);
-        }
-
-        if (enemyPrefabs.Count == Levels[CurrentLevel].gridPositions.Count)
+        for (int i = 0; i < enemyPrefabs.Count; i++)
         {
-            print($"Enemy Prefabs count {enemyPrefabs.Count} does not match Grid Positions count {Levels[CurrentLevel].gridPositions.Count}");
+            var prefab = enemyPrefabs[i];
+            var behav = prefab.GetComponent<EnemyBehaviors>();
+            Cube cell;
+
+            if (behav.enemyType == EnemyType.Killer)
+            {
+                int rnd = Random.Range(0, availableFilled.Count);
+                cell = availableFilled[rnd];
+                availableFilled.RemoveAt(rnd);
+                print(cell);
+            }
+            else
+            {
+                int random = Random.Range(0, availableFilled.Count);
+                cell = Levels[CurrentLevel].gridPositions[random];
+            }
+
+            float y = 0f;
+            if (behav.enemyType == EnemyType.Killer || behav.enemyType == EnemyType.FlyingHoop)
+                y = 0.7f;
+
+            Vector3 worldPos = cell.transform.position + new Vector3(0, y, 0);
+            print(worldPos);
+            Instantiate(prefab, worldPos, Quaternion.identity);
         }
     }
 
@@ -122,12 +141,12 @@ public class GameManager : MonoBehaviour
 
     public void DeleteEnemies()
     {
-        EnemyBehaviors[] enemies = FindObjectsOfType<EnemyBehaviors>();
+        EnemyBehaviors[] enemies = FindObjectsByType<EnemyBehaviors>(FindObjectsSortMode.None);
         foreach (EnemyBehaviors enemy in enemies)
         {
             Destroy(enemy.gameObject);
         }
-    } 
+    }
 }
 
 [System.Serializable]
@@ -137,8 +156,10 @@ public class LevelData
     public Transform PlayerPos = null;
     [HideInInspector] public int Columns = 10;
     [HideInInspector] public int Rows = 20;
-    public List<Vector2Int> gridPositions;
+    public List<Cube> gridPositions;
 
     private string LevelName = null;
     public void SetLevel(string levelName) => LevelName = levelName;
+
+    
 }

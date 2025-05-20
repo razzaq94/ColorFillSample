@@ -1,35 +1,40 @@
-using UnityEngine;
+﻿using UnityEngine;
 using DG.Tweening;
 using System.Collections.Generic;
 using System.Linq;
+using System.Collections;
 
 public class GameManager : MonoBehaviour
 {
     public static GameManager Instance;
-
+    [Header("Core Settings")]
     public bool _gameRunning = false;
     public bool Debug = false;
     private bool _gameStarted = false;
-    public Transform Camera = null;
     public Player Player;
+    public Transform Camera = null;
 
     public int StartLevel = 0;
     public int CurrentLevel = 1;
+    public int Diamonds;
     private int LevelToUse = 1;
     public int GetCurrentLevel => CurrentLevel;
     [Space]
     public LevelData[] Levels = null;
 
-    [Header("Enemy Prefabs")]
-    public List<GameObject> enemyPrefabs;
     [Header("Assign Enemy Spawn Positions Here")]
     public Vector2 gridOrigin = Vector2.zero;
     public Vector2 cellSize = Vector2.one;
 
+
+    private float _timeRemaining;
+    private bool _timerRunning;
+    private Coroutine _timerRoutine;
     private void Awake()
     {
         Instance = this;
         DOTween.Init();
+        
     }
 
     private void Start()
@@ -56,8 +61,17 @@ public class GameManager : MonoBehaviour
         Camera.transform.DOMoveZ(-5f, 0.5f);
 
         Player.Init();
+    }
 
+   
 
+    public void GetCells()
+    {
+        var availableEmpty = new List<Cube>(GridManager.Instance.GetAnyCells());
+        for (int i = 0; i < Levels[LevelToUse - 1].gridPositions.Count; i++)
+        {
+            Levels[LevelToUse - 1].gridPositions[i] = availableEmpty[Random.Range(0, availableEmpty.Count)];
+        }
     }
 
     private void Update()
@@ -72,9 +86,42 @@ public class GameManager : MonoBehaviour
         AudioManager.instance?.PlaySFXSound(2);
         UIManager.Instance?.StartGame();
         _gameRunning = true;
-        Invoke(nameof(SpawnEnemies), 5f);
+        Invoke(nameof(StartSpawningEnemies), 4f);
+        _timeRemaining = Levels[LevelToUse - 1].levelTime;
+        _timerRunning = true;
+
+        if (_timerRoutine != null)
+            StopCoroutine(_timerRoutine);
+
+        _timerRoutine = StartCoroutine(LevelTimer());
+    }
+    public IEnumerator LevelTimer()
+    {
+        while (_timerRunning && _timeRemaining > 0f)
+        {
+            _timeRemaining -= Time.deltaTime;
+            yield return null;
+        }
+
+        if (_timeRemaining <= 0f)
+        {
+            _timerRunning = false;
+            OnTimeUp();
+        }
     }
 
+    private void OnTimeUp()
+    {
+        _timerRunning = false;
+
+        LevelLose();
+    }
+
+    public void StopLevelTimer()
+    {
+        _timerRunning = false;
+        if (_timerRoutine != null) StopCoroutine(_timerRoutine);
+    }
     public void LevelComplete()
     {
         Player.enabled = _gameRunning = false;
@@ -84,42 +131,80 @@ public class GameManager : MonoBehaviour
         AudioManager.instance?.PlaySFXSound(3);
     }
 
-    public void SpawnEnemies()
+    public void StartSpawningEnemies()
     {
-        var availableFilled = new List<Cube>(GridManager.Instance.GetAllFilledCells());
-        var availableEmpty = new List<Cube>(Levels[CurrentLevel].gridPositions);   
-        int killerCount = enemyPrefabs
-            .Count(p => p.GetComponent<EnemyBehaviors>().enemyType == EnemyType.Killer);
-
-        for (int i = 0; i < enemyPrefabs.Count; i++)
+        foreach (var Config in Levels[LevelToUse-1].SpwanablesConfigurations)
         {
-            var prefab = enemyPrefabs[i];
-            var behav = prefab.GetComponent<EnemyBehaviors>();
+            if (Config.spawnCount <= 0)
+                continue;
+            StartCoroutine(SpawnEnemyRoutine(Config));
+        }
+    }
+
+    private IEnumerator SpawnEnemyRoutine(SpawnableConfig Config)
+    {
+        List<Cube> availableFilled = new List<Cube>(GridManager.Instance.GetAllFilledCells());
+
+        for (int i = 0; i < Config.spawnCount; i++)
+        {
             Cube cell;
 
-            if (behav.enemyType == EnemyType.Killer)
+            if (Config.enemyType == SpawnablesType.Killer)
             {
                 int rnd = Random.Range(0, availableFilled.Count);
                 cell = availableFilled[rnd];
                 availableFilled.RemoveAt(rnd);
-                print(cell);
             }
             else
             {
-                int random = Random.Range(0, availableFilled.Count);
-                cell = Levels[CurrentLevel].gridPositions[random];
+                List<Cube> positions = Levels[CurrentLevel].gridPositions;
+                int rndIndex = Random.Range(0, positions.Count);
+                cell = positions[rndIndex];
             }
 
-            float y = 0f;
-            if (behav.enemyType == EnemyType.Killer || behav.enemyType == EnemyType.FlyingHoop)
-                y = 0.7f;
+            Vector3 groundPos = cell.transform.position + new Vector3(0f, Config.yOffset, 0f);
+            Vector3 spawnPos = new Vector3(groundPos.x, Config.initialSpawnHeight, groundPos.z);
 
-            Vector3 worldPos = cell.transform.position + new Vector3(0, y, 0);
-            print(worldPos);
-            Instantiate(prefab, worldPos, Quaternion.identity);
+            GameObject enemy = Instantiate(Config.prefab, spawnPos, Quaternion.identity);
+
+            if (Config.usePhysicsDrop)
+            {
+                Rigidbody rb = enemy.GetComponent<Rigidbody>();
+                if (rb == null)
+                {
+                    rb = enemy.AddComponent<Rigidbody>();
+                }
+
+                rb.isKinematic = false;
+                rb.useGravity = true;
+                rb.constraints = RigidbodyConstraints.FreezeRotationX | RigidbodyConstraints.FreezeRotationZ;
+            }
+            else
+            {
+                StartCoroutine(ManualDrop(enemy.transform, groundPos, 0.5f));
+            }
+
+            if (i < Config.spawnCount - 1)
+            {
+                float delay = Random.Range(Config.delayRange.x, Config.delayRange.y);
+                yield return new WaitForSeconds(delay);
+            }
         }
     }
 
+    private IEnumerator ManualDrop(Transform pos, Vector3 target, float duration)
+    {
+        Vector3 start = pos.position;
+        float elapsed = 0f;
+
+        while (elapsed < duration)
+        {
+            elapsed += Time.deltaTime;
+            pos.position = Vector3.Lerp(start, target, elapsed / duration);
+            yield return null;
+        }
+        pos.position = target;
+    }
     public void LevelLose()
     {
         Player.enabled = _gameRunning = false;
@@ -136,7 +221,7 @@ public class GameManager : MonoBehaviour
         Start();
         Player.Restart();
         DeleteEnemies();
-        SpawnEnemies();
+
     }
 
     public void DeleteEnemies()
@@ -154,12 +239,26 @@ public class LevelData
 {
     public GameObject LevelObject = null;
     public Transform PlayerPos = null;
+    public float levelTime = 0f;
     [HideInInspector] public int Columns = 10;
     [HideInInspector] public int Rows = 20;
     public List<Cube> gridPositions;
+    public List<SpawnableConfig> SpwanablesConfigurations;
+    
 
     private string LevelName = null;
     public void SetLevel(string levelName) => LevelName = levelName;
 
-    
+
+}
+[System.Serializable]
+public class SpawnableConfig
+{
+    public GameObject prefab;
+    public SpawnablesType enemyType;
+    public int spawnCount;
+    public Vector2 delayRange = new Vector2(3f, 10f);
+    public float yOffset = 0f;
+    public float initialSpawnHeight = 35f;
+    public bool usePhysicsDrop = true;
 }

@@ -8,6 +8,7 @@ public class UIManager : MonoBehaviour
     public static UIManager Instance;
     public Image StartScreen = null;
     public TMP_Text CurrentLevelText = null;
+    public TMP_Text Diamonds;
     public TMP_Text NextLevelText = null;
     public GameObject LevelWinPanel = null;
     public Button NextLevelBtn = null;

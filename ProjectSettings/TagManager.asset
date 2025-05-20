@@ -13,6 +13,9 @@ TagManager:
   - Boundary
   - Enemy
   - InnerObstacle
+  - Timer
+  - SlowDown
+  - Diamond
   layers:
   - Default
   - TransparentFX

@@ -684,9 +684,9 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: e6d6a88ce065f204780c275b364dcc89, type: 3}
   m_Name: 
   m_EditorClassIdentifier: 
-  speed: 8
+  speed: 4
   enemyType: 1
-  bounceAngle: 4
+  bounceAngle: 3
   minInitial: 0.3
 --- !u!95 &7199124788822048848
 Animator:

@@ -82,7 +82,7 @@ public class GridManager : MonoBehaviour
         int rows = _gridRows;
 
         // Find all enemies in the scene
-        var enemies = GameObject.FindObjectsOfType<EnemyBehaviors>();
+        var enemies = GameObject.FindGameObjectsWithTag("Enemy");
         foreach (var enemy in enemies)
         {
             Vector3 pos = enemy.transform.position;
@@ -257,5 +257,16 @@ public class GridManager : MonoBehaviour
         return filled;
     }
 
-
+    public List<Cube> GetAnyCells()
+    {
+        var filled = new List<Cube>();
+        foreach (var cube in CubeGrid.Instance.AllCubes)
+        {
+            if (!cube.isActiveAndEnabled && !cube.gameObject.activeInHierarchy)
+            {
+                filled.Add(cube);
+            }
+        }
+        return filled;
+    }
 }

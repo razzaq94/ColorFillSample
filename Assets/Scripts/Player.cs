@@ -98,6 +98,8 @@ public class Player : MonoBehaviour
                 FillCubes();
                 GridManager.Instance.PerformFloodFill();
             }
+            GameManager.Instance.GetCells();
+            Invoke(nameof(GameManager.Instance.StartSpawningEnemies), 4f);
         }
     }
     private void OnTriggerEnter(Collider other)

@@ -4,7 +4,7 @@ using System.Collections.Generic;
 public class EnemyBehaviors : MonoBehaviour
 {
     public float speed = 5f;
-    public EnemyType enemyType;
+    public SpawnablesType enemyType;
     public float bounceAngle = 3f;   
     public float minInitial = 0.3f;  
 
@@ -27,18 +27,17 @@ public class EnemyBehaviors : MonoBehaviour
 
     void FixedUpdate()
     {
-        if (enemyType == EnemyType.Killer)
-            ConstrainToFilledBounce();
+        if (enemyType == SpawnablesType.Killer)
+            SpikedBallMovement();
         else
             rb.linearVelocity = dir * speed;
     }
 
-    private void ConstrainToFilledBounce()
+    private void SpikedBallMovement()
     {
         Vector3 pos = transform.position;
         Vector2Int curr = gridManager.WorldToGrid(pos); 
-        bool inCurrBounds = curr.x >= 0 && curr.x < gridManager._gridColumns
-                         && curr.y >= 0 && curr.y < gridManager._gridRows;
+        bool inCurrBounds = curr.x >= 0 && curr.x < gridManager._gridColumns && curr.y >= 0 && curr.y < gridManager._gridRows;
         bool currFilled = inCurrBounds && gridManager._grid[curr.x, curr.y]; 
 
         if (!currFilled)
@@ -126,7 +125,7 @@ public class EnemyBehaviors : MonoBehaviour
     {
         if (collision.gameObject.TryGetComponent<Cube>(out Cube cube))
         {
-            if (cube.IsFilled && enemyType == EnemyType.CubeDestroyer)
+            if (cube.IsFilled && enemyType == SpawnablesType.CubeDestroyer)
             {
                 gridManager.RemoveCubeAt(cube);
                 BounceOffNormal(collision.contacts[0].normal);
@@ -138,9 +137,9 @@ public class EnemyBehaviors : MonoBehaviour
         }
         else if (collision.transform.CompareTag("Player"))
         {
-            GameManager.Instance.LevelLose();
+            //GameManager.Instance.LevelLose();
         }
-        else if (collision.transform.CompareTag("Boundary") && enemyType != EnemyType.Killer)
+        else if (collision.transform.CompareTag("Boundary"))
         {
             BounceOffNormal(collision.contacts[0].normal);
         }
@@ -156,10 +155,11 @@ public class EnemyBehaviors : MonoBehaviour
     }
 }
 
-public enum EnemyType
+public enum SpawnablesType
 {
     Killer,
     FlyingHoop,
     CubeDestroyer,
-    CubeEater
+    CubeEater,
+    Diamond,
 }

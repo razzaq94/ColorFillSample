@@ -28,6 +28,7 @@ public class CubeGrid : MonoBehaviour
                 Cube cube = Instantiate(_cubePrefab, worldPos, Quaternion.identity)
                                 .GetComponent<Cube>();
                 cube.gameObject.SetActive(false);
+                cube.transform.SetParent(transform);    
                 AllCubes.Add(cube);
                 _cubeQueue.Enqueue(cube);
             }

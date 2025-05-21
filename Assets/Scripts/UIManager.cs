@@ -6,17 +6,21 @@ using UnityEngine.UI;
 public class UIManager : MonoBehaviour
 {
     public static UIManager Instance;
-    public Image StartScreen = null;
-    public TMP_Text CurrentLevelText = null;
-    public TMP_Text Diamonds;
-    public TMP_Text NextLevelText = null;
-    public GameObject LevelWinPanel = null;
-    public Button NextLevelBtn = null;
-    public TMP_Text LevelWinText = null;
-    public GameObject LevelLosePanel = null;
-    public Button RetryLevelBtn = null;
-    public TMP_Text LevelFailText = null;
-    public Image Fill = null;
+
+    public Image StartScreen;
+    public Image Fill;
+
+    public TextMeshProUGUI CurrentLevelText;
+    public TextMeshProUGUI Diamonds;
+    public TextMeshProUGUI timerText;
+    public TextMeshProUGUI NextLevelText;
+    public TextMeshProUGUI LevelWinText;
+    public TextMeshProUGUI LevelFailText;
+
+    public GameObject LevelWinPanel;
+    public GameObject LevelLosePanel;
+    public Button RetryLevelBtn;
+    public Button NextLevelBtn;
 
     private void Awake()
     {
@@ -26,11 +30,15 @@ public class UIManager : MonoBehaviour
     {
         LevelWinPanel.SetActive(false);
         LevelLosePanel.SetActive(false);
+        
         Fill.fillAmount = 0f;
+
         NextLevelBtn.onClick.RemoveAllListeners();
         NextLevelBtn.onClick.AddListener(GameManager.Instance.Replay);
+        
         RetryLevelBtn.onClick.RemoveAllListeners();
         RetryLevelBtn.onClick.AddListener(GameManager.Instance.Replay);
+        
         NextLevelText.text = (GameManager.Instance.GetCurrentLevel + 1).ToString();
         CurrentLevelText.text = GameManager.Instance.GetCurrentLevel.ToString();
     }

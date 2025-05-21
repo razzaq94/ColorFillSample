@@ -27,9 +27,8 @@ public class GameManager : MonoBehaviour
     public Vector2 cellSize = Vector2.one;
 
 
-    private float _timeRemaining;
-    private bool _timerRunning;
-    private Coroutine _timerRoutine;
+    private bool isGameOver = false;
+
     private void Awake()
     {
         Instance = this;
@@ -76,6 +75,22 @@ public class GameManager : MonoBehaviour
 
     private void Update()
     {
+        if (!isGameOver && Levels[LevelToUse-1].levelTime > 0)
+        {
+            Levels[LevelToUse-1].levelTime -= Time.deltaTime;
+            Levels[LevelToUse - 1].levelTime = Mathf.Clamp(Levels[LevelToUse - 1].levelTime, 0, 9999); 
+            UpdateTimerDisplay();
+        }
+
+        if (!isGameOver && Levels[LevelToUse - 1].levelTime <= 0)
+        {
+            LevelLose();
+        }
+        void UpdateTimerDisplay()
+        {
+            UIManager.Instance.timerText.text = Mathf.CeilToInt(Levels[LevelToUse - 1].levelTime).ToString();
+        }
+
         if (Input.GetMouseButtonDown(0) && !_gameStarted)
             StartGame();
     }
@@ -83,52 +98,23 @@ public class GameManager : MonoBehaviour
     private void StartGame()
     {
         _gameStarted = true;
-        AudioManager.instance?.PlaySFXSound(2);
+        AudioManager.instance?.PlayUISound(0);
         UIManager.Instance?.StartGame();
         _gameRunning = true;
-        Invoke(nameof(StartSpawningEnemies), 4f);
-        _timeRemaining = Levels[LevelToUse - 1].levelTime;
-        _timerRunning = true;
-
-        if (_timerRoutine != null)
-            StopCoroutine(_timerRoutine);
-
-        _timerRoutine = StartCoroutine(LevelTimer());
     }
-    public IEnumerator LevelTimer()
+    public void AddTime(int time)
     {
-        while (_timerRunning && _timeRemaining > 0f)
-        {
-            _timeRemaining -= Time.deltaTime;
-            yield return null;
-        }
-
-        if (_timeRemaining <= 0f)
-        {
-            _timerRunning = false;
-            OnTimeUp();
-        }
+        Levels[LevelToUse - 1].levelTime += time;
     }
 
-    private void OnTimeUp()
-    {
-        _timerRunning = false;
 
-        LevelLose();
-    }
-
-    public void StopLevelTimer()
-    {
-        _timerRunning = false;
-        if (_timerRoutine != null) StopCoroutine(_timerRoutine);
-    }
     public void LevelComplete()
     {
         Player.enabled = _gameRunning = false;
         CurrentLevel++;
         LevelToUse++;
         UIManager.Instance.LevelComplete();
-        AudioManager.instance?.PlaySFXSound(3);
+        AudioManager.instance?.PlaySFXSound(0);
     }
 
     public void StartSpawningEnemies()
@@ -141,9 +127,10 @@ public class GameManager : MonoBehaviour
         }
     }
 
-    private IEnumerator SpawnEnemyRoutine(SpawnableConfig Config)
+    public IEnumerator SpawnEnemyRoutine(SpawnableConfig Config)
     {
         List<Cube> availableFilled = new List<Cube>(GridManager.Instance.GetAllFilledCells());
+        GetCells();
 
         for (int i = 0; i < Config.spawnCount; i++)
         {
@@ -164,7 +151,7 @@ public class GameManager : MonoBehaviour
 
             Vector3 groundPos = cell.transform.position + new Vector3(0f, Config.yOffset, 0f);
             Vector3 spawnPos = new Vector3(groundPos.x, Config.initialSpawnHeight, groundPos.z);
-
+            yield return new WaitForSeconds(Config.delayRange.x);
             GameObject enemy = Instantiate(Config.prefab, spawnPos, Quaternion.identity);
 
             if (Config.usePhysicsDrop)
@@ -192,7 +179,7 @@ public class GameManager : MonoBehaviour
         }
     }
 
-    private IEnumerator ManualDrop(Transform pos, Vector3 target, float duration)
+    public IEnumerator ManualDrop(Transform pos, Vector3 target, float duration)
     {
         Vector3 start = pos.position;
         float elapsed = 0f;
@@ -210,12 +197,12 @@ public class GameManager : MonoBehaviour
         Player.enabled = _gameRunning = false;
         UIManager.Instance?.LevelLose();
         AudioManager.instance.BGAudioSource.Stop();
-        AudioManager.instance?.PlaySFXSound(4);
+        AudioManager.instance?.PlaySFXSound(0);
     }
 
     public void Replay()
     {
-        AudioManager.instance?.PlaySFXSound(5);
+        AudioManager.instance?.PlayUISound(0);
         CubeGrid.Instance.Restart();
         UIManager.Instance.Start();
         Start();

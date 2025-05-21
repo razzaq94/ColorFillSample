@@ -51,11 +51,10 @@ public class GridManager : MonoBehaviour
 
     public void PerformFloodFill()
     {
-        //if (AudioManager.instance)
-        //    AudioManager.instance?.PlaySFXSound(1);
+        if (AudioManager.instance)
+            AudioManager.instance?.PlaySFXSound(2);
         Haptics.Generate(HapticTypes.LightImpact);
 
-        // 1) keep old grid snapshot
         bool[,] oldGrid = (bool[,])_grid.Clone();
 
         for (int i = 0; i < 2; i++)
@@ -269,4 +268,5 @@ public class GridManager : MonoBehaviour
         }
         return filled;
     }
+    
 }

@@ -20,7 +20,7 @@ public class EnemyCubeGroup : MonoBehaviour
         Detected++;
         if (Detected == Cubes.Length)
         {
-            AudioManager.instance?.PlaySFXSound(0);
+            AudioManager.instance?.PlaySFXSound(3);
             gameObject.SetActive(false);
         }
     }

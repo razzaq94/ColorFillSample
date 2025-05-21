@@ -32,6 +32,10 @@ public class AudioManager : MonoBehaviour
 
     private void Start()
     {
+        if(BGAudioSource.isPlaying)
+            return;
+        BGAudioSource.Play();
+        BGAudioSource.loop = true;
         Screen.sleepTimeout = SleepTimeout.NeverSleep;
         LoadSounds();
     }

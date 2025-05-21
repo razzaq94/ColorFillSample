@@ -97,6 +97,7 @@ GameObject:
   m_Component:
   - component: {fileID: 4556761501219838167}
   - component: {fileID: 8312908793158469888}
+  - component: {fileID: 1107514175782074682}
   m_Layer: 0
   m_Name: Timer
   m_TagString: Timer
@@ -141,6 +142,18 @@ BoxCollider:
   serializedVersion: 3
   m_Size: {x: 1, y: 1, z: 1}
   m_Center: {x: 0, y: 0, z: 0}
+--- !u!114 &1107514175782074682
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 7101016809528862508}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: ab3737d3c8fdeb047ab87a9f5f9bff12, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: 
 --- !u!1 &8804667253871101329
 GameObject:
   m_ObjectHideFlags: 0

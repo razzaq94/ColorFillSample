@@ -1,5 +1,6 @@
 ﻿using UnityEngine;
 using System.Collections.Generic;
+using System.Linq;
 
 public class EnemyBehaviors : MonoBehaviour
 {
@@ -35,41 +36,60 @@ public class EnemyBehaviors : MonoBehaviour
 
     private void SpikedBallMovement()
     {
+        var filled = gridManager.GetAllFilledCells()
+                                .Where(c => c.gameObject.activeInHierarchy)
+                                .ToList();
+
         Vector3 pos = transform.position;
-        Vector2Int curr = gridManager.WorldToGrid(pos); 
-        bool inCurrBounds = curr.x >= 0 && curr.x < gridManager._gridColumns && curr.y >= 0 && curr.y < gridManager._gridRows;
-        bool currFilled = inCurrBounds && gridManager._grid[curr.x, curr.y]; 
+        Vector2Int curr = gridManager.WorldToGrid(pos);
+        Vector2Int next = gridManager.WorldToGrid(pos + dir * speed * Time.fixedDeltaTime);
 
-        if (!currFilled)
+        bool currValid = filled.Any(c => gridManager.WorldToGrid(c.transform.position) == curr);
+        bool nextValid = filled.Any(c => gridManager.WorldToGrid(c.transform.position) == next);
+
+        if (!currValid || !nextValid)
         {
-            Vector3 newDir = PickRandomFilledNeighbor(curr);
-            if (newDir != Vector3.zero)
-                dir = newDir;               
-            else
-                dir = -dir;                 
-
-            dir = ApplyJitter(dir);
-            dir.Normalize();
-            rb.linearVelocity = dir * speed;
-            return;
-        }
-
-        Vector3 nextPos = pos + dir * speed * Time.fixedDeltaTime;
-        Vector2Int next = gridManager.WorldToGrid(nextPos);
-        bool inNextBounds = next.x >= 0 && next.x < gridManager._gridColumns
-                         && next.y >= 0 && next.y < gridManager._gridRows;
-        bool nextFilled = inNextBounds && gridManager._grid[next.x, next.y];
-
-        if (!nextFilled)
-        {
-            if (next.x != curr.x) dir.x = -dir.x;
-            if (next.y != curr.y) dir.z = -dir.z;
-
-            dir = ApplyJitter(dir);
-            dir.Normalize();
+            Vector3 newDir = PickRandomFilledNeighbor(curr, filled);
+            dir = (newDir != Vector3.zero) ? newDir : -dir;
+            dir = ApplyJitter(dir).normalized;
         }
 
         rb.linearVelocity = dir * speed;
+    }
+
+    private Vector3 PickRandomFilledNeighbor(Vector2Int cell, List<Cube> filled)
+    {
+        var candidates = filled
+            .Where(c => {
+                var idx = gridManager.WorldToGrid(c.transform.position);
+                return Mathf.Abs(idx.x - cell.x) + Mathf.Abs(idx.y - cell.y) == 1;
+            })
+            .ToList();
+
+        if (candidates.Count == 0)
+            return Vector3.zero;
+
+        var chosen = candidates[Random.Range(0, candidates.Count)];
+        Vector3 d = (chosen.transform.position - transform.position).normalized;
+        d.y = 0;
+        return d;
+    }
+    private bool IsCubeFilledAt(Vector3 worldPos)
+    {
+        float r = gridManager.cellSize * 0.45f;  
+        Collider[] hits = Physics.OverlapBox(worldPos + Vector3.up * 0.1f,
+                                            new Vector3(r, 0.1f, r),
+                                            Quaternion.identity);
+        foreach (var hit in hits)
+        {
+            if (hit.TryGetComponent<Cube>(out Cube c)
+                && c.IsFilled
+                && c.gameObject.activeInHierarchy)  
+            {
+                return true;
+            }
+        }
+        return false;
     }
 
     private Vector3 PickRandomFilledNeighbor(Vector2Int cell)

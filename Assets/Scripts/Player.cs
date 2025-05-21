@@ -13,7 +13,7 @@ public class Player : MonoBehaviour
     private const float MinSwipeDistance = 0.10f;
     private float _startTime = 0f;
 
-    [SerializeField] float moveSpeed = 10f;
+    [SerializeField] public float moveSpeed = 10f;
 
     private Vector3 _startPos3 = Vector3.zero;
     private Vector3 _moveVector = Vector3.zero;
@@ -84,7 +84,7 @@ public class Player : MonoBehaviour
             spawnedCubes[i].FillCube();
         spawnedCubes.Clear();
     }
-
+    bool once = false;  
     private void OnCollisionEnter(Collision collision)
     {
         if (collision.gameObject.CompareTag("Boundary"))
@@ -98,8 +98,14 @@ public class Player : MonoBehaviour
                 FillCubes();
                 GridManager.Instance.PerformFloodFill();
             }
+
             GameManager.Instance.GetCells();
-            Invoke(nameof(GameManager.Instance.StartSpawningEnemies), 4f);
+            if (!once)
+            {
+                once = true;
+                GameManager.Instance.StartSpawningEnemies();
+            }
+            //Invoke(nameof(GameManager.Instance.StartSpawningEnemies), 2f);
         }
     }
     private void OnTriggerEnter(Collider other)

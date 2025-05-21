@@ -241,8 +241,8 @@ public class LevelData
 [System.Serializable]
 public class SpawnableConfig
 {
-    public GameObject prefab;
     public SpawnablesType enemyType;
+    public GameObject prefab;
     public int spawnCount;
     public Vector2 delayRange = new Vector2(3f, 10f);
     public float yOffset = 0f;

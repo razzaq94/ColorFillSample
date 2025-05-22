@@ -9,16 +9,18 @@ public class EnemyCube : MonoBehaviour
         enemyCubeGroup = GetComponentInParent<EnemyCubeGroup>();
         //particleManager = FindFirstObjectByType<ParticleManager>();  
     }
-
-    private void OnTriggerEnter(Collider other)
+    public void OnCubeHit(Cube cube)
     {
-        if(other.TryGetComponent<Cube>(out Cube cube))
+        Destroy(gameObject);
+    }
+    public void OnTriggerEnter(Collider other)
+    {
+        if (other.TryGetComponent<Cube>(out Cube cube))
         {
-            if(cube.IsFilled)
+            if (cube.IsFilled)
             {
                 particle.Play();
-                enemyCubeGroup.CubeDestroyed();
-                gameObject.SetActive(false);
+                Destroy(gameObject);
             }
             else
             {

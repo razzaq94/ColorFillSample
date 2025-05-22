@@ -4,6 +4,8 @@ using System.Collections.Generic;
 
 public class Player : MonoBehaviour
 {
+    public static Player Instance;
+
     [SerializeField] bool _spawnCubes = false;
     [SerializeField] bool _isMoving = false;
     [SerializeField] bool _useKeyboard = true;
@@ -21,7 +23,8 @@ public class Player : MonoBehaviour
     private Vector2 _startPos2 = Vector2.zero;
 
     [SerializeField] List<Cube> spawnedCubes = new List<Cube>();
-
+    [SerializeField] private Color playerColor = Color.white;
+    public Material material;
     private Rigidbody _rigidbody = null;
 
     [SerializeField] Direction _direction = Direction.None;
@@ -35,12 +38,18 @@ public class Player : MonoBehaviour
                 _moveVector = _rigidbody.linearVelocity = Vector3.zero;
         }
     }
-
+    private void Awake()
+    {
+        Instance = this;
+    }
     public bool SpawnCubes{get => _spawnCubes; set => _spawnCubes = value; }
 
     public void Init()
     {
         _rigidbody = GetComponent<Rigidbody>();
+        
+        if (material != null)
+            material.color = playerColor;
         spawnedCubes = new List<Cube>();
         MakeCube();
     }
@@ -84,10 +93,9 @@ public class Player : MonoBehaviour
             spawnedCubes[i].FillCube();
         spawnedCubes.Clear();
     }
-    bool once = false;  
     private void OnCollisionEnter(Collision collision)
     {
-        if (collision.gameObject.CompareTag("Boundary"))
+        if (collision.gameObject.CompareTag("Boundary") || collision.gameObject.CompareTag("Obstacle"))
         {
             IsMoving = false;
             transform.DOMove(RoundPos(), 0.1f);
@@ -98,14 +106,6 @@ public class Player : MonoBehaviour
                 FillCubes();
                 GridManager.Instance.PerformFloodFill();
             }
-
-            GameManager.Instance.GetCells();
-            if (!once)
-            {
-                once = true;
-                GameManager.Instance.StartSpawningEnemies();
-            }
-            //Invoke(nameof(GameManager.Instance.StartSpawningEnemies), 2f);
         }
     }
     private void OnTriggerEnter(Collider other)

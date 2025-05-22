@@ -3,6 +3,7 @@ using System.Collections.Generic;
 using System.Drawing;
 using UnityEngine.InputSystem.Haptics;
 using Unity.Collections;
+using System.Linq;
 
 public class GridManager : MonoBehaviour
 {
@@ -21,11 +22,11 @@ public class GridManager : MonoBehaviour
     private float _limitToFill = 0f;
     public int Columns => _gridColumns;
     public int Rows => _gridRows;
+    public Cube[] allCubes;
     private void Awake()
     {
         Instance = this;
     }
-    public Cube[] allCubes;
 
     void Start()
     {
@@ -51,29 +52,51 @@ public class GridManager : MonoBehaviour
 
     public void PerformFloodFill()
     {
-        if (AudioManager.instance)
-            AudioManager.instance?.PlaySFXSound(2);
         Haptics.Generate(HapticTypes.LightImpact);
 
+        // 1) snapshot before any changes
         bool[,] oldGrid = (bool[,])_grid.Clone();
 
-        for (int i = 0; i < 2; i++)
-        {
-            bool[,] gridCopy = (bool[,])_grid.Clone();
-            bool[,] gridCopySecond = (bool[,])_grid.Clone();
-            bool[,] newGrid = FloodFill(gridCopy, gridCopySecond);
+        // 2) build your obstacle map (as before)…
+        bool[,] obstacleMap = new bool[_gridColumns, _gridRows];
+        float half = cellSize * 0.45f;
+        for (int x = 0; x < _gridColumns; x++)
+            for (int y = 0; y < _gridRows; y++)
+            {
+                Vector3 ctr = GridToWorld(new Vector2Int(x, y)) + Vector3.up * 0.1f;
+                var hits = Physics.OverlapBox(ctr, new Vector3(half, 0.1f, half), Quaternion.identity);
+                foreach (var h in hits)
+                    if (h.CompareTag("Obstacle"))
+                    {
+                        obstacleMap[x, y] = true;
+                        break;
+                    }
+            }
 
-            DestroyEnemiesInNewlyFilledCells(oldGrid, newGrid);
+        // 3) snapshot your cube grid
+        bool[,] cubeSnapshot = (bool[,])_grid.Clone();
 
-            SetProgressBar(newGrid);
-            _grid = (bool[,])newGrid.Clone();
+        // 4) merge cubes + obstacles into one boundary grid
+        bool[,] boundary = new bool[_gridColumns, _gridRows];
+        for (int x = 0; x < _gridColumns; x++)
+            for (int y = 0; y < _gridRows; y++)
+                boundary[x, y] = cubeSnapshot[x, y] || obstacleMap[x, y];
 
-            oldGrid = (bool[,])_grid.Clone();
-        }
+        // 5) run the new flood-fill
+        bool[,] afterFill = FloodFillAlgo(boundary, cubeSnapshot);
+
+        // 6) destroy enemies in newly filled cells & update UI
+        DestroyEnemiesInNewlyFilledCells(oldGrid, afterFill);
+        SetProgressBar(afterFill);
+
+        // 7) commit back to _grid
+        _grid = (bool[,])afterFill.Clone();
 
         if (_progress >= 1f)
             GameManager.Instance.LevelComplete();
     }
+
+
 
     void DestroyEnemiesInNewlyFilledCells(bool[,] oldGrid, bool[,] newGrid)
     {
@@ -195,8 +218,99 @@ public class GridManager : MonoBehaviour
             cube.Initalize(repCubePos, true);
         }
     }
+    private bool[,] FloodFillAlgo(bool[,] boundaryGrid, bool[,] originalGrid)
+    {
+        int cols = _gridColumns;
+        int rows = _gridRows;
 
-    private Vector3 FindTransformFromPoint(Point point) => new Vector3((float)(point.X - (float)_gridColumns / 2f), 0.3f, (float)((float)_gridRows / 2f - point.Y));
+        // Track visited empty cells
+        bool[,] visited = new bool[cols, rows];
+        var regions = new List<List<Point>>();
+
+        // Offsets for 4-way neighbor checks
+        var dirs = new (int dx, int dy)[]
+        {
+        ( 1,  0),
+        (-1,  0),
+        ( 0,  1),
+        ( 0, -1),
+        };
+
+        // 1) Discover every connected region of “false” cells
+        for (int x = 0; x < cols; x++)
+            for (int y = 0; y < rows; y++)
+            {
+                if (!boundaryGrid[x, y] && !visited[x, y])
+                {
+                    var queue = new Queue<Point>();
+                    var region = new List<Point>();
+
+                    visited[x, y] = true;
+                    queue.Enqueue(new Point(x, y));
+                    region.Add(new Point(x, y));
+
+                    while (queue.Count > 0)
+                    {
+                        var p = queue.Dequeue();
+                        foreach (var (dx, dy) in dirs)
+                        {
+                            int nx = p.X + dx, ny = p.Y + dy;
+                            if (nx >= 0 && nx < cols && ny >= 0 && ny < rows
+                                && !visited[nx, ny]
+                                && !boundaryGrid[nx, ny])
+                            {
+                                visited[nx, ny] = true;
+                                queue.Enqueue(new Point(nx, ny));
+                                region.Add(new Point(nx, ny));
+                            }
+                        }
+                    }
+                    regions.Add(region);
+                }
+            }
+
+        // **NEW**: if there's only one region (i.e. everything outside your line),
+        // skip filling completely and return the grid as it was—
+        // your drawn cubes have already been FillCube()'d.
+        if (regions.Count <= 1)
+            return originalGrid;
+
+        // 2) Pick the *smallest* region by cell count (your true “pocket”)
+        var pocket = regions.OrderBy(r => r.Count).First();
+
+        // 3) Spawn cubes in that pocket
+        MakeCubes(pocket);
+
+        // 4) Build and return the updated grid
+        var newGrid = (bool[,])originalGrid.Clone();
+        foreach (var p in pocket)
+            newGrid[p.X, p.Y] = true;
+        return newGrid;
+    }
+
+
+    private void UpdateProgressAndEnemies(bool[,] oldGrid, bool[,] newGrid)
+    {
+        int cols = _gridColumns, rows = _gridRows;
+        var enemies = GameObject.FindGameObjectsWithTag("Enemy");
+        foreach (var enemy in enemies)
+        {
+            Vector3 pos = enemy.transform.position;
+            int col = Mathf.RoundToInt(pos.x + cols / 2f);
+            int row = Mathf.Abs(Mathf.RoundToInt(pos.z - rows / 2f));
+            if (col < 0 || col >= cols || row < 0 || row >= rows) continue;
+
+            if (!oldGrid[col, row] && newGrid[col, row])
+                Destroy(enemy);
+        }
+
+        _trueCount = GetTrueGridCount(newGrid);
+        _progress = (float)_trueCount / _totalCount;
+        UIManager.Instance.FillAmount(_progress);
+    }
+
+
+private Vector3 FindTransformFromPoint(Point point) => new Vector3((float)(point.X - (float)_gridColumns / 2f), 0.3f, (float)((float)_gridRows / 2f - point.Y));
 
     private int FindFalseCountPositions(bool[,] _grid, ref List<Point> pointList, bool[,] gridCopy2)
     {

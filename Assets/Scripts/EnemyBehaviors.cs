@@ -13,6 +13,8 @@ public class EnemyBehaviors : MonoBehaviour
     private Rigidbody rb;
     private Vector3 dir;
 
+    private int _lastDestroyFrame = -1;
+
     void Start()
     {
         rb = GetComponent<Rigidbody>();
@@ -145,10 +147,16 @@ public class EnemyBehaviors : MonoBehaviour
     {
         if (collision.gameObject.TryGetComponent<Cube>(out Cube cube))
         {
-            if (cube.IsFilled && enemyType == SpawnablesType.CubeDestroyer)
+            if(enemyType == SpawnablesType.SolidBall)
+            {
+                BounceOffNormal(collision.contacts[0].normal);
+            }
+            if (enemyType == SpawnablesType.CubeDestroyer && cube.IsFilled && Time.frameCount != _lastDestroyFrame)
             {
                 gridManager.RemoveCubeAt(cube);
                 BounceOffNormal(collision.contacts[0].normal);
+
+                _lastDestroyFrame = Time.frameCount;
             }
             else if (!cube.IsFilled && cube.CanHarm)
             {
@@ -159,7 +167,7 @@ public class EnemyBehaviors : MonoBehaviour
         {
             //GameManager.Instance.LevelLose();
         }
-        else if (collision.transform.CompareTag("Boundary"))
+        else if (collision.transform.CompareTag("Boundary") || collision.transform.CompareTag("Obstacle") || collision.transform.CompareTag("Enemy"))
         {
             BounceOffNormal(collision.contacts[0].normal);
         }
@@ -181,5 +189,6 @@ public enum SpawnablesType
     FlyingHoop,
     CubeDestroyer,
     CubeEater,
-    Diamond,
+    SolidBall,
+    Pickups,
 }

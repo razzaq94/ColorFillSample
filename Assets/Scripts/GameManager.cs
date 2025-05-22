@@ -23,7 +23,7 @@ public class GameManager : MonoBehaviour
     public LevelData[] Levels = null;
 
     [Header("Assign Enemy Spawn Positions Here")]
-    public Vector2 gridOrigin = Vector2.zero;
+    private Vector2 gridOrigin = Vector2.zero;
     public Vector2 cellSize = Vector2.one;
 
 
@@ -60,9 +60,8 @@ public class GameManager : MonoBehaviour
         Camera.transform.DOMoveZ(-5f, 0.5f);
 
         Player.Init();
+        GetCells();
     }
-
-   
 
     public void GetCells()
     {
@@ -98,9 +97,11 @@ public class GameManager : MonoBehaviour
     private void StartGame()
     {
         _gameStarted = true;
-        AudioManager.instance?.PlayUISound(0);
-        UIManager.Instance?.StartGame();
+        AudioManager.instance.PlayUISound(0);
+        UIManager.Instance.StartGame();
         _gameRunning = true;
+        PlacePreplacedEnemies();
+        ScheduleEnemySpawns();
     }
     public void AddTime(int time)
     {
@@ -114,70 +115,90 @@ public class GameManager : MonoBehaviour
         CurrentLevel++;
         LevelToUse++;
         UIManager.Instance.LevelComplete();
-        AudioManager.instance?.PlaySFXSound(0);
+        AudioManager.instance.PlaySFXSound(0);
     }
-
-    public void StartSpawningEnemies()
+    private void PlacePreplacedEnemies()
     {
-        foreach (var Config in Levels[LevelToUse-1].SpwanablesConfigurations)
+        var level = Levels[LevelToUse - 1];
+        for (int i = 0; i < level.PreplacedPrefabs.Count; i++)
         {
-            if (Config.spawnCount <= 0)
+            var prefab = level.PreplacedPrefabs[i];
+            var point = level.PreplacedSpawnPoints[i];
+            if (prefab != null && point != null)
+                Instantiate(prefab, point.position, Quaternion.identity);
+        }
+    }
+    private void ScheduleEnemySpawns()
+    {
+        var level = Levels[LevelToUse - 1];
+
+        foreach (var config in level.SpwanablesConfigurations)
+        {
+            if (config.spawnCount <= 0)
                 continue;
-            StartCoroutine(SpawnEnemyRoutine(Config));
+
+            StartCoroutine(SpawnEnemyRoutine(config));
         }
     }
 
-    public IEnumerator SpawnEnemyRoutine(SpawnableConfig Config)
+
+
+
+    public IEnumerator SpawnEnemyRoutine(SpawnableConfig cfg)
     {
-        List<Cube> availableFilled = new List<Cube>(GridManager.Instance.GetAllFilledCells());
+        if (cfg.useTimeBasedSpawn)
+        {
+            yield return new WaitForSeconds(cfg.initialDelay);
+        }
+        else if (!cfg.useTimeBasedSpawn)
+        {
+
+            yield return new WaitUntil(
+                () => GridManager.Instance._progress >= cfg.progressThreshold
+            );
+        }
+
+        List<Cube> available = new List<Cube>(GridManager.Instance.GetAllFilledCells());
         GetCells();
 
-        for (int i = 0; i < Config.spawnCount; i++)
+        for (int i = 0; i < cfg.spawnCount; i++)
         {
             Cube cell;
-
-            if (Config.enemyType == SpawnablesType.Killer)
+            if (cfg.enemyType == SpawnablesType.Killer)
             {
-                int rnd = Random.Range(0, availableFilled.Count);
-                cell = availableFilled[rnd];
-                availableFilled.RemoveAt(rnd);
+                int idx = Random.Range(0, available.Count);
+                cell = available[idx];
+                available.RemoveAt(idx);
             }
             else
             {
-                List<Cube> positions = Levels[CurrentLevel].gridPositions;
-                int rndIndex = Random.Range(0, positions.Count);
-                cell = positions[rndIndex];
+                var positions = Levels[CurrentLevel].gridPositions;
+                cell = positions[Random.Range(0, positions.Count)];
             }
 
-            Vector3 groundPos = cell.transform.position + new Vector3(0f, Config.yOffset, 0f);
-            Vector3 spawnPos = new Vector3(groundPos.x, Config.initialSpawnHeight, groundPos.z);
-            yield return new WaitForSeconds(Config.delayRange.x);
-            GameObject enemy = Instantiate(Config.prefab, spawnPos, Quaternion.identity);
+            Vector3 ground = cell.transform.position + Vector3.up * cfg.yOffset;
+            Vector3 spawnPos = new Vector3(ground.x, cfg.initialSpawnHeight, ground.z);
 
-            if (Config.usePhysicsDrop)
+            var enemy = Instantiate(cfg.prefab, spawnPos, Quaternion.identity);
+            if (cfg.usePhysicsDrop)
             {
-                Rigidbody rb = enemy.GetComponent<Rigidbody>();
-                if (rb == null)
-                {
-                    rb = enemy.AddComponent<Rigidbody>();
-                }
-
+                var rb = enemy.GetComponent<Rigidbody>()
+                         ?? enemy.AddComponent<Rigidbody>();
                 rb.isKinematic = false;
                 rb.useGravity = true;
-                rb.constraints = RigidbodyConstraints.FreezeRotationX | RigidbodyConstraints.FreezeRotationZ;
+                rb.constraints = RigidbodyConstraints.FreezeRotationX
+                                 | RigidbodyConstraints.FreezeRotationZ;
             }
             else
             {
-                StartCoroutine(ManualDrop(enemy.transform, groundPos, 0.5f));
+                StartCoroutine(ManualDrop(enemy.transform, ground, 0.5f));
             }
 
-            if (i < Config.spawnCount - 1)
-            {
-                float delay = Random.Range(Config.delayRange.x, Config.delayRange.y);
-                yield return new WaitForSeconds(delay);
-            }
+            if (i < cfg.spawnCount - 1)
+                yield return new WaitForSeconds(cfg.subsequentSpawnDelays[i]);
         }
     }
+
 
     public IEnumerator ManualDrop(Transform pos, Vector3 target, float duration)
     {
@@ -196,7 +217,7 @@ public class GameManager : MonoBehaviour
     {
         Player.enabled = _gameRunning = false;
         UIManager.Instance?.LevelLose();
-        AudioManager.instance.BGAudioSource.Stop();
+        AudioManager.instance?.BGAudioSource.Stop();
         AudioManager.instance?.PlaySFXSound(0);
     }
 
@@ -219,33 +240,66 @@ public class GameManager : MonoBehaviour
             Destroy(enemy.gameObject);
         }
     }
+#if UNITY_EDITOR
+    // In your GameManager.cs (or LevelData.cs) MonoBehaviour:
+    private void OnValidate()
+    {
+        foreach (var lvl in Levels)
+            foreach (var cfg in lvl.SpwanablesConfigurations)
+            {
+                int needed = Mathf.Max(0, cfg.spawnCount - 1);
+                while (cfg.subsequentSpawnDelays.Count < needed)
+                    cfg.subsequentSpawnDelays.Add(0f);
+                while (cfg.subsequentSpawnDelays.Count > needed)
+                    cfg.subsequentSpawnDelays.RemoveAt(cfg.subsequentSpawnDelays.Count - 1);
+            }
+    }
+#endif
 }
 
 [System.Serializable]
 public class LevelData
 {
+    private string LevelName;
     public GameObject LevelObject = null;
     public Transform PlayerPos = null;
     public float levelTime = 0f;
-    [HideInInspector] public int Columns = 10;
-    [HideInInspector] public int Rows = 20;
     public List<Cube> gridPositions;
     public List<SpawnableConfig> SpwanablesConfigurations;
-    
 
-    private string LevelName = null;
-    public void SetLevel(string levelName) => LevelName = levelName;
-
-
+    public List<GameObject> PreplacedPrefabs;
+    public List<Transform> PreplacedSpawnPoints;
+    [HideInInspector] public int Columns = 10;
+    [HideInInspector] public int Rows = 20;
 }
 [System.Serializable]
 public class SpawnableConfig
 {
     public SpawnablesType enemyType;
     public GameObject prefab;
-    public int spawnCount;
-    public Vector2 delayRange = new Vector2(3f, 10f);
-    public float yOffset = 0f;
-    public float initialSpawnHeight = 35f;
-    public bool usePhysicsDrop = true;
+
+    [Header("Spawn Trigger")]
+    [Space]
+    public bool useTimeBasedSpawn;
+    [Space]
+    public float initialDelay;
+
+    [Space]
+    [Range(0f, 1f)]
+    public bool useProgressBasedSpawn;
+    [Space]
+    [Range(0f, 1f)]
+    public float progressThreshold;
+
+    [Space]
+    public int spawnCount = 1;
+    [Space]
+    public List<float> subsequentSpawnDelays = new List<float>() { };
+
+    public float yOffset;
+    public float initialSpawnHeight;
+    public bool usePhysicsDrop;
+
+
+
 }

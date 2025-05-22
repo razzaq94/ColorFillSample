@@ -16,6 +16,8 @@ TagManager:
   - Timer
   - SlowDown
   - Diamond
+  - Obstacle
+  - EnemyGroup
   layers:
   - Default
   - TransparentFX

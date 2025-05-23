@@ -1,10 +1,13 @@
 using UnityEngine;
 using DG.Tweening;
+using Sirenix.OdinInspector;
 
+[HideMonoScript]
 public class Cube : MonoBehaviour
 {
-    public bool IsFilled = false;
-    public bool CanHarm = false;
+    [Title("CUBE", null, titleAlignment: TitleAlignments.Centered)]
+    [DisplayAsString] public bool IsFilled = false;
+    [DisplayAsString] public bool CanHarm = false;
 
     public void ResetCube()
     {

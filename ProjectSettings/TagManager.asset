@@ -18,6 +18,7 @@ TagManager:
   - Diamond
   - Obstacle
   - EnemyGroup
+  - MainCanvas
   layers:
   - Default
   - TransparentFX

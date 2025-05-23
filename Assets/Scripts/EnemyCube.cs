@@ -1,21 +1,24 @@
+using Sirenix.OdinInspector;
 using UnityEngine;
 
+[HideMonoScript]
 public class EnemyCube : MonoBehaviour
 {
+    [Title("ENEMY-CUBE", null, titleAlignment: TitleAlignments.Centered)]
     private EnemyCubeGroup enemyCubeGroup;
+    [FoldoutGroup("Particle Refernce")]
     public ParticleSystem particle;
     private void Start()
     {
         enemyCubeGroup = GetComponentInParent<EnemyCubeGroup>();
         //particleManager = FindFirstObjectByType<ParticleManager>();  
     }
-    public void OnCubeHit(Cube cube)
+
+
+
+    private void OnCollisionEnter(Collision collision)
     {
-        Destroy(gameObject);
-    }
-    public void OnTriggerEnter(Collider other)
-    {
-        if (other.TryGetComponent<Cube>(out Cube cube))
+        if (collision.gameObject.TryGetComponent<Cube>(out Cube cube))
         {
             if (cube.IsFilled)
             {
@@ -26,6 +29,10 @@ public class EnemyCube : MonoBehaviour
             {
                 GameManager.Instance.LevelLose();
             }
+        }
+        if(collision.gameObject.CompareTag("Player"))
+        {
+            GameManager.Instance.LevelLose();
         }
     }
 }

@@ -1,9 +1,13 @@
 ﻿using UnityEngine;
 using System.Collections;
+using Sirenix.OdinInspector;
 
+[HideMonoScript]
 public class EnemyCubeGroup : MonoBehaviour
-{ 
+{
+    [Title("ENEMY-CUBE-GROUP", null, titleAlignment: TitleAlignments.Centered)]
     public EnemyCube[] Cubes = null;
+    [DisplayAsString]
     public int Detected = 0;
 
     public bool moveHorizontal = true;

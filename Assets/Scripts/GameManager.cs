@@ -3,15 +3,21 @@ using DG.Tweening;
 using System.Collections.Generic;
 using System.Linq;
 using System.Collections;
-
+using Sirenix.OdinInspector;
+[HideMonoScript]    
 public class GameManager : MonoBehaviour
 {
     public static GameManager Instance;
+    [Title("GAME-MANAGER", null, titleAlignment: TitleAlignments.Centered)]
     [Header("Core Settings")]
+    [DisplayAsString]
     public bool _gameRunning = false;
     public bool Debug = false;
     private bool _gameStarted = false;
+
+    [FoldoutGroup("Player References")]
     public Player Player;
+    [FoldoutGroup("Player References")]
     public Transform Camera = null;
 
     public int StartLevel = 0;
@@ -19,7 +25,8 @@ public class GameManager : MonoBehaviour
     public int Diamonds;
     private int LevelToUse = 1;
     public int GetCurrentLevel => CurrentLevel;
-    [Space]
+    [FoldoutGroup("Level Data")]
+    [ListDrawerSettings(ShowFoldout = true, ShowIndexLabels = true, DraggableItems = true)]
     public LevelData[] Levels = null;
 
     [Header("Assign Enemy Spawn Positions Here")]
@@ -99,6 +106,7 @@ public class GameManager : MonoBehaviour
         _gameStarted = true;
         AudioManager.instance.PlayUISound(0);
         UIManager.Instance.StartGame();
+        UIManager.Instance.SwipeToStart.gameObject.SetActive(false);
         _gameRunning = true;
         PlacePreplacedEnemies();
         ScheduleEnemySpawns();
@@ -117,6 +125,7 @@ public class GameManager : MonoBehaviour
         UIManager.Instance.LevelComplete();
         AudioManager.instance.PlaySFXSound(0);
     }
+
     private void PlacePreplacedEnemies()
     {
         var level = Levels[LevelToUse - 1];
@@ -141,9 +150,6 @@ public class GameManager : MonoBehaviour
         }
     }
 
-
-
-
     public IEnumerator SpawnEnemyRoutine(SpawnableConfig cfg)
     {
         if (cfg.useTimeBasedSpawn)
@@ -164,7 +170,7 @@ public class GameManager : MonoBehaviour
         for (int i = 0; i < cfg.spawnCount; i++)
         {
             Cube cell;
-            if (cfg.enemyType == SpawnablesType.Killer)
+            if (cfg.enemyType == SpawnablesType.SpikedBall)
             {
                 int idx = Random.Range(0, available.Count);
                 cell = available[idx];
@@ -241,7 +247,6 @@ public class GameManager : MonoBehaviour
         }
     }
 #if UNITY_EDITOR
-    // In your GameManager.cs (or LevelData.cs) MonoBehaviour:
     private void OnValidate()
     {
         foreach (var lvl in Levels)
@@ -260,33 +265,30 @@ public class GameManager : MonoBehaviour
 [System.Serializable]
 public class LevelData
 {
-    private string LevelName;
     public GameObject LevelObject = null;
     public Transform PlayerPos = null;
     public float levelTime = 0f;
     public List<Cube> gridPositions;
+    [FoldoutGroup("Spawnables-Data")]
+    [ListDrawerSettings(ShowFoldout = true, ShowIndexLabels = true, DraggableItems = true)]
     public List<SpawnableConfig> SpwanablesConfigurations;
 
     public List<GameObject> PreplacedPrefabs;
     public List<Transform> PreplacedSpawnPoints;
     [HideInInspector] public int Columns = 10;
     [HideInInspector] public int Rows = 20;
+   
 }
 [System.Serializable]
 public class SpawnableConfig
 {
     public SpawnablesType enemyType;
     public GameObject prefab;
-
     [Header("Spawn Trigger")]
     [Space]
     public bool useTimeBasedSpawn;
     [Space]
     public float initialDelay;
-
-    [Space]
-    [Range(0f, 1f)]
-    public bool useProgressBasedSpawn;
     [Space]
     [Range(0f, 1f)]
     public float progressThreshold;
@@ -299,7 +301,4 @@ public class SpawnableConfig
     public float yOffset;
     public float initialSpawnHeight;
     public bool usePhysicsDrop;
-
-
-
 }

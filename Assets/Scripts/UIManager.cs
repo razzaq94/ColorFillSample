@@ -2,10 +2,15 @@ using DG.Tweening;
 using TMPro;
 using UnityEngine;
 using UnityEngine.UI;
+using Sirenix.OdinInspector;
+using UnityEngine.SceneManagement;
 
+[HideMonoScript]
 public class UIManager : MonoBehaviour
 {
     public static UIManager Instance;
+
+    [Title("UI-MANAGER", null, titleAlignment: TitleAlignments.Centered)]
 
     public Image StartScreen;
     public Image Fill;
@@ -14,13 +19,8 @@ public class UIManager : MonoBehaviour
     public TextMeshProUGUI Diamonds;
     public TextMeshProUGUI timerText;
     public TextMeshProUGUI NextLevelText;
-    public TextMeshProUGUI LevelWinText;
-    public TextMeshProUGUI LevelFailText;
+    public TextMeshProUGUI SwipeToStart;
 
-    public GameObject LevelWinPanel;
-    public GameObject LevelLosePanel;
-    public Button RetryLevelBtn;
-    public Button NextLevelBtn;
 
     private void Awake()
     {
@@ -28,19 +28,15 @@ public class UIManager : MonoBehaviour
     }
     public void Start()
     {
-        LevelWinPanel.SetActive(false);
-        LevelLosePanel.SetActive(false);
-        
         Fill.fillAmount = 0f;
-
-        NextLevelBtn.onClick.RemoveAllListeners();
-        NextLevelBtn.onClick.AddListener(GameManager.Instance.Replay);
-        
-        RetryLevelBtn.onClick.RemoveAllListeners();
-        RetryLevelBtn.onClick.AddListener(GameManager.Instance.Replay);
-        
         NextLevelText.text = (GameManager.Instance.GetCurrentLevel + 1).ToString();
         CurrentLevelText.text = GameManager.Instance.GetCurrentLevel.ToString();
+        Invoke(nameof(StartTextDelay), 0.7f);
+    }
+
+    public void StartTextDelay()
+    {
+        SwipeToStart.gameObject.SetActive(true);
     }
 
     public void FillAmount(float amount) => Fill.DOFillAmount(amount, 0.25f);
@@ -49,15 +45,31 @@ public class UIManager : MonoBehaviour
 
     public void LevelComplete()
     {
-        LevelWinText.text = "LEVEL\n<size=190>COMPLETED!";
-        LevelWinPanel.SetActive(true);
-        LevelWinPanel.GetComponent<Image>().DOFade(1f, 0.5f);
+        GameWinScreen.ShowUI(); 
     }
 
     public void LevelLose()
     {
-        LevelFailText.text = "LEVEL\n<size=200>FAILED";
-        LevelLosePanel.SetActive(true);
-        LevelLosePanel.GetComponent<Image>().DOFade(1f, 0.5f);
+        GameLoseScreen.ShowUI();
     }
+
+    public void ReturnToMenu()
+    {
+        Menu.ShowUI();
+    }
+    public void ResetartLevel()
+    {
+        GameManager.Instance.Replay();
+    }
+
+    public void SettingsButton()
+    {
+        SettingsPanel.ShowUI();
+    }
+
+    public void ShopButton()
+    {
+        //ShopPanel.ShowUI();
+    }
+
 }

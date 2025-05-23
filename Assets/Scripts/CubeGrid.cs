@@ -1,9 +1,12 @@
 using System.Collections.Generic;
+using Sirenix.OdinInspector;
 using UnityEngine;
 
+[HideMonoScript]
 public class CubeGrid : MonoBehaviour
 {
     public static CubeGrid Instance;
+    [Title("CUBE-GRID", null, titleAlignment: TitleAlignments.Centered)]
     [SerializeField] private int _poolSizeX = 10;  // Width (X axis)
     [SerializeField] private int _poolSizeY = 10;  // Height (Y axis)
     [SerializeField] private Cube _cubePrefab = null;

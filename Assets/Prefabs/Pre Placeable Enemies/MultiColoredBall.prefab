@@ -154,5 +154,5 @@ MonoBehaviour:
   m_EditorClassIdentifier: 
   speed: 5
   enemyType: 2
-  bounceAngle: 3
+  bounceAngle: 4
   minInitial: 0.3

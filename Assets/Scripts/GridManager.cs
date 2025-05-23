@@ -2,21 +2,25 @@
 using System.Collections.Generic;
 using System.Drawing;
 using UnityEngine.InputSystem.Haptics;
-using Unity.Collections;
 using System.Linq;
+using Sirenix.OdinInspector;
 
+[HideMonoScript]
 public class GridManager : MonoBehaviour
 {
     public static GridManager Instance;
 
-    public int _gridColumns = 10;
-    public int _gridRows = 20;
-    public int _totalCount = 0;
-    public int _trueCount = 0;
-    public float _progress = 0f;
+    [Title("GRID-MANAGER", null, titleAlignment: TitleAlignments.Centered)]
+
+    [SerializeField, DisplayAsString] int _gridColumns = 10;
+    [SerializeField, DisplayAsString] int _gridRows = 20;
+    [SerializeField, DisplayAsString] int _totalCount = 0;
+    [SerializeField, DisplayAsString] int _trueCount = 0;
+    [ProgressBar(0f, 1f, Height = 20)]public float _progress = 0f;
     public float cellSize = 1f;
     [Space]
-    public bool[,] _grid;
+    [HideInEditorMode]
+    [ShowInInspector, ReadOnly] bool[,] _grid;
 
     private const float PercentFalseCount = 0.1f;
     private float _limitToFill = 0f;

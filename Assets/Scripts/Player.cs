@@ -1,12 +1,17 @@
 using UnityEngine;
 using DG.Tweening;
 using System.Collections.Generic;
+using Sirenix.OdinInspector;
 
+
+[HideMonoScript]
 public class Player : MonoBehaviour
 {
     public static Player Instance;
-
+    [Title("PLAYER", null, titleAlignment: TitleAlignments.Centered)]
+    [DisplayAsString]
     [SerializeField] bool _spawnCubes = false;
+    [DisplayAsString]
     [SerializeField] bool _isMoving = false;
     [SerializeField] bool _useKeyboard = true;
 
@@ -18,6 +23,7 @@ public class Player : MonoBehaviour
     [SerializeField] public float moveSpeed = 10f;
 
     private Vector3 _startPos3 = Vector3.zero;
+    [DisplayAsString]
     private Vector3 _moveVector = Vector3.zero;
     private Vector3 _targetPos = Vector3.zero;
     private Vector2 _startPos2 = Vector2.zero;
@@ -107,6 +113,12 @@ public class Player : MonoBehaviour
                 GridManager.Instance.PerformFloodFill();
             }
         }
+        if (collision.gameObject.TryGetComponent<EnemyCube>(out EnemyCube enemyCube))
+        {
+            IsMoving = false;
+            transform.position = RoundPos();
+            GameManager.Instance.LevelLose();
+        }
     }
     private void OnTriggerEnter(Collider other)
     {
@@ -127,12 +139,12 @@ public class Player : MonoBehaviour
                 }
             }
         }
-        else if (other.TryGetComponent<EnemyCube>(out EnemyCube enemyCube))
-        {
-            IsMoving = false;
-            transform.position = RoundPos();
-            GameManager.Instance.LevelLose();
-        }
+        //else if (other.TryGetComponent<EnemyCube>(out EnemyCube enemyCube))
+        //{
+        //    IsMoving = false;
+        //    transform.position = RoundPos();
+        //    GameManager.Instance.LevelLose();
+        //}
     }
 
     private void OnTriggerStay(Collider other)

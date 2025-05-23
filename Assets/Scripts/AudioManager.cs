@@ -1,9 +1,14 @@
 using System.Collections.Generic;
 using UnityEngine;
+using Sirenix.OdinInspector;
 
+
+[HideMonoScript]
 public class AudioManager : MonoBehaviour
 {
     public static AudioManager instance;
+
+    [Title("AUDIO-MANAGER", null, titleAlignment: TitleAlignments.Centered)]
 
     public AudioSource BGAudioSource;
 

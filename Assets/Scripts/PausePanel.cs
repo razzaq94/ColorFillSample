@@ -1,4 +1,5 @@
 using UnityEngine;
+using UnityEngine.SceneManagement;
 
 public class PausePanel : MonoBehaviour
 {
@@ -30,21 +31,27 @@ public class PausePanel : MonoBehaviour
     public void ReturnToMainMenu()
     {
         AudioManager.instance.PlayUISound(0);
-
-        GameManager.Instance.Replay();
-        Destroy(gameObject);
+        SceneManager.LoadScene(0);
+        SplashScreen.Destroy(gameObject);
+        Menu.Destroy(gameObject);
     }
-    public void OpenSettings()
+    public void RestartButton()
     {
         AudioManager.instance.PlayUISound(0);
 
-        SettingsPanel.ShowUI();
-        Destroy(gameObject);
+        SceneManager.LoadScene(SceneManager.GetActiveScene().buildIndex);
+        if(Time.timeScale == 0)
+            Time.timeScale = 1.0f; 
+
     }
     public void QuitGame()
     {
         AudioManager.instance.PlayUISound(0);
         Application.Quit();
     }
-
+    public void CloseButton()
+    {
+        AudioManager.instance.PlayUISound(0);
+        Destroy(gameObject);
+    }
 }

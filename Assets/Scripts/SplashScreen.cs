@@ -15,8 +15,20 @@ public class SplashScreen : MonoBehaviour
     public Image startPanel;
     public float fillTime = 3f;
     public float fadeTime = 1.5f;
-    void Start()
+
+    private static bool _hasShown = false;
+
+   
+        private void Awake()
     {
+        if (_hasShown)
+        {
+            gameObject.SetActive(false);
+
+            return;
+        }
+
+        _hasShown = true;
         StartCoroutine(FillBarRoutine());
     }
 
@@ -71,7 +83,7 @@ public class SplashScreen : MonoBehaviour
             graphics[i].color = c;
         }
 
-        startPanel.gameObject.SetActive(false);
+        Destroy(gameObject);
     }
 
 

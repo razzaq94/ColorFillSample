@@ -1,9 +1,11 @@
 ﻿using UnityEngine;
+using UnityEngine.Rendering;
 
 public enum HapticTypes{ LightImpact, MediumImpact, HeavyImpact}
 
 public static class Haptics
 {
+    public static bool Enabled { get; private set; } = true;
 #if UNITY_ANDROID && !UNITY_EDITOR
     public static AndroidJavaClass  unityPlayer     = new AndroidJavaClass("com.unity3d.player.UnityPlayer");
     public static AndroidJavaObject currentActivity = unityPlayer.GetStatic<AndroidJavaObject>("currentActivity");
@@ -20,7 +22,7 @@ public static class Haptics
             vibrator.Call("vibrate");
         else
             Handheld.Vibrate();
-    }//Vibrate() end
+    }
 
     public static void Vibrate(long milliseconds)
     {
@@ -28,11 +30,16 @@ public static class Haptics
             vibrator.Call("vibrate", milliseconds);
         else
             Handheld.Vibrate();
-    }//Vibrate() end
-
+    }
+    public static void SetEnabled(bool enabled)
+    {
+        Enabled = enabled;
+    }
     public static void Generate(HapticTypes type)
     {
-        if(Application.isEditor)
+        if (!Enabled)
+            return;
+        if (Application.isEditor)
             return;
 #if UNITY_ANDROID
         if (type == HapticTypes.LightImpact)
@@ -49,7 +56,7 @@ public static class Haptics
         else
             HapticFeedback.Generate(UIFeedbackType.ImpactHeavy);
 #endif
-    }//Generate() end
+    }
 
     private static bool isAndroid()
     {
@@ -58,6 +65,6 @@ public static class Haptics
 #else
         return false;
 #endif
-    }//isAndroid() end
+    }
 
-}//class end
+}

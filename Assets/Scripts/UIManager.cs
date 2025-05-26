@@ -64,7 +64,14 @@ public class UIManager : MonoBehaviour
 
     public void SettingsButton()
     {
+        Time.timeScale = 0f;
         SettingsPanel.ShowUI();
+    }
+
+    public void PauseButton()
+    {
+        Time.timeScale = 0f;
+        PausePanel.ShowUI();
     }
 
     public void ShopButton()

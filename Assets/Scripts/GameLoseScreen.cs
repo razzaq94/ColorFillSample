@@ -1,6 +1,8 @@
 using System.Collections;
+using DG.Tweening;
 using TMPro;
 using UnityEngine;
+using UnityEngine.SceneManagement;
 
 public class GameLoseScreen : MonoBehaviour
 {
@@ -10,6 +12,12 @@ public class GameLoseScreen : MonoBehaviour
     private void Awake()
     {
         instance = this;
+    }
+    private void Start()
+    {
+        noThanksButton.SetActive(false);
+
+        StartCoroutine(CountdownRoutine());
     }
     public static GameLoseScreen ShowUI()
     {
@@ -21,14 +29,7 @@ public class GameLoseScreen : MonoBehaviour
 
             instance = obj.GetComponent<GameLoseScreen>();
         }
-        instance.StartCountdown();
         return instance;
-    }
-
-    private void StartCountdown()
-    {
-        noThanksButton.SetActive(false);
-        StartCoroutine(CountdownRoutine());
     }
 
     private IEnumerator CountdownRoutine()
@@ -36,19 +37,29 @@ public class GameLoseScreen : MonoBehaviour
         for (int i = 9; i >= 0; i--)
         {
             countdownText.text = i.ToString("00");
-
             if (i == 7)
                 noThanksButton.SetActive(true);
 
-            yield return new WaitForSeconds(1f);
+            yield return new WaitForSecondsRealtime(1f);
         }
 
-        //Destroy(gameObject);
+        countdownText.text = "00";
+        RestartButton();    //will call watch add after implementation;
+        Destroy(gameObject);
+    }
+
+    public void RestartButton()
+    {
+        AudioManager.instance.PlayUISound(0);
+
+        SceneManager.LoadScene(SceneManager.GetActiveScene().buildIndex);
+        if (Time.timeScale == 0)
+            Time.timeScale = 1.0f;
+
     }
 
     public void WatchAdd()
     {
 
     }
-
 }

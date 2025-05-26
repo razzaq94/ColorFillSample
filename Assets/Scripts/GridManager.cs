@@ -58,10 +58,8 @@ public class GridManager : MonoBehaviour
     {
         Haptics.Generate(HapticTypes.LightImpact);
 
-        // 1) snapshot before any changes
         bool[,] oldGrid = (bool[,])_grid.Clone();
 
-        // 2) build your obstacle map (as before)…
         bool[,] obstacleMap = new bool[_gridColumns, _gridRows];
         float half = cellSize * 0.45f;
         for (int x = 0; x < _gridColumns; x++)
@@ -77,19 +75,15 @@ public class GridManager : MonoBehaviour
                     }
             }
 
-        // 3) snapshot your cube grid
         bool[,] cubeSnapshot = (bool[,])_grid.Clone();
 
-        // 4) merge cubes + obstacles into one boundary grid
         bool[,] boundary = new bool[_gridColumns, _gridRows];
         for (int x = 0; x < _gridColumns; x++)
             for (int y = 0; y < _gridRows; y++)
                 boundary[x, y] = cubeSnapshot[x, y] || obstacleMap[x, y];
 
-        // 5) run the new flood-fill
         bool[,] afterFill = FloodFillAlgo(boundary, cubeSnapshot);
 
-        // 6) destroy enemies in newly filled cells & update UI
         DestroyEnemiesInNewlyFilledCells(oldGrid, afterFill);
         SetProgressBar(afterFill);
 

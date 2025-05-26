@@ -4,6 +4,7 @@ using System.Collections.Generic;
 using System.Linq;
 using System.Collections;
 using Sirenix.OdinInspector;
+using UnityEngine.SceneManagement;
 [HideMonoScript]    
 public class GameManager : MonoBehaviour
 {
@@ -22,12 +23,14 @@ public class GameManager : MonoBehaviour
 
     public int StartLevel = 0;
     public int CurrentLevel = 1;
+    public int firstLevelBuildIndex = 1;
+    public int TotalLevels => SceneManager.sceneCountInBuildSettings - firstLevelBuildIndex;
     public int Diamonds;
     private int LevelToUse = 1;
     public int GetCurrentLevel => CurrentLevel;
     [FoldoutGroup("Level Data")]
     [ListDrawerSettings(ShowFoldout = true, ShowIndexLabels = true, DraggableItems = true)]
-    public LevelData[] Levels = null;
+    public LevelData Level;
 
     [Header("Assign Enemy Spawn Positions Here")]
     private Vector2 gridOrigin = Vector2.zero;
@@ -40,61 +43,62 @@ public class GameManager : MonoBehaviour
     {
         Instance = this;
         DOTween.Init();
-        
+        LoadPlayerPrefs();
     }
 
     private void Start()
     {
         if (!Application.isEditor)
             Debug = false;
-        foreach (LevelData Level in Levels)
-            Level.LevelObject.SetActive(false);
+        //foreach (LevelData Level in Level)
+        //    Level.LevelObject.SetActive(false);
+        //if (LevelToUse > Level.Length)
+        //    LevelToUse = 1;
 
-        if (LevelToUse > Levels.Length)
-            LevelToUse = 1;
-
-        GridManager.Instance.InitGrid(Levels[LevelToUse - 1].Columns, Levels[LevelToUse - 1].Rows);
+        GridManager.Instance.InitGrid(Level.Columns, Level.Rows);
         //Levels[LevelToUse - 1].ResetGroups();
-        Levels[LevelToUse - 1].LevelObject.SetActive(true);
-        if (Levels[LevelToUse - 1].PlayerPos)
-            Player.transform.position = Levels[LevelToUse - 1].PlayerPos.position;
+        //Level[LevelToUse - 1].LevelObject.SetActive(true);
+        if (Level.PlayerPos)
+            Player.transform.position = Level.PlayerPos.position;
 
         Haptics.Generate(HapticTypes.LightImpact);
         if (AudioManager.instance)
             AudioManager.instance?.PlayBGMusic(0);
 
-        Camera.transform.position = new Vector3(-0.5f, 25f, 15f);
-        Camera.transform.DOMoveZ(-5f, 0.5f);
+        //Camera.transform.position = new Vector3(-0.5f, 25f, 15f);
+        //Camera.transform.DOMoveZ(-5f, 0.5f);
 
         Player.Init();
         GetCells();
     }
 
+    
+
     public void GetCells()
     {
         var availableEmpty = new List<Cube>(GridManager.Instance.GetAnyCells());
-        for (int i = 0; i < Levels[LevelToUse - 1].gridPositions.Count; i++)
+        for (int i = 0; i < Level.gridPositions.Count; i++)
         {
-            Levels[LevelToUse - 1].gridPositions[i] = availableEmpty[Random.Range(0, availableEmpty.Count)];
+            Level.gridPositions[i] = availableEmpty[Random.Range(0, availableEmpty.Count)];
         }
     }
 
     private void Update()
     {
-        if (!isGameOver && Levels[LevelToUse-1].levelTime > 0)
+        if (!isGameOver && Level.levelTime > 0)
         {
-            Levels[LevelToUse-1].levelTime -= Time.deltaTime;
-            Levels[LevelToUse - 1].levelTime = Mathf.Clamp(Levels[LevelToUse - 1].levelTime, 0, 9999); 
+            Level.levelTime -= Time.deltaTime;
+            Level.levelTime = Mathf.Clamp(Level.levelTime, 0, 9999); 
             UpdateTimerDisplay();
         }
 
-        if (!isGameOver && Levels[LevelToUse - 1].levelTime <= 0)
+        if (!isGameOver && Level.levelTime <= 0)
         {
             LevelLose();
         }
         void UpdateTimerDisplay()
         {
-            UIManager.Instance.timerText.text = Mathf.CeilToInt(Levels[LevelToUse - 1].levelTime).ToString();
+            UIManager.Instance.timerText.text = Mathf.CeilToInt(Level.levelTime).ToString();
         }
 
         if (Input.GetMouseButtonDown(0) && !_gameStarted)
@@ -113,7 +117,7 @@ public class GameManager : MonoBehaviour
     }
     public void AddTime(int time)
     {
-        Levels[LevelToUse - 1].levelTime += time;
+        Level.levelTime += time;
     }
 
 
@@ -124,11 +128,12 @@ public class GameManager : MonoBehaviour
         LevelToUse++;
         UIManager.Instance.LevelComplete();
         AudioManager.instance.PlaySFXSound(0);
+        MarkLevelCompleted(SceneManager.GetActiveScene().buildIndex); 
     }
 
     private void PlacePreplacedEnemies()
     {
-        var level = Levels[LevelToUse - 1];
+        var level = Level;
         for (int i = 0; i < level.PreplacedPrefabs.Count; i++)
         {
             var prefab = level.PreplacedPrefabs[i];
@@ -139,7 +144,7 @@ public class GameManager : MonoBehaviour
     }
     private void ScheduleEnemySpawns()
     {
-        var level = Levels[LevelToUse - 1];
+        var level = Level;
 
         foreach (var config in level.SpwanablesConfigurations)
         {
@@ -178,7 +183,7 @@ public class GameManager : MonoBehaviour
             }
             else
             {
-                var positions = Levels[CurrentLevel].gridPositions;
+                var positions = Level.gridPositions;
                 cell = positions[Random.Range(0, positions.Count)];
             }
 
@@ -237,7 +242,16 @@ public class GameManager : MonoBehaviour
         DeleteEnemies();
 
     }
+    public bool IsLevelCompleted(int buildIndex)
+    {
+        return PlayerPrefs.GetInt($"Level_{buildIndex}_Completed", 0) == 1;
+    }
 
+    public void MarkLevelCompleted(int buildIndex)
+    {
+        PlayerPrefs.SetInt($"Level_{buildIndex}_Completed", 1);
+        PlayerPrefs.Save();
+    }
     public void DeleteEnemies()
     {
         EnemyBehaviors[] enemies = FindObjectsByType<EnemyBehaviors>(FindObjectsSortMode.None);
@@ -246,18 +260,39 @@ public class GameManager : MonoBehaviour
             Destroy(enemy.gameObject);
         }
     }
+
+
+
+    public void SavePlayerPrefs()
+    {
+        PlayerPrefs.SetInt("Diamonds", Diamonds);
+        PlayerPrefs.SetInt("CurrentLevel", CurrentLevel);
+        PlayerPrefs.Save();
+    }
+
+    public void LoadPlayerPrefs()
+    {
+        Diamonds = PlayerPrefs.GetInt("Diamonds", 0);
+        CurrentLevel = PlayerPrefs.GetInt("CurrentLevel", 1);
+    }
+
+    private void OnApplicationQuit()
+    {
+        SavePlayerPrefs();
+    }
+   
+
 #if UNITY_EDITOR
     private void OnValidate()
     {
-        foreach (var lvl in Levels)
-            foreach (var cfg in lvl.SpwanablesConfigurations)
-            {
-                int needed = Mathf.Max(0, cfg.spawnCount - 1);
-                while (cfg.subsequentSpawnDelays.Count < needed)
-                    cfg.subsequentSpawnDelays.Add(0f);
-                while (cfg.subsequentSpawnDelays.Count > needed)
-                    cfg.subsequentSpawnDelays.RemoveAt(cfg.subsequentSpawnDelays.Count - 1);
-            }
+        foreach (var cfg in Level.SpwanablesConfigurations)
+        {
+            int needed = Mathf.Max(0, cfg.spawnCount - 1);
+            while (cfg.subsequentSpawnDelays.Count < needed)
+                cfg.subsequentSpawnDelays.Add(0f);
+            while (cfg.subsequentSpawnDelays.Count > needed)
+                cfg.subsequentSpawnDelays.RemoveAt(cfg.subsequentSpawnDelays.Count - 1);
+        }
     }
 #endif
 }
@@ -300,5 +335,6 @@ public class SpawnableConfig
 
     public float yOffset;
     public float initialSpawnHeight;
-    public bool usePhysicsDrop;
+
+    [HideInInspector] public bool usePhysicsDrop;
 }

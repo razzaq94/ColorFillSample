@@ -27,6 +27,12 @@ public class GameManager : MonoBehaviour
     public int TotalLevels => SceneManager.sceneCountInBuildSettings - firstLevelBuildIndex;
     public int Diamonds;
     private int LevelToUse = 1;
+
+
+    [Header("Fall Speed")]
+    [Range(0f, 1f)]
+    public float SpeedForFallingObjects;
+
     public int GetCurrentLevel => CurrentLevel;
     [FoldoutGroup("Level Data")]
     [ListDrawerSettings(ShowFoldout = true, ShowIndexLabels = true, DraggableItems = true)]
@@ -34,7 +40,7 @@ public class GameManager : MonoBehaviour
 
     [Header("Assign Enemy Spawn Positions Here")]
     private Vector2 gridOrigin = Vector2.zero;
-    public Vector2 cellSize = Vector2.one;
+    [HideInInspector]public Vector2 cellSize = Vector2.one;
 
 
     private bool isGameOver = false;
@@ -112,7 +118,7 @@ public class GameManager : MonoBehaviour
         UIManager.Instance.StartGame();
         UIManager.Instance.SwipeToStart.gameObject.SetActive(false);
         _gameRunning = true;
-        PlacePreplacedEnemies();
+        //PlacePreplacedEnemies();
         ScheduleEnemySpawns();
     }
     public void AddTime(int time)
@@ -131,6 +137,7 @@ public class GameManager : MonoBehaviour
         MarkLevelCompleted(SceneManager.GetActiveScene().buildIndex); 
     }
 
+    [Button]
     private void PlacePreplacedEnemies()
     {
         var level = Level;
@@ -202,14 +209,14 @@ public class GameManager : MonoBehaviour
             }
             else
             {
-                StartCoroutine(ManualDrop(enemy.transform, ground, 0.5f));
+                StartCoroutine(ManualDrop(enemy.transform, ground, SpeedForFallingObjects));
             }
 
             if (i < cfg.spawnCount - 1)
                 yield return new WaitForSeconds(cfg.subsequentSpawnDelays[i]);
         }
     }
-
+   
 
     public IEnumerator ManualDrop(Transform pos, Vector3 target, float duration)
     {

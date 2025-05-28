@@ -1827,6 +1827,7 @@ MonoBehaviour:
   CurrentLevel: 0
   firstLevelBuildIndex: 1
   Diamonds: 0
+  SpeedForFallingObjects: 0.3
   Level:
     LevelObject: {fileID: 344930045539134287}
     PlayerPos: {fileID: 6030701983270026941}

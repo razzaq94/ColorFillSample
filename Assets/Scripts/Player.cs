@@ -2,6 +2,7 @@ using UnityEngine;
 using DG.Tweening;
 using System.Collections.Generic;
 using Sirenix.OdinInspector;
+using System.Linq;
 
 
 [HideMonoScript]

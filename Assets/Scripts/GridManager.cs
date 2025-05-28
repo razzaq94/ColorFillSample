@@ -87,9 +87,10 @@ public class GridManager : MonoBehaviour
         DestroyEnemiesInNewlyFilledCells(oldGrid, afterFill);
         SetProgressBar(afterFill);
 
-        // 7) commit back to _grid
         _grid = (bool[,])afterFill.Clone();
 
+        FillFullyEnclosedPockets();
+        SetProgressBar(_grid);
         if (_progress >= 1f)
             GameManager.Instance.LevelComplete();
     }
@@ -216,6 +217,7 @@ public class GridManager : MonoBehaviour
             cube.Initalize(repCubePos, true);
         }
     }
+   
     private bool[,] FloodFillAlgo(bool[,] boundaryGrid, bool[,] originalGrid)
     {
         int cols = _gridColumns;
@@ -228,10 +230,10 @@ public class GridManager : MonoBehaviour
         // Offsets for 4-way neighbor checks
         var dirs = new (int dx, int dy)[]
         {
-        ( 1,  0),
-        (-1,  0),
-        ( 0,  1),
-        ( 0, -1),
+    ( 1,  0),
+    (-1,  0),
+    ( 0,  1),
+    ( 0, -1),
         };
 
         // 1) Discover every connected region of “false” cells
@@ -285,6 +287,76 @@ public class GridManager : MonoBehaviour
             newGrid[p.X, p.Y] = true;
         return newGrid;
     }
+
+    private void FillFullyEnclosedPockets()
+    {
+        int cols = _gridColumns;
+        int rows = _gridRows;
+
+        bool[,] visited = new bool[cols, rows];
+        var dirs = new (int dx, int dy)[]
+        {
+        ( 1,  0),
+        (-1,  0),
+        ( 0,  1),
+        ( 0, -1),
+        };
+
+        for (int x = 0; x < cols; x++)
+            for (int y = 0; y < rows; y++)
+            {
+                if (!_grid[x, y] && !visited[x, y])
+                {
+                    var queue = new Queue<Point>();
+                    var pocket = new List<Point>();
+                    bool isEnclosed = true; // assume enclosed unless found otherwise
+
+                    visited[x, y] = true;
+                    queue.Enqueue(new Point(x, y));
+                    pocket.Add(new Point(x, y));
+
+                    while (queue.Count > 0)
+                    {
+                        var p = queue.Dequeue();
+
+                        // If this pocket touches grid edge, it’s NOT enclosed
+                        if (p.X == 0 || p.X == cols - 1 || p.Y == 0 || p.Y == rows - 1)
+                            isEnclosed = false;
+
+                        foreach (var (dx, dy) in dirs)
+                        {
+                            int nx = p.X + dx, ny = p.Y + dy;
+
+                            if (nx < 0 || nx >= cols || ny < 0 || ny >= rows)
+                            {
+                                isEnclosed = false;
+                                continue;
+                            }
+
+                            if (!_grid[nx, ny] && !visited[nx, ny])
+                            {
+                                visited[nx, ny] = true;
+                                queue.Enqueue(new Point(nx, ny));
+                                pocket.Add(new Point(nx, ny));
+                            }
+                        }
+                    }
+
+                    // If pocket is enclosed and not empty, fill it immediately
+                    if (isEnclosed && pocket.Count > 0)
+                    {
+                        MakeCubes(pocket);
+
+                        // Update grid to mark these cells filled
+                        foreach (var pnt in pocket)
+                        {
+                            _grid[pnt.X, pnt.Y] = true;
+                        }
+                    }
+                }
+            }
+    }
+
 
 
     private void UpdateProgressAndEnemies(bool[,] oldGrid, bool[,] newGrid)

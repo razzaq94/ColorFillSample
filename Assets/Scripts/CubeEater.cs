@@ -73,11 +73,18 @@ public class CubeEater : MonoBehaviour
                         if (cube.IsFilled)
                             gridManager.RemoveCubeAt(cube);
                         else if (cube.CanHarm)
+                        {
+                            AudioManager.instance.PlaySFXSound(3);
+                            Haptics.Generate(HapticTypes.HeavyImpact);
                             GameManager.Instance.LevelLose();
+                        }
+
                     }
 
                     if (hit.CompareTag("Player"))
                     {
+                        AudioManager.instance.PlaySFXSound(3);
+                        Haptics.Generate(HapticTypes.HeavyImpact);
                         GameManager.Instance.LevelLose();
                     }
                 }

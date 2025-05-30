@@ -45,11 +45,13 @@ public class UIManager : MonoBehaviour
 
     public void LevelComplete()
     {
+        AudioManager.instance.PlaySFXSound(0);
         GameWinScreen.ShowUI(); 
     }
 
     public void LevelLose()
     {
+        AudioManager.instance?.PlaySFXSound(1);
         GameLoseScreen.ShowUI();
     }
 

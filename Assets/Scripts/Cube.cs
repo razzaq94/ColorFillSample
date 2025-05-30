@@ -34,4 +34,5 @@ public class Cube : MonoBehaviour
         //transform.DOScale(new Vector3(0.5f, 0.5f, 0.5f), 0.15f);
 
     }
+
 }

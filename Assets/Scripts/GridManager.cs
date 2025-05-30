@@ -27,6 +27,10 @@ public class GridManager : MonoBehaviour
     public int Columns => _gridColumns;
     public int Rows => _gridRows;
     public Cube[] allCubes;
+
+    private bool lastPocketFilled = false;
+
+
     private void Awake()
     {
         Instance = this;
@@ -352,35 +356,52 @@ public class GridManager : MonoBehaviour
                         {
                             _grid[pnt.X, pnt.Y] = true;
                         }
+                        lastPocketFilled = true;
                     }
                 }
             }
+        if (lastPocketFilled)
+        {
+            FillRemainingUnfilledCells(); 
+        }
     }
 
-
-
-    private void UpdateProgressAndEnemies(bool[,] oldGrid, bool[,] newGrid)
+    private void FillRemainingUnfilledCells()
     {
-        int cols = _gridColumns, rows = _gridRows;
-        var enemies = GameObject.FindGameObjectsWithTag("Enemy");
-        foreach (var enemy in enemies)
-        {
-            Vector3 pos = enemy.transform.position;
-            int col = Mathf.RoundToInt(pos.x + cols / 2f);
-            int row = Mathf.Abs(Mathf.RoundToInt(pos.z - rows / 2f));
-            if (col < 0 || col >= cols || row < 0 || row >= rows) continue;
+        int cols = _gridColumns;
+        int rows = _gridRows;
 
-            if (!oldGrid[col, row] && newGrid[col, row])
-                Destroy(enemy);
+        bool allFilled = true;
+        for (int x = 0; x < cols; x++)
+        {
+            for (int y = 0; y < rows; y++)
+            {
+                if (!_grid[x, y]) // unfilled cells
+                {
+                    allFilled = false;
+                    break;
+                }
+            }
+            if (!allFilled) break;
         }
 
-        _trueCount = GetTrueGridCount(newGrid);
-        _progress = (float)_trueCount / _totalCount;
-        UIManager.Instance.FillAmount(_progress);
+        if (!allFilled)
+        {
+            for (int x = 0; x < cols; x++)
+                for (int y = 0; y < rows; y++)
+                {
+                    if (!_grid[x, y]) // if the cell is unfilled
+                    {
+                        _grid[x, y] = true;
+                        Vector3 position = GridToWorld(new Vector2Int(x, y));
+                        Cube cube = CubeGrid.Instance.GetCube();
+                        cube.Initalize(position, true);
+                    }
+                }
+        }
     }
 
-
-private Vector3 FindTransformFromPoint(Point point) => new Vector3((float)(point.X - (float)_gridColumns / 2f), 0.3f, (float)((float)_gridRows / 2f - point.Y));
+    private Vector3 FindTransformFromPoint(Point point) => new Vector3((float)(point.X - (float)_gridColumns / 2f), 0.3f, (float)((float)_gridRows / 2f - point.Y));
 
     private int FindFalseCountPositions(bool[,] _grid, ref List<Point> pointList, bool[,] gridCopy2)
     {

@@ -165,11 +165,14 @@ public class EnemyBehaviors : MonoBehaviour
             }
             else if (!cube.IsFilled && cube.CanHarm)
             {
+                AudioManager.instance.PlaySFXSound(3);
+                Haptics.Generate(HapticTypes.HeavyImpact);
                 GameManager.Instance.LevelLose();
             }
         }
         else if (collision.transform.CompareTag("Player"))
         {
+            AudioManager.instance.PlaySFXSound(3);
             //GameManager.Instance.LevelLose();
         }
         else if (collision.transform.CompareTag("Boundary") || collision.transform.CompareTag("Obstacle") || collision.transform.CompareTag("Enemy"))

@@ -118,6 +118,8 @@ public class Player : MonoBehaviour
         {
             IsMoving = false;
             transform.position = RoundPos();
+            AudioManager.instance.PlaySFXSound(3);
+            Haptics.Generate(HapticTypes.HeavyImpact);
             GameManager.Instance.LevelLose();
         }
     }
@@ -136,6 +138,7 @@ public class Player : MonoBehaviour
                 if (cube.CanHarm)
                 {
                     Haptics.Generate(HapticTypes.HeavyImpact);
+                    AudioManager.instance.PlaySFXSound(3);
                     GameManager.Instance.LevelLose();
                 }
             }

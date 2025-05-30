@@ -133,7 +133,6 @@ public class GameManager : MonoBehaviour
         CurrentLevel++;
         LevelToUse++;
         UIManager.Instance.LevelComplete();
-        AudioManager.instance.PlaySFXSound(0);
         MarkLevelCompleted(SceneManager.GetActiveScene().buildIndex); 
     }
 
@@ -236,7 +235,6 @@ public class GameManager : MonoBehaviour
         Player.enabled = _gameRunning = false;
         UIManager.Instance?.LevelLose();
         AudioManager.instance?.BGAudioSource.Stop();
-        AudioManager.instance?.PlaySFXSound(0);
     }
 
     public void Replay()

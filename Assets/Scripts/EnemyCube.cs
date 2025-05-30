@@ -27,11 +27,14 @@ public class EnemyCube : MonoBehaviour
             }
             else
             {
+                AudioManager.instance.PlaySFXSound(3);
+                Haptics.Generate(HapticTypes.HeavyImpact);
                 GameManager.Instance.LevelLose();
             }
         }
         if(collision.gameObject.CompareTag("Player"))
         {
+            AudioManager.instance.PlaySFXSound(3);
             GameManager.Instance.LevelLose();
         }
     }

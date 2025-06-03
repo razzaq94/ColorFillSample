@@ -186,7 +186,7 @@ GameObject:
   - component: {fileID: 1171206823421702728}
   - component: {fileID: 5451501013949391858}
   m_Layer: 0
-  m_Name: Cube Eater
+  m_Name: CubeEater
   m_TagString: Enemy
   m_Icon: {fileID: 0}
   m_NavMeshLayer: 0

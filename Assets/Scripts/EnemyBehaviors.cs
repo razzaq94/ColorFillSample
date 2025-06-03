@@ -35,7 +35,7 @@ public class EnemyBehaviors : MonoBehaviour
 
     void FixedUpdate()
     {
-        if (enemyType == SpawnablesType.SpikedBall)
+        if (enemyType == SpawnablesType.SpikeBall)
             SpikedBallMovement();
         else
             rb.linearVelocity = dir * speed;
@@ -156,7 +156,7 @@ public class EnemyBehaviors : MonoBehaviour
             {
                 BounceOffNormal(collision.contacts[0].normal);
             }
-            if (enemyType == SpawnablesType.CubeDestroyer && cube.IsFilled && Time.frameCount != _lastDestroyFrame)
+            if (enemyType == SpawnablesType.MultiColoredBall && cube.IsFilled && Time.frameCount != _lastDestroyFrame)
             {
                 gridManager.RemoveCubeAt(cube);
                 BounceOffNormal(collision.contacts[0].normal);
@@ -194,9 +194,9 @@ public class EnemyBehaviors : MonoBehaviour
 
 public enum SpawnablesType
 {
-    SpikedBall,
+    SpikeBall,
     FlyingHoop,
-    CubeDestroyer,
+    MultiColoredBall,
     CubeEater,
     SolidBall,
     Pickups,

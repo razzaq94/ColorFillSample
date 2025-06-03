@@ -5,7 +5,7 @@ using System.Linq;
 using System.Collections;
 using Sirenix.OdinInspector;
 using UnityEngine.SceneManagement;
-[HideMonoScript]    
+//[HideMonoScript]    
 public class GameManager : MonoBehaviour
 {
     public static GameManager Instance;
@@ -137,17 +137,22 @@ public class GameManager : MonoBehaviour
     }
 
     [Button]
-    private void PlacePreplacedEnemies()
+    public void PlacePreplacedEnemies()
     {
         var level = Level;
         for (int i = 0; i < level.PreplacedPrefabs.Count; i++)
         {
             var prefab = level.PreplacedPrefabs[i];
             var point = level.PreplacedSpawnPoints[i];
+
             if (prefab != null && point != null)
-                Instantiate(prefab, point.position, Quaternion.identity);
+            {
+                var enemy = Instantiate(prefab, point.position, Quaternion.identity);
+                enemy.transform.SetParent(point); // Make the spawn point the parent
+            }
         }
     }
+
     private void ScheduleEnemySpawns()
     {
         var level = Level;
@@ -181,7 +186,7 @@ public class GameManager : MonoBehaviour
         for (int i = 0; i < cfg.spawnCount; i++)
         {
             Cube cell;
-            if (cfg.enemyType == SpawnablesType.SpikedBall)
+            if (cfg.enemyType == SpawnablesType.SpikeBall)
             {
                 int idx = Random.Range(0, available.Count);
                 cell = available[idx];
@@ -339,7 +344,9 @@ public class SpawnableConfig
     public List<float> subsequentSpawnDelays = new List<float>() { };
 
     public float yOffset;
-    public float initialSpawnHeight;
+    public float initialSpawnHeight = 35f;
 
     [HideInInspector] public bool usePhysicsDrop;
+    public bool useFallDrop = false;
+
 }

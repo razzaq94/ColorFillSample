@@ -15,7 +15,7 @@ GameObject:
   - component: {fileID: 7156627944056098751}
   - component: {fileID: 8030434378369562637}
   m_Layer: 0
-  m_Name: Solid Ball
+  m_Name: SolidBall
   m_TagString: Enemy
   m_Icon: {fileID: 0}
   m_NavMeshLayer: 0

@@ -33,7 +33,7 @@ public class Player : MonoBehaviour
     [SerializeField] private Color playerColor = Color.white;
     public Material material;
     private Rigidbody _rigidbody = null;
-
+    public Color GetPlayerColor() => playerColor;
     [SerializeField] Direction _direction = Direction.None;
     public bool IsMoving
     {

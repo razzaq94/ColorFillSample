@@ -21,7 +21,7 @@ public class UIManager : MonoBehaviour
     public TextMeshProUGUI NextLevelText;
     public TextMeshProUGUI SwipeToStart;
 
-
+    public GameObject LinePrefab;
     private void Awake()
     {
         Instance = this;
@@ -46,13 +46,27 @@ public class UIManager : MonoBehaviour
     public void LevelComplete()
     {
         AudioManager.instance.PlaySFXSound(0);
-        GameWinScreen.ShowUI(); 
+        GameObject line = Instantiate(LinePrefab, GameObject.FindGameObjectWithTag("MainCanvas").transform.position, LinePrefab.transform.rotation);
+        line.transform.SetParent(GameObject.FindGameObjectWithTag("MainCanvas").transform, false);
+        Invoke(nameof(ShowGamWinUI), 1f);
+        Destroy(line, 1.6f);
     }
 
     public void LevelLose()
     {
         AudioManager.instance?.PlaySFXSound(1);
+        //GameObject line = Instantiate(LinePrefab, GameObject.FindGameObjectWithTag("MainCanvas").transform.position, LinePrefab.transform.rotation);
+        //line.transform.SetParent(GameObject.FindGameObjectWithTag("MainCanvas").transform, false);
+        Invoke(nameof(ShowGameLoseUI), 0.1f);
+        //Destroy(line, 1.6f);
+    }
+
+    private void ShowGameLoseUI()
+    {
         GameLoseScreen.ShowUI();
+    }private void ShowGamWinUI()
+    {
+        GameWinScreen.ShowUI();
     }
 
     public void ReturnToMenu()

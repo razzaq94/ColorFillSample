@@ -12,8 +12,9 @@ public class GridManager : MonoBehaviour
 
     [Title("GRID-MANAGER", null, titleAlignment: TitleAlignments.Centered)]
 
-    [SerializeField, DisplayAsString] int _gridColumns = 10;
-    [SerializeField, DisplayAsString] int _gridRows = 20;
+    public int _gridColumns = 50;
+    public int _gridRows = 50;
+    public int TotalExposedGridCount;
     [SerializeField, DisplayAsString] int _totalCount = 0;
     [SerializeField, DisplayAsString] int _trueCount = 0;
     [ProgressBar(0f, 1f, Height = 20)]public float _progress = 0f;
@@ -126,24 +127,53 @@ public class GridManager : MonoBehaviour
 
     private void SetProgressBar(bool[,] _grid)
     {
-        _trueCount = GetTrueGridCount(_grid);
-        _progress = (float)_trueCount / _totalCount;
+        _trueCount = GetTrueGridCount(_grid);  // This counts the filled cells
+
+        // Get the list of exposed cells instead of just counting
+        List<Vector2Int> exposedCells = GridManager.Instance.GetExposedGridCells();
+
+        // Use the count of exposed cells for progress calculation
+        _progress = (float)_trueCount / exposedCells.Count;  // Use exposed cells count dynamically
         UIManager.Instance.FillAmount(_progress);
     }
+
 
     private int GetTrueGridCount(bool[,] _grid)
     {
         int trueCount = 0;
-        for (int col = 0; col < _gridColumns; col++)
+        int startX = 0, startY = 0;
+        int endX = _gridColumns, endY = _gridRows;
+
+        for (int col = startX; col < endX; col++)
         {
-            for (int row = 0; row < _gridRows; row++)
+            for (int row = startY; row < endY; row++)
             {
-                if (_grid[col, row])
+                if (_grid[col, row] && IsCellExposed(new Vector2Int(col, row)))  
                     trueCount++;
             }
         }
+
         return trueCount;
     }
+    public List<Vector2Int> GetExposedGridCells()
+    {
+        List<Vector2Int> exposedCells = new List<Vector2Int>();
+
+        for (int x = 0; x < _gridColumns; x++)
+        {
+            for (int y = 0; y < _gridRows; y++)
+            {
+                if (IsCellExposed(new Vector2Int(x, y)))  // Check if the cell is exposed
+                {
+                    exposedCells.Add(new Vector2Int(x, y));
+                }
+            }
+        }
+
+        return exposedCells;
+    }
+
+
 
     private bool[,] FloodFill(bool[,] _grid, bool[,] gridCopySecond)
     {
@@ -460,6 +490,40 @@ public class GridManager : MonoBehaviour
         }
         return filled;
     }
+    public bool IsCellExposed(Vector2Int gridPos)
+    {
+        // Define the position of the cell in world space
+        Vector3 worldPos = GridToWorld(gridPos);
+
+        // Check if the cell is covered by an obstacle (can use layers or tags)
+        Collider[] hitColliders = Physics.OverlapBox(worldPos, new Vector3(cellSize / 2, 0.1f, cellSize / 2), Quaternion.identity);
+
+        // Check if there's an obstacle at this grid position
+        foreach (var collider in hitColliders)
+        {
+            if (collider.CompareTag("Obstacle"))  // Assuming "Obstacle" is the tag for obstacles
+            {
+                return false;  // This cell is obstructed, not exposed
+            }
+        }
+
+        return true;  // This cell is exposed
+    }
+
+    public Cube GetCubeAtPosition(Vector2Int position)
+    {
+        foreach (Cube cube in CubeGrid.Instance.AllCubes)
+        {
+            Vector2Int cubePos = GridManager.Instance.WorldToGrid(cube.transform.position);
+            if (cubePos == position)
+            {
+                return cube;
+            }
+        }
+        return null; // Return null if no cube is found at the position (shouldn't happen if logic is correct)
+    }
+
+
 
     public List<Cube> GetAnyCells()
     {

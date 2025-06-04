@@ -9,11 +9,11 @@ public class EnemyCubeGroup : MonoBehaviour
     public EnemyCube[] Cubes = null;
     [DisplayAsString]
     public int Detected = 0;
-
+    //public bool Static = false;
     public bool moveHorizontal = true;
     public bool moveVertical = false;
     public int moveCells = 5;
-    public float cellSize = 1f;
+    [HideInInspector]public float cellSize = 1f;
     public float moveSpeed = 2f; 
 
     Rigidbody _rb;

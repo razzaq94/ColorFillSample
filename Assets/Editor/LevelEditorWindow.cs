@@ -21,7 +21,6 @@ public class LevelDataEditorWindow : EditorWindow
     private string[] _tabs = new string[] { "General", "Grid", "Spawnables", "Preplaced", "Advanced" };
     private Dictionary<SpawnablesType, List<GameObject>> _enemyTypeToPrefabsMap = new Dictionary<SpawnablesType, List<GameObject>>();
 
-
     [MenuItem("Window/Level Data Editor (Friendly)")]
     public static void OpenWindow()
     {
@@ -126,6 +125,16 @@ public class LevelDataEditorWindow : EditorWindow
         switch (_selectedTab)
         {
             case 0: DrawGeneralTab(); break;
+                // Check for mouse wheel scroll input (while hovering over the grid area)
+                Event e = Event.current;
+                if (e.type == EventType.ScrollWheel)
+                {
+                    zoomFactor -= e.delta.y * 0.1f;  // Scroll up = zoom in, down = zoom out
+                    zoomFactor = Mathf.Clamp(zoomFactor, 0.5f, 3f);  // Clamp zoom between 50% and 300%
+                    e.Use();  // Mark event as used
+                }
+
+                DrawGridTab();  // Draw the zoomable grid here
             case 1: DrawGridTab(); break;
             case 2: DrawSpawnablesTab(); break;
             case 3: DrawPreplacedTab(); break;
@@ -180,27 +189,173 @@ public class LevelDataEditorWindow : EditorWindow
     // ─────────────────────────────────────────────────────────
     // Tab 1: Grid (Columns, Rows, simple grid info)
     // ─────────────────────────────────────────────────────────
+    private float zoomFactor = 1f;  // Default zoom factor
+
     private void DrawGridTab()
     {
-        EditorGUILayout.LabelField("Grid Settings", EditorStyles.boldLabel);
+        EditorGUILayout.LabelField("Grid Layout", EditorStyles.boldLabel);
         EditorGUILayout.BeginVertical("box");
+        // Add the "Fill All" button to fill all cells with cubes
+        if (GUILayout.Button("Fill All Cubes"))
         {
-            // Display Columns and Rows as read-only labels
-            EditorGUILayout.LabelField("Columns (Width)", _level.Columns.ToString());
-            EditorGUILayout.LabelField("Rows (Height)", _level.Rows.ToString());
-
-            GUILayout.Space(4);
-            EditorGUILayout.HelpBox(
-                "The grid is " + _level.Columns + " × " + _level.Rows + ".\n" +
-                "You can place cubes at runtime based on these dimensions.\n" +
-                "(No visual painter in this tab—see advanced or a future version.)",
-                MessageType.Info
-            );
+            FillAllCubes();
         }
-        EditorGUILayout.EndVertical();
 
-        // No need for GUI.changed here since nothing is editable.
+        // Add the "Clear All" button to clear all cubes (remove obstacles)
+        if (GUILayout.Button("Clear All"))
+        {
+            ClearAllCubes();
+        }
+
+        GUILayout.Space(10);  // Space between buttons and the grid
+        // Zoom slider
+        zoomFactor = EditorGUILayout.Slider("Zoom", zoomFactor, 0.5f, 3f);  // Zoom from 50% to 300%
+        GUILayout.Space(6);
+
+        // Create the grid interactable area
+        for (int row = 0; row < _level.Rows; row++)
+        {
+            EditorGUILayout.BeginHorizontal();
+
+            for (int col = 0; col < _level.Columns; col++)
+            {
+                string cellKey = $"{row},{col}";  // Unique key for each cell in the grid
+
+                // Handle cell clicks and mouse interaction
+                bool isOccupied = _level.gridCellPositions.Exists(c => c.row == row && c.col == col);
+
+                // Calculate cell size based on zoom factor
+                float cellSize = 30 * zoomFactor;  // Default size is 30, scale by zoomFactor
+
+                // Handle cell color if occupied
+                GUI.backgroundColor = isOccupied ? Color.green : Color.white;
+                if (GUILayout.Button(" ", GUILayout.Width(30 * zoomFactor), GUILayout.Height(30 * zoomFactor)))
+                {
+                    // Handle the click and place/remove the obstacle
+                    HandleCellClick(row, col);
+                }
+                GUI.backgroundColor = Color.white;  // Reset background color
+            }
+            EditorGUILayout.EndHorizontal();
+        }
+
+        EditorGUILayout.EndVertical();
     }
+
+
+    // Handle mouse clicks on grid cells
+    private void HandleCellClick(int row, int col)
+    {
+
+        // Add offset based on your grid origin (lower-left corner at (25, -24))
+        float offsetX = -25f;  // Your grid's offset X (adjust based on your needs)
+        float offsetZ = -24f;  // Your grid's offset Z (adjust based on your needs)
+
+        // Fix row orientation (flip it)
+        int flippedRow = _level.Rows - row - 1;  // Reverse the row index to flip the grid
+
+        // Now calculate the spawn position with the offset
+        Vector3 spawnPosition = new Vector3(col + offsetX, 1f, flippedRow + offsetZ);
+        // Check if the cell is already occupied
+        bool isOccupied = _level.gridCellPositions.Exists(c => c.row == row && c.col == col && c.isObstacle);
+
+        if (isOccupied)
+        {
+            // If occupied, remove the spawnable (or empty the cell)
+            _level.gridCellPositions.RemoveAll(c => c.row == row && c.col == col);
+
+            DestroyObstacleAt(row, col);
+        }
+        else
+        {
+            // If empty, add a spawnable (or mark it with something, like a spawn point)
+            _level.gridCellPositions.Add(new CubeCell { row = row, col = col, isObstacle = true });
+            // Instantiate the obstacle prefab at the correct position
+            if (_level.obstaclePrefab == null)
+            {
+                Debug.LogError("Obstacle prefab is not assigned!");
+                return;
+            }
+            Instantiate(_level.obstaclePrefab, spawnPosition, Quaternion.identity);
+        }
+
+        // Mark scene dirty so it saves changes
+        EditorUtility.SetDirty(_gameManager);
+        UnityEditor.SceneManagement.EditorSceneManager.MarkSceneDirty(_gameManager.gameObject.scene);
+    }
+
+
+    private void DestroyObstacleAt(int row, int col)
+    {
+        // Apply the same offsets used for placement
+        float offsetX = -25f;  // Your grid's offset X
+        float offsetZ = -24f; // Your grid's offset Z
+
+        // Calculate the position based on row, col, and offsets
+        Vector3 obstaclePosition = new Vector3(col + offsetX, 1f, (_level.Rows - row - 1) + offsetZ);  // Use flipped row
+
+        // Find obstacles by position
+        var obstacles = GameObject.FindGameObjectsWithTag("Obstacle");  // Assuming obstacles are tagged as "Obstacle"
+
+        foreach (var obstacle in obstacles)
+        {
+            // Check if the position matches (adjust the comparison if needed)
+            if (Vector3.Distance(obstacle.transform.position, obstaclePosition) < 0.1f)  // Small tolerance
+            {
+                DestroyImmediate(obstacle);  // Use DestroyImmediate for immediate effect in Edit mode
+                Debug.Log($"Destroyed obstacle at: {obstaclePosition}");
+                return;
+            }
+        }
+        Debug.LogWarning($"No obstacle found at position: {obstaclePosition}");
+    }
+    private void FillAllCubes()
+    {
+        // Define the offsets (use your existing grid offsets)
+        float offsetX = -25f;  // Your grid's offset X
+        float offsetZ = -24f; // Your grid's offset Z
+
+        // Loop through each cell in the grid
+        for (int row = 0; row < _level.Rows; row++)
+        {
+            for (int col = 0; col < _level.Columns; col++)
+            {
+                // Check if this cell is not already filled with a cube (obstacle)
+                if (!_level.gridCellPositions.Exists(c => c.row == row && c.col == col && c.isObstacle))
+                {
+                    // Add a new obstacle (cube) to this cell
+                    _level.gridCellPositions.Add(new CubeCell { row = row, col = col, isObstacle = true });
+
+                    // Calculate spawn position with offsets
+                    Vector3 spawnPosition = new Vector3(col + offsetX, 1f, (_level.Rows - row - 1) + offsetZ);  // Adjust position with offsets and flipped row
+                    Instantiate(_level.obstaclePrefab, spawnPosition, Quaternion.identity);  // Spawn obstacle in scene
+                }
+            }
+        }
+
+        // Mark scene dirty to save the changes
+        EditorUtility.SetDirty(_gameManager);
+        UnityEditor.SceneManagement.EditorSceneManager.MarkSceneDirty(_gameManager.gameObject.scene);
+    }
+
+
+    private void ClearAllCubes()
+    {
+        // Clear the grid positions by removing all obstacles
+        _level.gridCellPositions.RemoveAll(c => c.isObstacle);
+
+        // Optionally, destroy all existing obstacles in the scene
+        var obstacles = GameObject.FindGameObjectsWithTag("Obstacle");  // Assuming obstacles are tagged as "Obstacle"
+        foreach (var obstacle in obstacles)
+        {
+            DestroyImmediate(obstacle);  // Use DestroyImmediate in Edit mode to immediately remove the obstacle
+        }
+
+        // Mark scene dirty to save the changes
+        EditorUtility.SetDirty(_gameManager);
+        UnityEditor.SceneManagement.EditorSceneManager.MarkSceneDirty(_gameManager.gameObject.scene);
+    }
+
 
 
     private void DrawSpawnablesTab()

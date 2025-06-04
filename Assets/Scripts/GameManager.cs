@@ -42,6 +42,7 @@ public class GameManager : MonoBehaviour
     private Vector2 gridOrigin = Vector2.zero;
     [HideInInspector]public Vector2 cellSize = Vector2.one;
 
+   
 
     private bool isGameOver = false;
 
@@ -54,25 +55,15 @@ public class GameManager : MonoBehaviour
 
     private void Start()
     {
+       
         if (!Application.isEditor)
             Debug = false;
-        //foreach (LevelData Level in Level)
-        //    Level.LevelObject.SetActive(false);
-        //if (LevelToUse > Level.Length)
-        //    LevelToUse = 1;
-
         GridManager.Instance.InitGrid(Level.Columns, Level.Rows);
-        //Levels[LevelToUse - 1].ResetGroups();
-        //Level[LevelToUse - 1].LevelObject.SetActive(true);
         if (Level.PlayerPos)
             Player.transform.position = Level.PlayerPos.position;
-
         Haptics.Generate(HapticTypes.LightImpact);
         if (AudioManager.instance)
             AudioManager.instance?.PlayBGMusic(0);
-
-        //Camera.transform.position = new Vector3(-0.5f, 25f, 15f);
-        //Camera.transform.DOMoveZ(-5f, 0.5f);
 
         Player.Init();
         GetCells();
@@ -157,69 +148,76 @@ public class GameManager : MonoBehaviour
     {
         var level = Level;
 
+        // Get the list of exposed cells
+        List<Vector2Int> exposedCells = GridManager.Instance.GetExposedGridCells();
+
         foreach (var config in level.SpwanablesConfigurations)
         {
             if (config.spawnCount <= 0)
                 continue;
 
-            StartCoroutine(SpawnEnemyRoutine(config));
+            StartCoroutine(SpawnEnemyRoutine(config, exposedCells));
         }
     }
 
-    public IEnumerator SpawnEnemyRoutine(SpawnableConfig cfg)
-    {
-        if (cfg.useTimeBasedSpawn)
-        {
-            yield return new WaitForSeconds(cfg.initialDelay);
-        }
-        else if (!cfg.useTimeBasedSpawn)
-        {
 
-            yield return new WaitUntil(
-                () => GridManager.Instance._progress >= cfg.progressThreshold
-            );
-        }
+    public IEnumerator SpawnEnemyRoutine(SpawnableConfig cfg, List<Vector2Int> exposedCells)
+ {
+     if (cfg.useTimeBasedSpawn)
+     {
+         yield return new WaitForSeconds(cfg.initialDelay);
+     }
+     else if (!cfg.useTimeBasedSpawn)
+     {
 
-        List<Cube> available = new List<Cube>(GridManager.Instance.GetAllFilledCells());
-        GetCells();
+         yield return new WaitUntil(
+             () => GridManager.Instance._progress >= cfg.progressThreshold
+         );
+     }
 
-        for (int i = 0; i < cfg.spawnCount; i++)
-        {
-            Cube cell;
-            if (cfg.enemyType == SpawnablesType.SpikeBall)
-            {
-                int idx = Random.Range(0, available.Count);
-                cell = available[idx];
-                available.RemoveAt(idx);
-            }
-            else
-            {
-                var positions = Level.gridPositions;
-                cell = positions[Random.Range(0, positions.Count)];
-            }
+     List<Cube> available = new List<Cube>(GridManager.Instance.GetAllFilledCells());
+     GetCells();
+     Vector2Int randomCell = Vector2Int.zero;
+     Vector3 spawnPos = Vector3.zero;
 
-            Vector3 ground = cell.transform.position + Vector3.up * cfg.yOffset;
-            Vector3 spawnPos = new Vector3(ground.x, cfg.initialSpawnHeight, ground.z);
+     for (int i = 0; i < cfg.spawnCount; i++)
+     {
+         Cube cell;
+         if (cfg.enemyType == SpawnablesType.SpikeBall)
+         {
+             int idx = Random.Range(0, available.Count);
+             cell = available[idx];
+             available.RemoveAt(idx);
+             spawnPos = cell.transform.position;
+         }
+         else
+         {
+             randomCell = exposedCells[Random.Range(0, exposedCells.Count)];
+             spawnPos = GridManager.Instance.GridToWorld(randomCell);
+         }
+            spawnPos.y += cfg.yOffset;
 
             var enemy = Instantiate(cfg.prefab, spawnPos, Quaternion.identity);
-            if (cfg.usePhysicsDrop)
-            {
-                var rb = enemy.GetComponent<Rigidbody>()
-                         ?? enemy.AddComponent<Rigidbody>();
-                rb.isKinematic = false;
-                rb.useGravity = true;
-                rb.constraints = RigidbodyConstraints.FreezeRotationX
-                                 | RigidbodyConstraints.FreezeRotationZ;
-            }
-            else
-            {
-                StartCoroutine(ManualDrop(enemy.transform, ground, SpeedForFallingObjects));
-            }
+         if (cfg.usePhysicsDrop)
+         {
+             var rb = enemy.GetComponent<Rigidbody>()
+                      ?? enemy.AddComponent<Rigidbody>();
+             rb.isKinematic = false;
+             rb.useGravity = true;
+             rb.constraints = RigidbodyConstraints.FreezeRotationX
+                              | RigidbodyConstraints.FreezeRotationZ;
+         }
+         else
+         {
+             StartCoroutine(ManualDrop(enemy.transform, spawnPos, SpeedForFallingObjects));
+         }
 
-            if (i < cfg.spawnCount - 1)
-                yield return new WaitForSeconds(cfg.subsequentSpawnDelays[i]);
-        }
-    }
+         if (i < cfg.spawnCount - 1)
+             yield return new WaitForSeconds(cfg.subsequentSpawnDelays[i]);
+     }
+ }
+
+
    
 
     public IEnumerator ManualDrop(Transform pos, Vector3 target, float duration)
@@ -320,9 +318,12 @@ public class LevelData
 
     public List<GameObject> PreplacedPrefabs;
     public List<Transform> PreplacedSpawnPoints;
-    [HideInInspector] public int Columns = 10;
-    [HideInInspector] public int Rows = 20;
-   
+    public int Columns = 50;
+    public int Rows = 50;
+    public List<CubeCell> gridCellPositions;
+    public GameObject obstaclePrefab;
+
+
 }
 [System.Serializable]
 public class SpawnableConfig
@@ -349,4 +350,11 @@ public class SpawnableConfig
     [HideInInspector] public bool usePhysicsDrop;
     public bool useFallDrop = false;
 
+}
+[System.Serializable]
+public class CubeCell
+{
+    public int row;
+    public int col;
+    public bool isObstacle;
 }

@@ -960,8 +960,8 @@ MonoBehaviour:
   - {fileID: 3560181984013430633}
   - {fileID: 999709299497683557}
   Detected: 0
-  moveHorizontal: 1
-  moveVertical: 0
+  moveHorizontal: 0
+  moveVertical: 1
   moveCells: 5
   cellSize: 1
   moveSpeed: 2

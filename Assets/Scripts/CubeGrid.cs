@@ -7,8 +7,6 @@ public class CubeGrid : MonoBehaviour
 {
     public static CubeGrid Instance;
     [Title("CUBE-GRID", null, titleAlignment: TitleAlignments.Centered)]
-    [SerializeField] private int _poolSizeX = 10;  // Width (X axis)
-    [SerializeField] private int _poolSizeY = 10;  // Height (Y axis)
     [SerializeField] private Cube _cubePrefab = null;
 
     private Queue<Cube> _cubeQueue = new Queue<Cube>();
@@ -22,9 +20,12 @@ public class CubeGrid : MonoBehaviour
     }
     private void MakePool()
     {
-        for (int x = 0; x < _poolSizeX; x++)
+        int cols = _gridManager.Columns;
+        int rows = _gridManager.Rows;
+
+        for (int x = 0; x < cols; x++)
         {
-            for (int y = 0; y < _poolSizeY; y++)
+            for (int y = 0; y < rows; y++)
             {
                 Vector3 worldPos = _gridManager.GridToWorld(new Vector2Int(x, y));
                 worldPos.y = 0f;              

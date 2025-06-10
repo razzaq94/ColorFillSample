@@ -130,7 +130,7 @@ public class GridManager : MonoBehaviour
         _trueCount = GetTrueGridCount(_grid);  // This counts the filled cells
 
         // Get the list of exposed cells instead of just counting
-        List<Vector2Int> exposedCells = GridManager.Instance.GetExposedGridCells();
+        List<Vector2Int> exposedCells = GetExposedGridCells();
 
         // Use the count of exposed cells for progress calculation
         _progress = (float)_trueCount / exposedCells.Count;  // Use exposed cells count dynamically

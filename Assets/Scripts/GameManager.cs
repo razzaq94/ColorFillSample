@@ -59,12 +59,12 @@ public class GameManager : MonoBehaviour
         if (!Application.isEditor)
             Debug = false;
         GridManager.Instance.InitGrid(Level.Columns, Level.Rows);
-        if (Level.PlayerPos)
-            Player.transform.position = Level.PlayerPos.position;
+        //if (Level.PlayerPos)
+        //    Player.transform.position = Level.PlayerPos.position;
         Haptics.Generate(HapticTypes.LightImpact);
         if (AudioManager.instance)
             AudioManager.instance?.PlayBGMusic(0);
-
+        GridManager.Instance.InitGrid(Level.Columns, Level.Rows);
         Player.Init();
         GetCells();
     }
@@ -128,21 +128,21 @@ public class GameManager : MonoBehaviour
     }
 
     [Button]
-    public void PlacePreplacedEnemies()
-    {
-        var level = Level;
-        for (int i = 0; i < level.PreplacedPrefabs.Count; i++)
-        {
-            var prefab = level.PreplacedPrefabs[i];
-            var point = level.PreplacedSpawnPoints[i];
+    //public void PlacePreplacedEnemies()
+    //{
+    //    var level = Level;
+    //    for (int i = 0; i < level.PreplacedPrefabs.Count; i++)
+    //    {
+    //        var prefab = level.PreplacedPrefabs[i];
+    //        var point = level.PreplacedSpawnPoints[i];
 
-            if (prefab != null && point != null)
-            {
-                var enemy = Instantiate(prefab, point.position, Quaternion.identity);
-                enemy.transform.SetParent(point); // Make the spawn point the parent
-            }
-        }
-    }
+    //        if (prefab != null && point != null)
+    //        {
+    //            var enemy = Instantiate(prefab, point.position, Quaternion.identity);
+    //            enemy.transform.SetParent(point); // Make the spawn point the parent
+    //        }
+    //    }
+    //}
 
     private void ScheduleEnemySpawns()
     {
@@ -309,14 +309,17 @@ public class GameManager : MonoBehaviour
 public class LevelData
 {
     public GameObject LevelObject = null;
-    public Transform PlayerPos = null;
+    //public Transform PlayerPos = null;
+    // add these:
+    public int PlayerStartRow = 0;
+    public int PlayerStartCol = 0;
     public float levelTime = 0f;
     public List<Cube> gridPositions;
     [FoldoutGroup("Spawnables-Data")]
     [ListDrawerSettings(ShowFoldout = true, ShowIndexLabels = true, DraggableItems = true)]
     public List<SpawnableConfig> SpwanablesConfigurations;
 
-    public List<GameObject> PreplacedPrefabs;
+    public List<PreplacedEnemy> PreplacedEnemies = new List<PreplacedEnemy>();
     public List<Transform> PreplacedSpawnPoints;
     public int Columns = 50;
     public int Rows = 50;
@@ -357,4 +360,11 @@ public class CubeCell
     public int row;
     public int col;
     public bool isObstacle;
+}
+[System.Serializable]
+public class PreplacedEnemy
+{
+    public GameObject prefab;
+    public int row, col;
+    public string prefabName;
 }

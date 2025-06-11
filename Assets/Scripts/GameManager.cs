@@ -311,8 +311,8 @@ public class LevelData
     public GameObject LevelObject = null;
     //public Transform PlayerPos = null;
     // add these:
-    public int PlayerStartRow = 0;
-    public int PlayerStartCol = 0;
+    public int PlayerStartRow = -1;
+    public int PlayerStartCol = -1;
     public float levelTime = 0f;
     public List<Cube> gridPositions;
     [FoldoutGroup("Spawnables-Data")]
@@ -325,7 +325,8 @@ public class LevelData
     public int Rows = 50;
     public List<CubeCell> gridCellPositions;
     public GameObject obstaclePrefab;
-
+    public GameObject EnemyPrefab;
+    public List<EnemyCubeGroup> EnemyGroups = new List<EnemyCubeGroup>();
 
 }
 [System.Serializable]

@@ -19,7 +19,7 @@ public class LevelDataEditorWindow : EditorWindow
     // assign your enemy prefabs in the Inspector of the LevelEditorWindow
     // at top of your LevelEditorWindow class:
     private Dictionary<GameObject, Color> _enemyTypeColors = new Dictionary<GameObject, Color>();
-
+    private Dictionary<Vector2Int, GameObject> _placedEnemyMap = new Dictionary<Vector2Int, GameObject>();
     private const int MinGridSize = 1;
     private const int MaxGridSize = 50;
 
@@ -279,60 +279,76 @@ public class LevelDataEditorWindow : EditorWindow
         Event e = Event.current;
         bool hasPlayerStart = _level.PlayerStartRow >= 0 && _level.PlayerStartCol >= 0;
 
+        // 1) Ensure our color‐map exists:
+        if (_enemyTypeColors == null)
+            _enemyTypeColors = new Dictionary<GameObject, Color>();
+
+        // 2) Assign a distinct default color for any newly placed prefab type:
+        foreach (var prefab in _placedEnemyMap.Values.Distinct())
+        {
+            if (!_enemyTypeColors.ContainsKey(prefab))
+            {
+                // golden ratio step for hue
+                float hue = (_enemyTypeColors.Count * 0.618f) % 1f;
+                _enemyTypeColors[prefab] = Color.HSVToRGB(hue, 0.6f, 0.8f);
+            }
+        }
+
         for (int row = 0; row < _level.Rows; row++)
         {
             EditorGUILayout.BeginHorizontal();
             for (int col = 0; col < _level.Columns; col++)
             {
-                bool isPlayerStart = row == _level.PlayerStartRow && col == _level.PlayerStartCol;
-                bool isOccupied = _level.gridCellPositions.Exists(c => c.row == row && c.col == col && c.isObstacle);
-                bool shouldFire = (_selectedSelectionIndex == 0 && !isOccupied)|| (_selectedSelectionIndex == 1 && isOccupied);
+                var key = new Vector2Int(row, col);
+                bool isPlayerStart = hasPlayerStart && row == _level.PlayerStartRow && col == _level.PlayerStartCol;
+                bool isWall = _level.gridCellPositions.Exists(c => c.row == row && c.col == col && c.isObstacle);
+                bool isEnemy = _placedEnemyMap.ContainsKey(key);
+
+                // treat either wall OR enemy as "occupied"
+                bool isOccupied = isWall || isEnemy;
+                bool shouldFire = (_selectedSelectionIndex == 0 && !isOccupied)
+                                   || (_selectedSelectionIndex == 1 && isOccupied);
+
                 Rect cellRect = GUILayoutUtility.GetRect(30, 30);
 
+                // 3) Pick a fill color:
                 Color fill;
                 if (isPlayerStart)
                 {
                     fill = Color.green;
                 }
+                else if (isEnemy)
+                {
+                    fill = _enemyTypeColors[_placedEnemyMap[key]];
+                }
+                else if (isWall)
+                {
+                    fill = Color.red;
+                }
                 else
                 {
-                    // check for a preplaced enemy at this cell
-                    var pe = _level.PreplacedEnemies
-                                  .FirstOrDefault(e => e.row == row && e.col == col);
-                    if (pe != null && pe.prefab != null && _enemyTypeColors.TryGetValue(pe.prefab, out var c))
-                    {
-                        fill = c;              // use the user‐picked color
-                    }
-                    else if (isOccupied)
-                    {
-                        fill = Color.red;      // still your obstacle color
-                    }
-                    else
-                    {
-                        fill = Color.white;    // empty
-                    }
+                    fill = Color.white;
                 }
-                EditorGUI.DrawRect(cellRect, fill);
 
+                EditorGUI.DrawRect(cellRect, fill);
                 Handles.DrawSolidRectangleWithOutline(cellRect, Color.clear, Color.black);
 
-                // ── Right-click down on the cell → context menu ─────────────────
-                if (e.type == EventType.MouseDown && e.button == 1 && cellRect.Contains(e.mousePosition))
+                // ── Right-click: only on non‐occupied cells ─────────────────────────────
+                if (!isOccupied
+                    && e.type == EventType.MouseDown
+                    && e.button == 1
+                    && cellRect.Contains(e.mousePosition))
                 {
                     int r = row, c = col;
                     var menu = new GenericMenu();
 
-                    // 1) Keep your “Set Player Start” option
                     menu.AddItem(
                         new GUIContent("Set Player Start"),
                         isPlayerStart,
                         () => SetPlayerStart(r, c)
                     );
-
-                    // 2) Add a separator so “Preplaced Enemy” becomes its own submenu
                     menu.AddSeparator("");
 
-                    // 3) Populate the Preplaced Enemy submenu
                     if (_level.PreplacedEnemies == null || _level.PreplacedEnemies.Count == 0)
                     {
                         menu.AddDisabledItem(new GUIContent("Preplaced Enemy/— no prefabs assigned —"));
@@ -354,20 +370,22 @@ public class LevelDataEditorWindow : EditorWindow
                     e.Use();
                 }
 
-                if ((e.type == EventType.MouseDown || e.type == EventType.MouseDrag)
+                // ── Left-click down OR drag = paint/erase ────────────────────────────────
+                if (shouldFire
+                    && (e.type == EventType.MouseDown || e.type == EventType.MouseDrag)
                     && e.button == 0
                     && cellRect.Contains(e.mousePosition))
+                {
+                    if (_selectedSelectionIndex == 0)
                     {
-                    
-
-                    if (shouldFire)
-                    {
+                        // draw wall
                         HandleCellClick(row, col);
-
-                        if (_selectedSelectionIndex == 1)
-                        {
-                            DestroyObstacleAt(row, col);
-                        }
+                    }
+                    else
+                    {
+                        // erase wall *and* any enemy
+                        HandleCellClick(row, col);
+                        DestroyAt(row, col);
                     }
 
                     e.Use();
@@ -388,12 +406,13 @@ public class LevelDataEditorWindow : EditorWindow
             return;
         }
 
-        _level.PreplacedEnemies.Add(new PreplacedEnemy
-        {
-            prefab = prefab,
-            row = row,
-            col = col
-   });
+        //     //_level.PreplacedEnemies.Add(new PreplacedEnemy
+        //     {
+        //         prefab = prefab,
+        //         row = row,
+        //         col = col
+        //});
+        _placedEnemyMap[new Vector2Int(row, col)] = prefab;
 
 #if UNITY_EDITOR
         UnityEditor.Undo.IncrementCurrentGroup();
@@ -467,14 +486,12 @@ public class LevelDataEditorWindow : EditorWindow
 
         gm.InitGrid(_level.Columns, _level.Rows);
         EditorUtility.SetDirty(gm);
-        Debug.Log($"[LevelEditor] Synced GridManager to {_level.Columns}×{_level.Rows}");
 
         var bg = Object.FindFirstObjectByType<GridBackground>();
         if (bg != null)
         {
             bg.UpdateVisuals();
             EditorUtility.SetDirty(bg);
-            Debug.Log("[LevelEditor] GridBackground visuals updated");
         }
         else
         {
@@ -515,7 +532,7 @@ public class LevelDataEditorWindow : EditorWindow
             if (isOccupied)
             {
                 _level.gridCellPositions.RemoveAll(c => c.row == row && c.col == col && c.isObstacle);
-                DestroyObstacleAt(row, col);  
+                DestroyAt(row, col);  
             }
         }
 
@@ -523,30 +540,64 @@ public class LevelDataEditorWindow : EditorWindow
         UnityEditor.SceneManagement.EditorSceneManager.MarkSceneDirty(_gameManager.gameObject.scene);
     }
 
-
-    private void DestroyObstacleAt(int row, int col)
+    private void DestroyAt(int row, int col)
     {
+        // 1) Compute the world-space position of that cell:
         float baseOffsetX = -(_level.Columns - 1) * 0.5f;
         float baseOffsetZ = -(_level.Rows - 1) * 0.5f;
-
         float offsetX = baseOffsetX - 0.5f;
         float offsetZ = baseOffsetZ + 0.5f;
+        int flippedRow = _level.Rows - row - 1;
+        Vector3 worldPos = new Vector3(
+            col + offsetX,
+            0.5f,
+            flippedRow + offsetZ
+        );
 
-        Vector3 obstaclePosition = new Vector3(col + offsetX, 0.5f, (_level.Rows - row - 1) + offsetZ);  
+        // 2) Remove from your LevelData lists:
+        _level.gridCellPositions.RemoveAll(c => c.row == row && c.col == col && c.isObstacle);
+        _level.PreplacedEnemies.RemoveAll(e => e.row == row && e.col == col);
 
-        var obstacles = GameObject.FindGameObjectsWithTag("Obstacle");  
+        // 3) Remove from the editor’s runtime map:
+        _placedEnemyMap.Remove(new Vector2Int(row, col));
 
-        foreach (var obstacle in obstacles)
+        // 4) Destroy any matching scene objects by tag:
+        //    Obstacles:
+        foreach (var go in GameObject.FindGameObjectsWithTag("Obstacle"))
         {
-            if (Vector3.Distance(obstacle.transform.position, obstaclePosition) < 0.1f)  
+            if (Vector3.Distance(go.transform.position, worldPos) < 0.1f)
             {
-                DestroyImmediate(obstacle); 
-                Debug.Log($"Destroyed obstacle at: {obstaclePosition}");
-                return;
+#if UNITY_EDITOR
+                DestroyImmediate(go);
+#else
+            Destroy(go);
+#endif
+                Debug.Log($"Destroyed obstacle at {worldPos}");
+                break;
             }
         }
-        Debug.LogWarning($"No obstacle found at position: {obstaclePosition}");
+        //    Enemies:
+        foreach (var go in GameObject.FindGameObjectsWithTag("Enemy"))
+        {
+            if (Vector3.Distance(go.transform.position, worldPos) < 0.1f)
+            {
+#if UNITY_EDITOR
+                DestroyImmediate(go);
+#else
+            Destroy(go);
+#endif
+                Debug.Log($"Destroyed enemy at {worldPos}");
+                break;
+            }
+        }
+
+        // 5) Mark everything dirty so Unity saves the changes:
+#if UNITY_EDITOR
+        UnityEditor.EditorUtility.SetDirty(_gameManager);
+        EditorSceneManager.MarkSceneDirty(_gameManager.gameObject.scene);
+#endif
     }
+
     private void FillAllCubes()
     {
         float baseOffsetX = -(_level.Columns - 1) * 0.5f;
@@ -577,15 +628,21 @@ public class LevelDataEditorWindow : EditorWindow
     {
         _level.gridCellPositions.RemoveAll(c => c.isObstacle);
 
-        var obstacles = GameObject.FindGameObjectsWithTag("Obstacle");  
+        var obstacles = GameObject.FindGameObjectsWithTag("Obstacle");
         foreach (var obstacle in obstacles)
         {
-            DestroyImmediate(obstacle); 
+            DestroyImmediate(obstacle);
         }
 
+        var enemies = GameObject.FindGameObjectsWithTag("Enemy");
+        foreach (var enemy in enemies)
+        {
+            DestroyImmediate(enemy);
+        }
         EditorUtility.SetDirty(_gameManager);
         UnityEditor.SceneManagement.EditorSceneManager.MarkSceneDirty(_gameManager.gameObject.scene);
     }
+
 
 
 

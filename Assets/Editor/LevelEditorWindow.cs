@@ -11,17 +11,25 @@ public class LevelDataEditorWindow : EditorWindow
     private GameManager _gameManager;
     private LevelData _level;          
 
-    private Vector2 _scrollSpawnables = Vector2.zero;
-    private List<bool> _spawnableFoldouts = new List<bool>();
     private int _selectedTab = 0;
     private string[] _tabs = new string[] { "General", "Grid" };
     private Dictionary<SpawnablesType, List<GameObject>> _enemyTypeToPrefabsMap = new Dictionary<SpawnablesType, List<GameObject>>();
-    // assign your enemy prefabs in the Inspector of the LevelEditorWindow
-    // at top of your LevelEditorWindow class:
     private Dictionary<GameObject, Color> _enemyTypeColors = new Dictionary<GameObject, Color>();
-    private Dictionary<Vector2Int, GameObject> _placedEnemyMap = new Dictionary<Vector2Int, GameObject>();
     private const int MinGridSize = 1;
     private const int MaxGridSize = 50;
+    private Dictionary<Vector2Int, GameObject> _placedEnemyMap = new Dictionary<Vector2Int, GameObject>();
+    private enum DrawMode { Wall, Empty, Enemy }
+    private DrawMode _drawMode = DrawMode.Wall;
+   
+
+    public Dictionary<SpawnablesType, List<GameObject>> EnemyTypeToPrefabsMap => _enemyTypeToPrefabsMap;
+
+    // Maps grid‐cells → their placed EnemyCube instance
+    private Dictionary<Vector2Int, EnemyCube> _placedEnemyCubeMap
+        = new Dictionary<Vector2Int, EnemyCube>();
+    private bool _cubeMapDirty = true;
+
+    private int _selectedSelectionIndex = 0;
 
     [MenuItem("Window/Level Data Editor (Friendly)")]
     public static void OpenWindow()
@@ -57,6 +65,10 @@ public class LevelDataEditorWindow : EditorWindow
                 }
             }
         }
+        RefreshEnemyCubeMap();
+        RefreshSpawnableMap();
+        EditorApplication.playModeStateChanged += OnPlayModeStateChanged;
+        _cubeMapDirty = true;
 
         _enemyTypeToPrefabsMap[SpawnablesType.Pickups] = new List<GameObject>
         {
@@ -66,11 +78,8 @@ public class LevelDataEditorWindow : EditorWindow
         };
     }
 
-    private void OnInspectorUpdate()
-    {
-        if (_gameManager != null)
-            _level = _gameManager.Level;
-    }
+    
+
 
     private void OnGUI()
     {
@@ -197,25 +206,32 @@ public class LevelDataEditorWindow : EditorWindow
                     col = 0
                 });
             }
+
+            
+
+            if (GUI.changed)
+            {
+#if UNITY_EDITOR
+                UnityEditor.EditorUtility.SetDirty(_gameManager);
+                UnityEditor.SceneManagement.EditorSceneManager.MarkSceneDirty(_gameManager.gameObject.scene);
+#endif
+            }
+
             EditorGUILayout.Space();
             EditorGUILayout.LabelField("Enemy Type Colors", EditorStyles.miniBoldLabel);
 
-            // Gather all unique, non-null prefabs in your level
             var uniquePrefabs = _level.PreplacedEnemies
                                      .Where(e => e.prefab != null)
                                      .Select(e => e.prefab)
                                      .Distinct()
                                      .ToList();
 
-            // Remove stale entries
             foreach (var key in _enemyTypeColors.Keys.ToList())
                 if (!uniquePrefabs.Contains(key))
                     _enemyTypeColors.Remove(key);
 
-            // For each prefab, show a color picker
             foreach (var prefab in uniquePrefabs)
             {
-                // give it a default if needed
                 if (!_enemyTypeColors.TryGetValue(prefab, out var col))
                     _enemyTypeColors[prefab] = Color.HSVToRGB(
                         Random.value, 0.5f, 0.8f
@@ -224,12 +240,6 @@ public class LevelDataEditorWindow : EditorWindow
                 _enemyTypeColors[prefab] = EditorGUILayout.ColorField(
                     prefab.name, _enemyTypeColors[prefab]
                 );
-            }
-
-            if (GUI.changed)
-            {
-                EditorUtility.SetDirty(_gameManager);
-                EditorSceneManager.MarkSceneDirty(_gameManager.gameObject.scene);
             }
 
             EditorGUILayout.EndVertical();
@@ -253,196 +263,607 @@ public class LevelDataEditorWindow : EditorWindow
         EditorGUILayout.LabelField("Grid Layout", EditorStyles.boldLabel);
         EditorGUILayout.BeginVertical("box");
 
+        DrawGridSizeControls();
+        DrawFillClearButtons();
+        DrawEnemyGroupButton();
+        DrawSelectionTypePopup();
+        DrawGridCells();
+
+        EditorGUILayout.EndVertical();
+    }
+
+    private void DrawGridSizeControls()
+    {
         int cols = EditorGUILayout.IntField("Columns", _level.Columns);
         _level.Columns = Mathf.Clamp(cols, MinGridSize, MaxGridSize);
-
         int rows = EditorGUILayout.IntField("Rows", _level.Rows);
         _level.Rows = Mathf.Clamp(rows, MinGridSize, MaxGridSize);
-
         SyncSceneGridAndBackground();
+    }
 
-        if (GUILayout.Button("Fill All Cubes"))
-            FillAllCubes();
-        if (GUILayout.Button("Clear All"))
-            ClearAllCubes();
+    private void DrawFillClearButtons()
+    {
+        if (GUILayout.Button("Fill All Cubes")) FillAllCubes();
+        if (GUILayout.Button("Clear All")) ClearAllCubes();
+        GUILayout.Space(5);
+    }
 
-        GUILayout.Space(10);
-
-        EditorGUILayout.LabelField("Selection Type", EditorStyles.boldLabel);
-        string[] selectionOptions = new string[] { "Wall", "Empty" };
-        _selectedSelectionIndex = EditorGUILayout.Popup("Select Type", _selectedSelectionIndex, selectionOptions);
-
-        scrollPosition = EditorGUILayout.BeginScrollView(scrollPosition,
-                                   GUILayout.Width(700), GUILayout.Height(700));
-        GUILayout.Space(10);
-
-        Event e = Event.current;
-        bool hasPlayerStart = _level.PlayerStartRow >= 0 && _level.PlayerStartCol >= 0;
-
-        // 1) Ensure our color‐map exists:
-        if (_enemyTypeColors == null)
-            _enemyTypeColors = new Dictionary<GameObject, Color>();
-
-        // 2) Assign a distinct default color for any newly placed prefab type:
-        foreach (var prefab in _placedEnemyMap.Values.Distinct())
+    private void DrawEnemyGroupButton()
+    {
+        if (_drawMode == DrawMode.Enemy)
         {
-            if (!_enemyTypeColors.ContainsKey(prefab))
-            {
-                // golden ratio step for hue
-                float hue = (_enemyTypeColors.Count * 0.618f) % 1f;
-                _enemyTypeColors[prefab] = Color.HSVToRGB(hue, 0.6f, 0.8f);
-            }
+            EditorGUI.BeginDisabledGroup(_placedEnemyCubeMap.Count == 0);
+            if (GUILayout.Button("Create Enemy Group"))
+                CreateEnemyGroup();
+            EditorGUI.EndDisabledGroup();
+            GUILayout.Space(8);
         }
+    }
+
+    private void DrawSelectionTypePopup()
+    {
+        EditorGUILayout.LabelField("Selection Type", EditorStyles.boldLabel);
+        string[] modes = { "Wall", "Empty", "Enemy" };
+        _drawMode = (DrawMode)EditorGUILayout.Popup("Select Type", (int)_drawMode, modes);
+    }
+
+    private void DrawGridCells()
+    {
+        scrollPosition = EditorGUILayout.BeginScrollView(scrollPosition,
+            GUILayout.Width(700), GUILayout.Height(700));
+        GUILayout.Space(10);
+
+        var e = Event.current;
+        bool hasPlayer = _level.PlayerStartRow >= 0 && _level.PlayerStartCol >= 0;
+        EnsureEnemyTypeColors();
 
         for (int row = 0; row < _level.Rows; row++)
         {
             EditorGUILayout.BeginHorizontal();
             for (int col = 0; col < _level.Columns; col++)
-            {
-                var key = new Vector2Int(row, col);
-                bool isPlayerStart = hasPlayerStart && row == _level.PlayerStartRow && col == _level.PlayerStartCol;
-                bool isWall = _level.gridCellPositions.Exists(c => c.row == row && c.col == col && c.isObstacle);
-                bool isEnemy = _placedEnemyMap.ContainsKey(key);
-
-                // treat either wall OR enemy as "occupied"
-                bool isOccupied = isWall || isEnemy;
-                bool shouldFire = (_selectedSelectionIndex == 0 && !isOccupied)
-                                   || (_selectedSelectionIndex == 1 && isOccupied);
-
-                Rect cellRect = GUILayoutUtility.GetRect(30, 30);
-
-                // 3) Pick a fill color:
-                Color fill;
-                if (isPlayerStart)
-                {
-                    fill = Color.green;
-                }
-                else if (isEnemy)
-                {
-                    fill = _enemyTypeColors[_placedEnemyMap[key]];
-                }
-                else if (isWall)
-                {
-                    fill = Color.red;
-                }
-                else
-                {
-                    fill = Color.white;
-                }
-
-                EditorGUI.DrawRect(cellRect, fill);
-                Handles.DrawSolidRectangleWithOutline(cellRect, Color.clear, Color.black);
-
-                // ── Right-click: only on non‐occupied cells ─────────────────────────────
-                if (!isOccupied
-                    && e.type == EventType.MouseDown
-                    && e.button == 1
-                    && cellRect.Contains(e.mousePosition))
-                {
-                    int r = row, c = col;
-                    var menu = new GenericMenu();
-
-                    menu.AddItem(
-                        new GUIContent("Set Player Start"),
-                        isPlayerStart,
-                        () => SetPlayerStart(r, c)
-                    );
-                    menu.AddSeparator("");
-
-                    if (_level.PreplacedEnemies == null || _level.PreplacedEnemies.Count == 0)
-                    {
-                        menu.AddDisabledItem(new GUIContent("Preplaced Enemy/— no prefabs assigned —"));
-                    }
-                    else
-                    {
-                        foreach (var entry in _level.PreplacedEnemies)
-                        {
-                            if (entry.prefab == null) continue;
-                            menu.AddItem(
-                                new GUIContent($"Preplaced Enemy/{entry.prefab.name}"),
-                                false,
-                                () => PlacePreplacedEnemy(r, c, entry.prefab)
-                            );
-                        }
-                    }
-
-                    menu.ShowAsContext();
-                    e.Use();
-                }
-
-                // ── Left-click down OR drag = paint/erase ────────────────────────────────
-                if (shouldFire
-                    && (e.type == EventType.MouseDown || e.type == EventType.MouseDrag)
-                    && e.button == 0
-                    && cellRect.Contains(e.mousePosition))
-                {
-                    if (_selectedSelectionIndex == 0)
-                    {
-                        // draw wall
-                        HandleCellClick(row, col);
-                    }
-                    else
-                    {
-                        // erase wall *and* any enemy
-                        HandleCellClick(row, col);
-                        DestroyAt(row, col);
-                    }
-
-                    e.Use();
-                }
-            }
+                DrawCell(row, col, e, hasPlayer);
             EditorGUILayout.EndHorizontal();
         }
 
         EditorGUILayout.EndScrollView();
-        EditorGUILayout.EndVertical();
+    }
+    private void EnsureEnemyTypeColors()
+    {
+        if (_enemyTypeColors == null)
+            _enemyTypeColors = new Dictionary<GameObject, Color>();
+
+        // For each distinct pre‐placed enemy prefab, assign it a repeatable color
+        foreach (var go in _placedEnemyMap.Values.Distinct())
+        {
+            if (!_enemyTypeColors.ContainsKey(go))
+                _enemyTypeColors[go] = Color.HSVToRGB(
+                    (_enemyTypeColors.Count * .618f) % 1f,  // golden-ratio spacing
+                    .6f,
+                    .8f
+                );
+        }
     }
 
-    private void PlacePreplacedEnemy(int row, int col, GameObject prefab)
+    private void DrawCell(int row, int col, Event e, bool hasPlayer)
     {
-        if (prefab == null)
+        var key = new Vector2Int(row, col);
+        bool isWall = _level.gridCellPositions.Any(c => c.row == row && c.col == col && c.isObstacle);
+        bool isPre = _placedEnemyMap.ContainsKey(key);
+        bool isCube = _placedEnemyCubeMap.ContainsKey(key);
+        bool isPlayer = hasPlayer && row == _level.PlayerStartRow && col == _level.PlayerStartCol;
+        bool isSpawnable = _cellSpawnMap != null && _cellSpawnMap.ContainsKey(key);
+
+        bool occupied = isWall || isPre || isCube || isSpawnable;
+
+        bool shouldPaint =
+               (_drawMode == DrawMode.Wall && !occupied)
+            || (_drawMode == DrawMode.Enemy && !occupied)
+            || (_drawMode == DrawMode.Empty && occupied);
+
+        // 1) draw box
+        Rect cellRect = GUILayoutUtility.GetRect(30, 30);
+        DrawCellBackground(cellRect, key, isWall, isPre, isCube, isPlayer);
+        Handles.DrawSolidRectangleWithOutline(cellRect, Color.clear, Color.black);
+
+        if (isCube) DrawMovementArrow(cellRect, key);
+
+        if (e.type == EventType.MouseDown && e.button == 1 && cellRect.Contains(e.mousePosition) && CanRightClickCell(row, col))
         {
-            Debug.LogError("Prefab is null. Cannot place preplaced enemy.");
-            return;
+            ShowCellContextMenu(cellRect, key, isWall, isPre, occupied, row, col);
+            e.Use();
         }
 
-        //     //_level.PreplacedEnemies.Add(new PreplacedEnemy
-        //     {
-        //         prefab = prefab,
-        //         row = row,
-        //         col = col
-        //});
-        _placedEnemyMap[new Vector2Int(row, col)] = prefab;
+        if (shouldPaint
+            && (e.type == EventType.MouseDown || e.type == EventType.MouseDrag)
+            && e.button == 0
+            && cellRect.Contains(e.mousePosition))
+        {
+            if (_drawMode == DrawMode.Wall) HandleCellClick(row, col);
+
+            if (_drawMode == DrawMode.Empty)
+            {
+                var cellKey = new Vector2Int(row, col);
+
+                if (_cellSpawnMap != null && _cellSpawnMap.TryGetValue(cellKey, out var cfg))
+                {
+                    _level.SpwanablesConfigurations.Remove(cfg);
+                    RefreshSpawnableMap();
 
 #if UNITY_EDITOR
-        UnityEditor.Undo.IncrementCurrentGroup();
-        UnityEditor.Undo.SetCurrentGroupName("Place Preplaced Enemy");
+                    UnityEditor.EditorUtility.SetDirty(_gameManager);
+                    UnityEditor.SceneManagement.EditorSceneManager
+                        .MarkSceneDirty(UnityEditor.SceneManagement.EditorSceneManager.GetActiveScene());
 #endif
+                    Repaint();
+                }
+                else
+                {
+                    DestroyAt(row, col);
+                    Repaint();
+                }
 
-        float baseOffsetX = -(_level.Columns - 1) * 0.5f;
-        float baseOffsetZ = -(_level.Rows - 1) * 0.5f;
-        float offsetX = baseOffsetX - 0.5f;
-        float offsetZ = baseOffsetZ + 0.5f;
-        int flippedRow = _level.Rows - row - 1;
-        Vector3 worldPos = new Vector3(
-            col + offsetX,
-            prefab.transform.position.y,
-            flippedRow + offsetZ
+                e.Use(); 
+                return;
+            }
+
+            else if (_drawMode == DrawMode.Enemy)
+                PlaceEnemyCube(row, col, key);
+
+            Repaint();
+            e.Use();
+        }
+    }
+
+    private void DrawCellBackground(Rect r, Vector2Int key, bool wall, bool pre,bool cube, bool player)
+    {
+        Color baseColor;
+        if (player)
+            baseColor = Color.green;
+        else if (cube)
+            baseColor = Color.yellow;
+        else if (pre && _placedEnemyMap.ContainsKey(key))
+            baseColor = _enemyTypeColors[_placedEnemyMap[key]];
+        else if (wall)
+            baseColor = Color.red;
+        else
+            baseColor = Color.white;
+
+        EditorGUI.DrawRect(r, baseColor);
+
+        if (_cellSpawnMap != null
+            && _cellSpawnMap.TryGetValue(key, out var cfg))
+        {
+            Color overlay = cfg.enemyType == SpawnablesType.SpikeBall
+                ? new Color(1f, 1f, 0f, 0.3f)
+                : new Color(0f, 1f, 1f, 0.5f);
+
+            EditorGUI.DrawRect(r, overlay);
+        }
+    }
+
+
+    private void DrawMovementArrow(Rect r, Vector2Int key)
+    {
+        // 1) guard against missing/destroyed cubes
+        if (!_placedEnemyCubeMap.TryGetValue(key, out var ec) || ec == null)
+            return;
+
+        // 2) guard against missing transform (just in case)
+        var t = ec.transform;
+        if (t == null)
+            return;
+
+        // 3) grab the group
+        var group = t.parent?.GetComponent<EnemyCubeGroup>();
+        if (group == null)
+            return;
+
+        // 4) finally draw the arrow
+        GUI.Label(r,
+            group.moveHorizontal && !group.moveVertical ? "→" :
+            group.moveVertical && !group.moveHorizontal ? "↑" : "",
+            EditorStyles.boldLabel);
+    }
+
+
+    private void ShowCellContextMenu(Rect r, Vector2Int key,
+        bool isWall, bool isPre, bool occupied, int row, int col)
+    {
+        var menu = new GenericMenu();
+        bool isCube = _placedEnemyCubeMap.ContainsKey(key);
+        if (isPre)
+        {
+            menu.AddItem(new GUIContent("Remove Preplaced Enemy"), false, () =>
+            {
+                var go = _placedEnemyMap[key];
+#if UNITY_EDITOR
+                DestroyImmediate(go);
+#else
+            Destroy(go);
+#endif
+                _placedEnemyMap.Remove(key);
+                Repaint();
+            });
+        }
+        else if (isCube)
+        {
+            AddCubeContextItems(menu, key);
+        }
+        else
+        {
+            menu.AddItem(new GUIContent("Set Player Start"), false, () => SetPlayerStart(row, col));
+            menu.AddSeparator("");
+            AddPreplacedSpawnItems(menu, row, col);
+        }
+        var screenMouse = GUIUtility.GUIToScreenPoint(Event.current.mousePosition);
+        var rect = new Rect(screenMouse.x, screenMouse.y, 1, 1);
+
+        menu.AddSeparator("Spawnable/");
+        if (_cellSpawnMap != null&& _cellSpawnMap.TryGetValue(key, out var cellCfg))
+        {
+            // already has a config → edit or remove
+            menu.AddItem(new GUIContent("Spawnable/Edit Config"), false, () =>
+            {
+                SpawnableCellPopup.Open(cellCfg, _enemyTypeToPrefabsMap, new Rect(screenMouse.x, screenMouse.y, 1, 1));
+            });
+
+            menu.AddItem(new GUIContent("Spawnable/Remove Config"), false, () => {
+                EditorApplication.delayCall += () =>
+                {
+                    _level.SpwanablesConfigurations.Remove(cellCfg);
+                    RefreshSpawnableMap();
+                    Repaint();
+                    EditorUtility.SetDirty(_gameManager);
+                };
+            });
+        }
+        else
+        {
+            menu.AddSeparator("Spawnable/");
+            // loop over all types…
+            foreach (SpawnablesType t in System.Enum.GetValues(typeof(SpawnablesType)))
+            {
+                // capture the current value so each lambda gets its own copy
+                var spawnType = t;
+                menu.AddItem(new GUIContent($"Spawnable/{spawnType}"), false, () =>
+                {
+                    // decide yOffset (and useFallDrop if you like) *before* creating cfg
+                    float yOffset;
+                    bool useFall = false;
+                    switch (spawnType)
+                    {
+                        case SpawnablesType.FlyingHoop:
+                            yOffset = 2f;
+                            useFall = false;
+                            break;
+                        case SpawnablesType.Pickups:
+                            yOffset = 1.4f;
+                            useFall = true;
+                            break;
+                        case SpawnablesType.SpikeBall:
+                            yOffset = 1.6f;
+                            useFall = false;
+                            break;
+                        default:
+                            yOffset = 0f;
+                            break;
+                    }
+
+                    var cfg = new SpawnableConfig
+                    {
+                        enemyType = spawnType,
+                        prefab = null,
+                        row = row,
+                        col = col,
+                        spawnCount = 1,
+                        progressThreshold = 0.5f,
+                        subsequentProgressThresholds = new List<float>(),
+                        usePhysicsDrop = useFall,
+                        yOffset = yOffset
+                    };
+
+                    _level.SpwanablesConfigurations.Add(cfg);
+                    RefreshSpawnableMap();
+                    EditorUtility.SetDirty(_gameManager);
+
+                    var screenMouse = GUIUtility.GUIToScreenPoint(Event.current.mousePosition);
+                    SpawnableCellPopup.Open(
+                        cfg,
+                        _enemyTypeToPrefabsMap,
+                        new Rect(screenMouse.x, screenMouse.y, 1, 1)
+                    );
+                });
+            }
+
+        }
+        menu.ShowAsContext();
+    }
+
+    private void AddCubeContextItems(GenericMenu menu, Vector2Int key)
+    {
+        var ec = _placedEnemyCubeMap[key];
+        var group = ec.transform.parent?.GetComponent<EnemyCubeGroup>()
+                  ?? CreateTempGroupFor(ec);
+
+        // movement mode
+        menu.AddItem(new GUIContent("Movement/Static"),
+            !group.moveHorizontal && !group.moveVertical,
+            () => SetEnemyGroupMovement(group, false, false, group.moveCells));
+        menu.AddItem(new GUIContent("Movement/Horizontal"),
+            group.moveHorizontal && !group.moveVertical,
+            () => SetEnemyGroupMovement(group, true, false, group.moveCells));
+        menu.AddItem(new GUIContent("Movement/Vertical"),
+            !group.moveHorizontal && group.moveVertical,
+            () => SetEnemyGroupMovement(group, false, true, group.moveCells));
+
+        var screenMouse = GUIUtility.GUIToScreenPoint(Event.current.mousePosition);
+
+        menu.AddSeparator("Movement/");
+        menu.AddItem(
+            new GUIContent("Movement/Set Distance…"),
+            false,
+            () =>
+            {
+                var dropRect = new Rect(screenMouse.x, screenMouse.y, 1, 1);
+                MoveDistancePopup.Open(group, dropRect);
+            }
         );
 
-#if UNITY_EDITOR
-        var go = (GameObject)UnityEditor.PrefabUtility.InstantiatePrefab(prefab);
-        go.transform.position = worldPos;
-        UnityEditor.Undo.RegisterCreatedObjectUndo(go, "Place Preplaced Enemy");
-        UnityEditor.EditorUtility.SetDirty(go);
-        UnityEditor.SceneManagement.EditorSceneManager.MarkSceneDirty(go.scene);
-#else
-        Instantiate(prefab, worldPos, Quaternion.identity);
-#endif
+        menu.AddSeparator("Group/");
+        menu.AddItem(new GUIContent("Group/Remove Entire Group"), false, () => {
+            var grp = ec.transform.parent.GetComponent<EnemyCubeGroup>();
+            EditorApplication.delayCall += () => {
+                if (grp != null)
+                    Undo.DestroyObjectImmediate(grp.gameObject);
+                _cubeMapDirty = true;
+                RefreshEnemyCubeMap();
+                Repaint();
+            };
+        });
+
+    }
+
+    private void AddPreplacedSpawnItems(GenericMenu menu, int row, int col)
+    {
+        if (_level.PreplacedEnemies?.Count > 0)
+        {
+            foreach (var entry in _level.PreplacedEnemies)
+            {
+                if (entry.prefab == null) continue;
+                int r = row, c = col;
+                GameObject prefab = entry.prefab;
+                menu.AddItem(new GUIContent($"Preplaced Enemy/{prefab.name}"), false, () => {
+                    var gm = FindFirstObjectByType<GridManager>();
+                    var wp = gm.GridToWorld(new Vector2Int(c, r));
+                    wp.y = prefab.transform.position.y;
+                    var go = (GameObject)PrefabUtility.InstantiatePrefab(prefab);
+                    _gameManager.RandomizeColor(go);
+                    go.transform.position = wp;
+                    _placedEnemyMap[new Vector2Int(r, c)] = go;
+                    Repaint();
+                });
+            }
+        }
+        else
+            menu.AddDisabledItem(new GUIContent("Preplaced Enemy/— none assigned —"));
+    }
+
+    private void PlaceEnemyCube(int row, int col, Vector2Int key)
+    {
+        var prefab = _level.enemyCubePrefab;
+        var gm = FindFirstObjectByType<GridManager>();
+        var wp = gm.GridToWorld(new Vector2Int(col, row));
+        wp.y = prefab.transform.position.y;
+
+        var go = (GameObject)PrefabUtility.InstantiatePrefab(prefab);
+        go.transform.position = wp;
+
+        _placedEnemyCubeMap[key] = go.GetComponent<EnemyCube>();
+    }
+
+
+
+    // ─────────────────────────────────────────────────────────
+    // Draw Grid Tab Ends Here 
+    // ─────────────────────────────────────────────────────────
+
+
+
+    private void OnInspectorUpdate()
+    {
+        if (_gameManager != null)
+            _level = _gameManager.Level;
+        if (!_cubeMapDirty) return;
+
+        SyncSceneGridAndBackground();
+
+        RefreshEnemyCubeMap();
+        _cubeMapDirty = false;
+        Repaint();
+    }
+    // ─────────────────────────────────────────────────────────
+    // Rebuilds the in-memory map of all EnemyCube instances
+    // so DrawGridTab() can paint them yellow.
+    // ─────────────────────────────────────────────────────────
+    private void RefreshEnemyCubeMap()
+    {
+        if (_placedEnemyCubeMap == null)
+            _placedEnemyCubeMap = new Dictionary<Vector2Int, EnemyCube>();
+        else
+            _placedEnemyCubeMap.Clear();
+
+        var gm = Object.FindFirstObjectByType<GridManager>();
+        if (gm == null) return;
+
+        foreach (var ec in Object.FindObjectsByType<EnemyCube>(FindObjectsSortMode.None))
+        {
+            Vector2Int gridCR = gm.WorldToGrid(ec.transform.position);
+
+            var key = new Vector2Int(gridCR.y, gridCR.x);
+            _placedEnemyCubeMap[key] = ec;
+        }
 
         Repaint();
     }
 
+
+    private void HandleCellClick(int row, int col)
+    {
+        bool isObstacle = _selectedSelectionIndex == 0;
+
+        float baseOffsetX = -(_level.Columns - 1) * 0.5f;
+        float baseOffsetZ = -(_level.Rows - 1) * 0.5f;
+
+        float offsetX = baseOffsetX - 0.5f;
+        float offsetZ = baseOffsetZ + 0.5f;
+        int flippedRow = _level.Rows - row - 1;
+        Vector3 spawnPosition = new Vector3(col + offsetX, 0.5f, flippedRow + offsetZ);
+
+        bool isOccupied = _level.gridCellPositions.Exists(c => c.row == row && c.col == col && c.isObstacle);
+
+        if (isObstacle)
+        {
+            if (!isOccupied)
+            {
+                _level.gridCellPositions.Add(new CubeCell { row = row, col = col, isObstacle = true });
+                Instantiate(_level.obstaclePrefab, spawnPosition, Quaternion.identity);
+            }
+        }
+        else
+        {
+            if (isOccupied)
+            {
+                _level.gridCellPositions.RemoveAll(c => c.row == row && c.col == col && c.isObstacle);
+                DestroyAt(row, col);
+            }
+        }
+
+        EditorUtility.SetDirty(_gameManager);
+        UnityEditor.SceneManagement.EditorSceneManager.MarkSceneDirty(_gameManager.gameObject.scene);
+    }
+    private void FillAllCubes()
+    {
+        float baseOffsetX = -(_level.Columns - 1) * 0.5f;
+        float baseOffsetZ = -(_level.Rows - 1) * 0.5f;
+
+        float offsetX = baseOffsetX - 0.5f;
+        float offsetZ = baseOffsetZ + 0.5f;
+
+        for (int row = 0; row < _level.Rows; row++)
+        {
+            for (int col = 0; col < _level.Columns; col++)
+            {
+                if (!_level.gridCellPositions.Exists(c => c.row == row && c.col == col && c.isObstacle))
+                {
+                    _level.gridCellPositions.Add(new CubeCell { row = row, col = col, isObstacle = true });
+
+                    Vector3 spawnPosition = new Vector3(col + offsetX, 0.5f, (_level.Rows - row - 1) + offsetZ);
+                    Instantiate(_level.obstaclePrefab, spawnPosition, Quaternion.identity);
+                }
+            }
+        }
+        EditorUtility.SetDirty(_gameManager);
+        UnityEditor.SceneManagement.EditorSceneManager.MarkSceneDirty(_gameManager.gameObject.scene);
+    }
+
+    private void ClearAllCubes()
+    {
+        _level.gridCellPositions.RemoveAll(c => c.isObstacle);
+
+        var obstacles = GameObject.FindGameObjectsWithTag("Obstacle");
+        foreach (var obstacle in obstacles)
+        {
+            DestroyImmediate(obstacle);
+        }
+
+        var enemies = GameObject.FindGameObjectsWithTag("Enemy");
+        foreach (var enemy in enemies)
+        {
+            DestroyImmediate(enemy);
+        }
+        foreach (var grp in Object.FindObjectsOfType<EnemyCubeGroup>())
+            DestroyImmediate(grp.gameObject);
+
+        var enemyGroups = GameObject.FindGameObjectsWithTag("EnemyGroup");
+        foreach (var grp in enemyGroups)
+        {
+            DestroyImmediate(grp);
+        }
+
+        _level.SpwanablesConfigurations.Clear();
+        RefreshSpawnableMap();
+
+        EditorUtility.SetDirty(_gameManager);
+        UnityEditor.SceneManagement.EditorSceneManager.MarkSceneDirty(_gameManager.gameObject.scene);
+    }
+
+    private void CreateEnemyGroup()
+    {
+        int idx = Object.FindObjectsOfType<EnemyCubeGroup>().Length;
+        var parent = new GameObject($"EnemyGroup{idx}");
+        parent.tag = "EnemyGroup";
+        Undo.RegisterCreatedObjectUndo(parent, "Create EnemyGroup");
+
+        var group = Undo.AddComponent<EnemyCubeGroup>(parent);
+        group.Cubes = new EnemyCube[0];
+
+        var rb = Undo.AddComponent<Rigidbody>(parent);
+        rb.useGravity = false;
+        rb.freezeRotation = true;
+        var cubesToGroup = _placedEnemyCubeMap.Values
+            .Where(ec => ec != null && ec.transform.parent == null)
+            .ToArray();
+        if (cubesToGroup.Length > 0)
+        {
+            var b = new Bounds(cubesToGroup[0].transform.position, Vector3.zero);
+            foreach (var ec in cubesToGroup) b.Encapsulate(ec.transform.position);
+            b.Expand(new Vector3(group.cellSize, 0f, group.cellSize));
+
+            var bc = Undo.AddComponent<BoxCollider>(parent);
+            bc.center = parent.transform.InverseTransformPoint(b.center);
+            bc.size = new Vector3(b.size.x, 1f, b.size.z);
+            bc.isTrigger = true;
+
+            foreach (var ec in cubesToGroup)
+            {
+                Undo.SetTransformParent(ec.transform, parent.transform, "Group Enemy Cubes");
+                ArrayUtility.Add(ref group.Cubes, ec);
+            }
+        }
+
+        _cubeMapDirty = true;
+        RefreshEnemyCubeMap();
+        Repaint();
+
+        Selection.activeGameObject = parent;
+        EditorSceneManager.MarkSceneDirty(EditorSceneManager.GetActiveScene());
+    }
+
+    private void SetEnemyGroupMovement(EnemyCubeGroup group, bool horiz, bool vert, int dist)
+    {
+        if (group == null) return;
+
+        // Record for undo
+        Undo.RecordObject(group, "Set Enemy Group Movement");
+
+        group.moveHorizontal = horiz;
+        group.moveVertical = vert;
+        group.moveCells = dist;
+
+        EditorUtility.SetDirty(group);
+        EditorSceneManager.MarkSceneDirty(EditorSceneManager.GetActiveScene());
+        Repaint();
+    }
+
+    private EnemyCubeGroup CreateTempGroupFor(EnemyCube ec)
+    {
+        var parentGO = new GameObject("EnemyCubeGroup");
+        Undo.RegisterCreatedObjectUndo(parentGO, "Create Temp EnemyCubeGroup");
+        var grp = Undo.AddComponent<EnemyCubeGroup>(parentGO);
+        Undo.SetTransformParent(ec.transform, parentGO.transform, "Reparent to Temp Group");
+        grp.Cubes = new[] { ec };
+        return grp;
+    }
     private void SetPlayerStart(int row, int col)
     {
 #if UNITY_EDITOR
@@ -473,7 +894,6 @@ public class LevelDataEditorWindow : EditorWindow
 #endif
     }
 
-
     private void SyncSceneGridAndBackground()
     {
 #if UNITY_EDITOR
@@ -502,148 +922,152 @@ public class LevelDataEditorWindow : EditorWindow
 #endif
     }
 
-
-    private int _selectedSelectionIndex = 0; 
-
-    private void HandleCellClick(int row, int col)
-    {
-        bool isObstacle = _selectedSelectionIndex == 0;
-
-        float baseOffsetX = -(_level.Columns - 1) * 0.5f; 
-        float baseOffsetZ = -(_level.Rows - 1) * 0.5f; 
-
-        float offsetX = baseOffsetX - 0.5f;  
-        float offsetZ = baseOffsetZ + 0.5f;
-        int flippedRow = _level.Rows - row - 1;  
-        Vector3 spawnPosition = new Vector3(col + offsetX, 0.5f, flippedRow + offsetZ);
-
-        bool isOccupied = _level.gridCellPositions.Exists(c => c.row == row && c.col == col && c.isObstacle);
-
-        if (isObstacle)
-        {
-            if (!isOccupied)
-            {
-                _level.gridCellPositions.Add(new CubeCell { row = row, col = col, isObstacle = true });
-                Instantiate(_level.obstaclePrefab, spawnPosition, Quaternion.identity);  
-            }
-        }
-        else
-        {
-            if (isOccupied)
-            {
-                _level.gridCellPositions.RemoveAll(c => c.row == row && c.col == col && c.isObstacle);
-                DestroyAt(row, col);  
-            }
-        }
-
-        EditorUtility.SetDirty(_gameManager);
-        UnityEditor.SceneManagement.EditorSceneManager.MarkSceneDirty(_gameManager.gameObject.scene);
-    }
-
     private void DestroyAt(int row, int col)
     {
-        // 1) Compute the world-space position of that cell:
+        var key = new Vector2Int(row, col);
+
+        // ── 1) Remove any spawnable-config on this cell ─────────────
+        var cfg = _level.SpwanablesConfigurations
+            .FirstOrDefault(c => c.row == row && c.col == col);
+        if (cfg != null)
+        {
+            _level.SpwanablesConfigurations.Remove(cfg);
+            RefreshSpawnableMap();
+
+#if UNITY_EDITOR
+            // Mark dirty & repaint so the colored-cell overlay disappears
+            UnityEditor.EditorUtility.SetDirty(_gameManager);
+            UnityEditor.SceneManagement.EditorSceneManager
+                .MarkSceneDirty(UnityEditor.SceneManagement.EditorSceneManager.GetActiveScene());
+#endif
+            Repaint();
+            // continue on to also clear walls/enemies/etc.
+        }
+
+        // ── 2) Your existing wall/obstacle cleanup ──────────────────
         float baseOffsetX = -(_level.Columns - 1) * 0.5f;
         float baseOffsetZ = -(_level.Rows - 1) * 0.5f;
         float offsetX = baseOffsetX - 0.5f;
         float offsetZ = baseOffsetZ + 0.5f;
         int flippedRow = _level.Rows - row - 1;
-        Vector3 worldPos = new Vector3(
-            col + offsetX,
-            0.5f,
-            flippedRow + offsetZ
-        );
+        Vector3 worldPos = new Vector3(col + offsetX, 0.5f, flippedRow + offsetZ);
 
-        // 2) Remove from your LevelData lists:
         _level.gridCellPositions.RemoveAll(c => c.row == row && c.col == col && c.isObstacle);
-        _level.PreplacedEnemies.RemoveAll(e => e.row == row && e.col == col);
 
-        // 3) Remove from the editor’s runtime map:
-        _placedEnemyMap.Remove(new Vector2Int(row, col));
-
-        // 4) Destroy any matching scene objects by tag:
-        //    Obstacles:
-        foreach (var go in GameObject.FindGameObjectsWithTag("Obstacle"))
+        foreach (var obstacle in GameObject.FindGameObjectsWithTag("Obstacle"))
         {
-            if (Vector3.Distance(go.transform.position, worldPos) < 0.1f)
+            if (Vector3.Distance(obstacle.transform.position, worldPos) < 0.1f)
             {
 #if UNITY_EDITOR
-                DestroyImmediate(go);
+                DestroyImmediate(obstacle);
 #else
-            Destroy(go);
+            Destroy(obstacle);
 #endif
-                Debug.Log($"Destroyed obstacle at {worldPos}");
-                break;
-            }
-        }
-        //    Enemies:
-        foreach (var go in GameObject.FindGameObjectsWithTag("Enemy"))
-        {
-            if (Vector3.Distance(go.transform.position, worldPos) < 0.1f)
-            {
-#if UNITY_EDITOR
-                DestroyImmediate(go);
-#else
-            Destroy(go);
-#endif
-                Debug.Log($"Destroyed enemy at {worldPos}");
                 break;
             }
         }
 
-        // 5) Mark everything dirty so Unity saves the changes:
-#if UNITY_EDITOR
-        UnityEditor.EditorUtility.SetDirty(_gameManager);
-        EditorSceneManager.MarkSceneDirty(_gameManager.gameObject.scene);
-#endif
-    }
-
-    private void FillAllCubes()
-    {
-        float baseOffsetX = -(_level.Columns - 1) * 0.5f;
-        float baseOffsetZ = -(_level.Rows - 1) * 0.5f;
-
-        float offsetX = baseOffsetX - 0.5f;
-        float offsetZ = baseOffsetZ + 0.5f;
-
-        for (int row = 0; row < _level.Rows; row++)
+        // ── 3) Preplaced-enemy cleanup ─────────────────────────────
+        if (_placedEnemyMap.TryGetValue(key, out var preGo))
         {
-            for (int col = 0; col < _level.Columns; col++)
+#if UNITY_EDITOR
+            DestroyImmediate(preGo);
+#else
+        Destroy(preGo);
+#endif
+            _placedEnemyMap.Remove(key);
+        }
+
+        // ── 4) Enemy-cube cleanup ──────────────────────────────────
+        if (_placedEnemyCubeMap.TryGetValue(key, out var ec) && ec != null)
+        {
+#if UNITY_EDITOR
+            DestroyImmediate(ec.gameObject);
+#else
+        Destroy(ec.gameObject);
+#endif
+            _placedEnemyCubeMap.Remove(key);
+        }
+        else
+        {
+            foreach (var other in Object.FindObjectsOfType<EnemyCube>())
             {
-                if (!_level.gridCellPositions.Exists(c => c.row == row && c.col == col && c.isObstacle))
+                if (Vector3.Distance(other.transform.position, worldPos) < 0.1f)
                 {
-                    _level.gridCellPositions.Add(new CubeCell { row = row, col = col, isObstacle = true });
-
-                    Vector3 spawnPosition = new Vector3(col + offsetX, 0.5f, (_level.Rows - row - 1) + offsetZ);  
-                    Instantiate(_level.obstaclePrefab, spawnPosition, Quaternion.identity);  
+#if UNITY_EDITOR
+                    DestroyImmediate(other.gameObject);
+#else
+                Destroy(other.gameObject);
+#endif
+                    _placedEnemyCubeMap.Remove(key);
+                    break;
                 }
             }
         }
-        EditorUtility.SetDirty(_gameManager);
-        UnityEditor.SceneManagement.EditorSceneManager.MarkSceneDirty(_gameManager.gameObject.scene);
+
+        // ── 5) Final dirty + scene-dirty if desired ──────────────
+#if UNITY_EDITOR
+        UnityEditor.EditorUtility.SetDirty(_gameManager);
+        UnityEditor.SceneManagement.EditorSceneManager
+            .MarkSceneDirty(UnityEditor.SceneManagement.EditorSceneManager.GetActiveScene());
+#endif
     }
 
 
-    private void ClearAllCubes()
+    private void OnDisable()
     {
-        _level.gridCellPositions.RemoveAll(c => c.isObstacle);
+        EditorApplication.playModeStateChanged -= OnPlayModeStateChanged;
+        _gameManager = FindFirstObjectByType<GameManager>();
+    }
 
-        var obstacles = GameObject.FindGameObjectsWithTag("Obstacle");
-        foreach (var obstacle in obstacles)
-        {
-            DestroyImmediate(obstacle);
-        }
+    private void OnFocus()
+    {
+        _cubeMapDirty = true;
+        RefreshEnemyCubeMap();
+    }
 
-        var enemies = GameObject.FindGameObjectsWithTag("Enemy");
-        foreach (var enemy in enemies)
+    private void OnPlayModeStateChanged(PlayModeStateChange state)
+    {
+        if (state == PlayModeStateChange.EnteredEditMode)
         {
-            DestroyImmediate(enemy);
+        _cubeMapDirty = true;
+            RefreshEnemyCubeMap();
         }
-        EditorUtility.SetDirty(_gameManager);
-        UnityEditor.SceneManagement.EditorSceneManager.MarkSceneDirty(_gameManager.gameObject.scene);
+    }
+
+    private bool CanRightClickCell(int row, int col)
+    {
+        var key = new Vector2Int(row, col);
+
+        bool isWall = _level.gridCellPositions
+            .Any(c => c.row == row && c.col == col && c.isObstacle);
+
+        bool isPreplaced = _placedEnemyMap.ContainsKey(key);
+        bool isCube = _placedEnemyCubeMap.ContainsKey(key);
+        bool isPlayer = row == _level.PlayerStartRow && col == _level.PlayerStartCol;
+
+        // guard against _cellSpawnMap being null
+        bool isSpawnableCell = _cellSpawnMap != null
+            && _cellSpawnMap.ContainsKey(key);
+
+        return isCube
+            || isSpawnableCell
+            || (!isWall && !isPreplaced && !isPlayer);
     }
 
 
+    // cache cell→config for fast lookups in DrawCell, right-click, etc.
+    private Dictionary<Vector2Int, SpawnableConfig> _cellSpawnMap;
+
+    private void RefreshSpawnableMap()
+    {
+        _cellSpawnMap = _level.SpwanablesConfigurations
+            .Where(cfg => cfg != null)
+            .ToDictionary(
+                cfg => new Vector2Int(cfg.row, cfg.col),
+                cfg => cfg
+            );
+    }
 
 
     //private void DrawSpawnablesTab()
@@ -827,102 +1251,128 @@ public class LevelDataEditorWindow : EditorWindow
     //}
 
 
-    // ─────────────────────────────────────────────────────────
-    // Tab 3: Preplaced (List of PreplacedPrefabs & PreplacedSpawnPoints)
-    // ─────────────────────────────────────────────────────────
-    //private void DrawPreplacedTab()
-    //{
-    //    EditorGUILayout.LabelField("Preplaced Prefabs & Spawn Points", EditorStyles.boldLabel);
-    //    EditorGUILayout.BeginVertical("box");
-    //    {
-    //        EditorGUILayout.LabelField("Preplaced Prefabs:", EditorStyles.miniBoldLabel);
-    //        if (_level.PreplacedPrefabs == null)
-    //            _level.PreplacedPrefabs = new List<GameObject>();
-
-    //        for (int i = 0; i < _level.PreplacedPrefabs.Count; i++)
-    //        {
-    //            EditorGUILayout.BeginHorizontal();
-    //            _level.PreplacedPrefabs[i] = (GameObject)EditorGUILayout.ObjectField(
-    //                $"Prefab #{i + 1}",
-    //                _level.PreplacedPrefabs[i],
-    //                typeof(GameObject),
-    //                false
-    //            );
-    //            if (GUILayout.Button("✕", GUILayout.Width(20)))
-    //            {
-    //                _level.PreplacedPrefabs.RemoveAt(i);
-    //                break;
-    //            }
-    //            EditorGUILayout.EndHorizontal();
-    //        }
-    //        if (GUILayout.Button("+ Add Preplaced Prefab"))
-    //        {
-    //            _level.PreplacedPrefabs.Add(null);
-    //        }
-
-    //        GUILayout.Space(8);
-
-    //        EditorGUILayout.LabelField("Preplaced Spawn Points:", EditorStyles.miniBoldLabel);
-    //        if (_level.PreplacedSpawnPoints == null)
-    //            _level.PreplacedSpawnPoints = new List<Transform>();
-
-    //        for (int i = 0; i < _level.PreplacedSpawnPoints.Count; i++)
-    //        {
-    //            EditorGUILayout.BeginHorizontal();
-    //            _level.PreplacedSpawnPoints[i] = (Transform)EditorGUILayout.ObjectField(
-    //                $"SpawnPoint #{i + 1}",
-    //                _level.PreplacedSpawnPoints[i],
-    //                typeof(Transform),
-    //                true
-    //            );
-    //            if (GUILayout.Button("✕", GUILayout.Width(20)))
-    //            {
-    //                _level.PreplacedSpawnPoints.RemoveAt(i);
-    //                break;
-    //            }
-    //            EditorGUILayout.EndHorizontal();
-    //        }
-    //        if (GUILayout.Button("+ Add Preplaced Spawn Point"))
-    //        {
-    //            _level.PreplacedSpawnPoints.Add(null);
-    //        }
 
 
-    //        GUILayout.Space(15);
-    //        if (GUILayout.Button("➤ Spawn Preplaced Enemies"))
-    //        {
-    //            _gameManager.PlacePreplacedEnemies(); 
-    //            EditorUtility.SetDirty(_gameManager);
-    //            EditorSceneManager.MarkSceneDirty(_gameManager.gameObject.scene);
-    //        }
-    //    }
-    //    EditorGUILayout.EndVertical();
+}
 
-    //    if (GUI.changed)
-    //    {
-    //        EditorUtility.SetDirty(_gameManager);
-    //        EditorSceneManager.MarkSceneDirty(_gameManager.gameObject.scene);
-    //    }
-    //}
 
-    // ─────────────────────────────────────────────────────────
-    // Tab 4: Advanced (Columns/Rows again, plus “Spawn Preplaced Enemies”)
-    // ─────────────────────────────────────────────────────────
-    private void DrawAdvancedTab()
+
+
+internal class MoveDistancePopup : EditorWindow
+{
+    int _distance;
+    EnemyCubeGroup _group;
+
+    public static void Open(EnemyCubeGroup group, Rect buttonRect)
     {
-        EditorGUILayout.LabelField("Advanced / Utilities", EditorStyles.boldLabel);
-        EditorGUILayout.BeginVertical("box");
+        var wnd = CreateInstance<MoveDistancePopup>();
+        wnd._group = group;
+        wnd._distance = group.moveCells;
+        wnd.minSize = new Vector2(180, 60);
+        wnd.ShowAsDropDown(buttonRect, wnd.minSize);
+    }
+
+    void OnGUI()
+    {
+        EditorGUILayout.LabelField("Cells to move:", EditorStyles.boldLabel);
+        _distance = EditorGUILayout.IntField(_distance);
+
+        GUILayout.FlexibleSpace();
+        EditorGUILayout.BeginHorizontal();
+        if (GUILayout.Button("OK"))
         {
-            EditorGUILayout.LabelField("Grid Dimensions", EditorStyles.miniBoldLabel);
-            EditorGUILayout.LabelField("Columns", _level.Columns.ToString());
-            EditorGUILayout.LabelField("Rows", _level.Rows.ToString());
+            Undo.RecordObject(_group, "Set Move Distance");
+            _group.moveCells = Mathf.Max(1, _distance);
+            EditorUtility.SetDirty(_group);
+            Close();
         }
-        EditorGUILayout.EndVertical();
-
+        if (GUILayout.Button("Cancel"))
+            Close();
+        EditorGUILayout.EndHorizontal();
     }
+}
 
-    private void OnDisable()
+
+
+internal class SpawnableCellPopup : EditorWindow
+{
+    private SpawnableConfig cfg;
+    private Dictionary<SpawnablesType, List<GameObject>> _prefabMap;
+    private Vector2 scroll;
+    private readonly Vector2 size = new Vector2(280, 300);
+    public static void Open(SpawnableConfig cfg,Dictionary<SpawnablesType, List<GameObject>> prefabMap,Rect buttonRect)
     {
-        _gameManager = FindFirstObjectByType<GameManager>();
+        var wnd = CreateInstance<SpawnableCellPopup>();
+        wnd.cfg = cfg;
+        wnd._prefabMap = prefabMap;
+        wnd.minSize = wnd.size;
+        wnd.ShowAsDropDown(buttonRect, wnd.size);
     }
+
+    void OnGUI()
+    {
+        EditorGUILayout.LabelField(
+            $"Cell ({cfg.row},{cfg.col}) → {cfg.enemyType}",
+            EditorStyles.boldLabel
+        );
+        EditorGUILayout.Space();
+
+        scroll = EditorGUILayout.BeginScrollView(scroll);
+
+        // ── Enemy Type & Prefab ────────────────────────────────────────
+        cfg.enemyType = (SpawnablesType)EditorGUILayout.EnumPopup("Type", cfg.enemyType);
+        if (_prefabMap != null
+            && _prefabMap.TryGetValue(cfg.enemyType, out var variants)
+            && variants.Count > 0)
+        {
+            var names = variants.ConvertAll(g => g.name).ToArray();
+            int idx = Mathf.Max(0, variants.IndexOf(cfg.prefab));
+            idx = EditorGUILayout.Popup("Prefab", idx, names);
+            cfg.prefab = variants[idx];
+        }
+        else
+        {
+            cfg.prefab = (GameObject)EditorGUILayout.ObjectField(
+                "Prefab", cfg.prefab, typeof(GameObject), false
+            );
+        }
+
+        EditorGUILayout.Space();
+
+        // ── Initial Progress Slider (0–100) ────────────────────────────
+        float initialPct = cfg.progressThreshold * 100f;
+        initialPct = EditorGUILayout.Slider("Progress (%)", initialPct, 0f, 100f);
+        cfg.progressThreshold = initialPct * 0.01f;
+
+        EditorGUILayout.Space();
+
+        // ── Spawn Count ─────────────────────────────────────────────────
+        cfg.spawnCount = Mathf.Max(1, EditorGUILayout.IntField("Count", cfg.spawnCount));
+
+        // ── Subsequent Progress Sliders ────────────────────────────────
+        if (cfg.spawnCount > 1)
+        {
+            int needed = cfg.spawnCount - 1;
+            // ensure list length
+            while (cfg.subsequentProgressThresholds.Count < needed)
+                cfg.subsequentProgressThresholds.Add(cfg.progressThreshold);
+            while (cfg.subsequentProgressThresholds.Count > needed)
+                cfg.subsequentProgressThresholds.RemoveAt(cfg.subsequentProgressThresholds.Count - 1);
+
+            EditorGUILayout.LabelField("Subsequent Progress (%)", EditorStyles.boldLabel);
+            for (int i = 0; i < needed; i++)
+            {
+                float minPct = cfg.progressThreshold * 100f;
+                float subPct = cfg.subsequentProgressThresholds[i] * 100f;
+                subPct = EditorGUILayout.Slider($"After spawn #{i + 1}", subPct, minPct, 100f);
+                cfg.subsequentProgressThresholds[i] = subPct * 0.01f;
+            }
+        }
+
+        EditorGUILayout.EndScrollView();
+
+        if (GUI.changed)
+            EditorUtility.SetDirty(FindFirstObjectByType<GameManager>());
+    }
+
 }

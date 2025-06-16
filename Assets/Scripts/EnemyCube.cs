@@ -1,23 +1,38 @@
-using Sirenix.OdinInspector;
+﻿using Sirenix.OdinInspector;
 using UnityEngine;
 
 [HideMonoScript]
 public class EnemyCube : MonoBehaviour
 {
     [Title("ENEMY-CUBE", null, titleAlignment: TitleAlignments.Centered)]
-    private EnemyCubeGroup enemyCubeGroup;
+    public EnemyCubeGroup enemyCubeGroup;
     [FoldoutGroup("Particle Refernce")]
     public ParticleSystem particle;
+
     private void Start()
     {
         enemyCubeGroup = GetComponentInParent<EnemyCubeGroup>();
-        //particleManager = FindFirstObjectByType<ParticleManager>();  
     }
-
-
 
     private void OnCollisionEnter(Collision collision)
     {
+        //if (collision.gameObject.CompareTag("Obstacle") || collision.gameObject.CompareTag("Boundary"))
+        //{
+        //        print("wrt");
+
+        //    if (enemyCubeGroup != null)
+        //    {
+        //        print("Reversing Direction");
+        //        enemyCubeGroup.ReverseDirection();
+        //        enemyCubeGroup.SetNextTarget();
+        //    }
+
+        //}
+        if (collision.gameObject.CompareTag("Player"))
+        {
+            AudioManager.instance.PlaySFXSound(3);
+            GameManager.Instance.LevelLose();
+        }
         if (collision.gameObject.TryGetComponent<Cube>(out Cube cube))
         {
             if (cube.IsFilled)
@@ -31,11 +46,6 @@ public class EnemyCube : MonoBehaviour
                 Haptics.Generate(HapticTypes.HeavyImpact);
                 GameManager.Instance.LevelLose();
             }
-        }
-        if(collision.gameObject.CompareTag("Player"))
-        {
-            AudioManager.instance.PlaySFXSound(3);
-            GameManager.Instance.LevelLose();
         }
     }
 }

@@ -18,7 +18,9 @@ public class GridManager : MonoBehaviour
     [SerializeField, DisplayAsString] int _totalCount = 0;
     [SerializeField, DisplayAsString] int _trueCount = 0;
     [ProgressBar(0f, 1f, Height = 20)]public float _progress = 0f;
+
     public float cellSize = 1f;
+    
     [Space]
     [HideInEditorMode]
     [ShowInInspector, ReadOnly] bool[,] _grid;
@@ -132,8 +134,7 @@ public class GridManager : MonoBehaviour
         // Get the list of exposed cells instead of just counting
         List<Vector2Int> exposedCells = GetExposedGridCells();
 
-        // Use the count of exposed cells for progress calculation
-        _progress = (float)_trueCount / exposedCells.Count;  // Use exposed cells count dynamically
+        _progress = (float)_trueCount / exposedCells.Count;  
         UIManager.Instance.FillAmount(_progress);
     }
 
@@ -163,7 +164,7 @@ public class GridManager : MonoBehaviour
         {
             for (int y = 0; y < _gridRows; y++)
             {
-                if (IsCellExposed(new Vector2Int(x, y)))  // Check if the cell is exposed
+                if (IsCellExposed(new Vector2Int(x, y)))  
                 {
                     exposedCells.Add(new Vector2Int(x, y));
                 }
@@ -251,26 +252,20 @@ public class GridManager : MonoBehaviour
             cube.Initalize(repCubePos, true);
         }
     }
-   
+
     private bool[,] FloodFillAlgo(bool[,] boundaryGrid, bool[,] originalGrid)
     {
         int cols = _gridColumns;
         int rows = _gridRows;
 
-        // Track visited empty cells
         bool[,] visited = new bool[cols, rows];
         var regions = new List<List<Point>>();
 
-        // Offsets for 4-way neighbor checks
         var dirs = new (int dx, int dy)[]
         {
-    ( 1,  0),
-    (-1,  0),
-    ( 0,  1),
-    ( 0, -1),
+        (1, 0), (-1, 0), (0, 1), (0, -1)
         };
 
-        // 1) Discover every connected region of “false” cells
         for (int x = 0; x < cols; x++)
             for (int y = 0; y < rows; y++)
             {
@@ -279,23 +274,22 @@ public class GridManager : MonoBehaviour
                     var queue = new Queue<Point>();
                     var region = new List<Point>();
 
-                    visited[x, y] = true;
                     queue.Enqueue(new Point(x, y));
-                    region.Add(new Point(x, y));
+                    visited[x, y] = true;
 
                     while (queue.Count > 0)
                     {
                         var p = queue.Dequeue();
+                        region.Add(p);
+
                         foreach (var (dx, dy) in dirs)
                         {
                             int nx = p.X + dx, ny = p.Y + dy;
                             if (nx >= 0 && nx < cols && ny >= 0 && ny < rows
-                                && !visited[nx, ny]
-                                && !boundaryGrid[nx, ny])
+                                && !visited[nx, ny] && !boundaryGrid[nx, ny])
                             {
-                                visited[nx, ny] = true;
                                 queue.Enqueue(new Point(nx, ny));
-                                region.Add(new Point(nx, ny));
+                                visited[nx, ny] = true;
                             }
                         }
                     }
@@ -303,22 +297,17 @@ public class GridManager : MonoBehaviour
                 }
             }
 
-        // **NEW**: if there's only one region (i.e. everything outside your line),
-        // skip filling completely and return the grid as it was—
-        // your drawn cubes have already been FillCube()'d.
         if (regions.Count <= 1)
             return originalGrid;
 
-        // 2) Pick the *smallest* region by cell count (your true “pocket”)
-        var pocket = regions.OrderBy(r => r.Count).First();
+        var smallestRegion = regions.OrderBy(r => r.Count).First();
 
-        // 3) Spawn cubes in that pocket
-        MakeCubes(pocket);
+        MakeCubes(smallestRegion);
 
-        // 4) Build and return the updated grid
         var newGrid = (bool[,])originalGrid.Clone();
-        foreach (var p in pocket)
+        foreach (var p in smallestRegion)
             newGrid[p.X, p.Y] = true;
+
         return newGrid;
     }
 
@@ -330,70 +319,85 @@ public class GridManager : MonoBehaviour
         bool[,] visited = new bool[cols, rows];
         var dirs = new (int dx, int dy)[]
         {
-        ( 1,  0),
-        (-1,  0),
-        ( 0,  1),
-        ( 0, -1),
+        (1, 0), (-1, 0), (0, 1), (0, -1)
         };
 
+        List<List<Point>> allPockets = new();
+        List<Point> outerEdgePocket = null;
+
         for (int x = 0; x < cols; x++)
+        {
             for (int y = 0; y < rows; y++)
             {
                 if (!_grid[x, y] && !visited[x, y])
                 {
+                    bool isTouchingEdge = false;
                     var queue = new Queue<Point>();
                     var pocket = new List<Point>();
-                    bool isEnclosed = true; // assume enclosed unless found otherwise
 
-                    visited[x, y] = true;
                     queue.Enqueue(new Point(x, y));
-                    pocket.Add(new Point(x, y));
+                    visited[x, y] = true;
 
                     while (queue.Count > 0)
                     {
                         var p = queue.Dequeue();
+                        pocket.Add(p);
 
-                        // If this pocket touches grid edge, it’s NOT enclosed
                         if (p.X == 0 || p.X == cols - 1 || p.Y == 0 || p.Y == rows - 1)
-                            isEnclosed = false;
+                            isTouchingEdge = true;
 
                         foreach (var (dx, dy) in dirs)
                         {
                             int nx = p.X + dx, ny = p.Y + dy;
-
-                            if (nx < 0 || nx >= cols || ny < 0 || ny >= rows)
-                            {
-                                isEnclosed = false;
-                                continue;
-                            }
-
-                            if (!_grid[nx, ny] && !visited[nx, ny])
+                            if (nx >= 0 && nx < cols && ny >= 0 && ny < rows
+                                && !_grid[nx, ny] && !visited[nx, ny])
                             {
                                 visited[nx, ny] = true;
                                 queue.Enqueue(new Point(nx, ny));
-                                pocket.Add(new Point(nx, ny));
                             }
                         }
                     }
 
-                    // If pocket is enclosed and not empty, fill it immediately
-                    if (isEnclosed && pocket.Count > 0)
-                    {
-                        MakeCubes(pocket);
-
-                        // Update grid to mark these cells filled
-                        foreach (var pnt in pocket)
-                        {
-                            _grid[pnt.X, pnt.Y] = true;
-                        }
-                        lastPocketFilled = true;
-                    }
+                    if (isTouchingEdge)
+                        outerEdgePocket = pocket;
+                    else
+                        allPockets.Add(pocket);
                 }
             }
-        if (lastPocketFilled)
-        {
-            FillRemainingUnfilledCells(); 
         }
+
+        if (outerEdgePocket != null)
+        {
+            allPockets = allPockets
+                .Where(p => p != outerEdgePocket)
+                .OrderByDescending(p => p.Count)
+                .ToList();
+        }
+
+        foreach (var pocket in allPockets)
+        {
+            foreach (var p in pocket)
+                _grid[p.X, p.Y] = true;
+            MakeCubes(pocket);
+            lastPocketFilled = true;
+        }
+
+        if (lastPocketFilled)
+            FillRemainingUnfilledCells();
+
+        SyncVisualsForExposedFilledCells();
+
+        // Final auto-fill safety
+        int exposed = GetExposedGridCells().Count;
+        int filled = GetTrueGridCount(_grid);
+        if (exposed - filled <= 6)
+        {
+            Debug.Log("Auto-filling remaining exposed cells...");
+            FillRemainingUnfilledCells();
+        }
+
+
+
     }
 
     private void FillRemainingUnfilledCells()
@@ -490,6 +494,22 @@ public class GridManager : MonoBehaviour
         }
         return filled;
     }
+    private void SyncVisualsForExposedFilledCells()
+    {
+        for (int x = 0; x < _gridColumns; x++)
+        {
+            for (int y = 0; y < _gridRows; y++)
+            {
+                if (_grid[x, y] && IsCellExposed(new Vector2Int(x, y)))
+                {
+                    var cube = CubeGrid.Instance.GetCube();
+                    cube.Initalize(GridToWorld(new Vector2Int(x, y)), true);
+                    cube.FillCube();
+                }
+            }
+        }
+    }
+
     public bool IsCellExposed(Vector2Int gridPos)
     {
         // Define the position of the cell in world space

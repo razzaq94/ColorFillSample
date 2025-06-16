@@ -175,7 +175,7 @@ public class EnemyBehaviors : MonoBehaviour
             AudioManager.instance.PlaySFXSound(3);
             //GameManager.Instance.LevelLose();
         }
-        else if (collision.transform.CompareTag("Boundary") || collision.transform.CompareTag("Obstacle") || collision.transform.CompareTag("Enemy"))
+        else if (collision.transform.CompareTag("Boundary") || collision.transform.CompareTag("Obstacle") || collision.transform.CompareTag("EnemyGroup") || collision.transform.CompareTag("Enemy"))
         {
             BounceOffNormal(collision.contacts[0].normal);
         }

@@ -10,7 +10,7 @@ public class CubeGrid : MonoBehaviour
     [SerializeField] private Cube _cubePrefab = null;
 
     private Queue<Cube> _cubeQueue = new Queue<Cube>();
-    private List<Cube> TakenCubes = new List<Cube>();
+    public List<Cube> TakenCubes = new List<Cube>();
     public List<Cube> AllCubes;
     public GridManager _gridManager;
     private void Awake()

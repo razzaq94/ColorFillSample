@@ -31,7 +31,7 @@ public class GameManager : MonoBehaviour
 
     [Header("Fall Speed")]
     [Range(0f, 1f)]
-    public float SpeedForFallingObjects;
+    public float SpeedForFallingObjects = 2;
 
     public int GetCurrentLevel => CurrentLevel;
     [FoldoutGroup("Level Data")]
@@ -40,9 +40,9 @@ public class GameManager : MonoBehaviour
 
     [Header("Assign Enemy Spawn Positions Here")]
     private Vector2 gridOrigin = Vector2.zero;
-    [HideInInspector]public Vector2 cellSize = Vector2.one;
+    [HideInInspector] public Vector2 cellSize = Vector2.one;
 
-   
+
 
     private bool isGameOver = false;
 
@@ -55,7 +55,7 @@ public class GameManager : MonoBehaviour
 
     private void Start()
     {
-       
+
         if (!Application.isEditor)
             Debug = false;
         GridManager.Instance.InitGrid(Level.Columns, Level.Rows);
@@ -69,7 +69,7 @@ public class GameManager : MonoBehaviour
         GetCells();
     }
 
-    
+
 
     public void GetCells()
     {
@@ -85,7 +85,7 @@ public class GameManager : MonoBehaviour
         if (!isGameOver && Level.levelTime > 0)
         {
             Level.levelTime -= Time.deltaTime;
-            Level.levelTime = Mathf.Clamp(Level.levelTime, 0, 9999); 
+            Level.levelTime = Mathf.Clamp(Level.levelTime, 0, 9999);
             UpdateTimerDisplay();
         }
 
@@ -124,7 +124,7 @@ public class GameManager : MonoBehaviour
         CurrentLevel++;
         LevelToUse++;
         UIManager.Instance.LevelComplete();
-        MarkLevelCompleted(SceneManager.GetActiveScene().buildIndex); 
+        MarkLevelCompleted(SceneManager.GetActiveScene().buildIndex);
     }
 
     [Button]
@@ -162,63 +162,48 @@ public class GameManager : MonoBehaviour
 
 
     public IEnumerator SpawnEnemyRoutine(SpawnableConfig cfg, List<Vector2Int> exposedCells)
- {
-     if (cfg.useTimeBasedSpawn)
-     {
-         yield return new WaitForSeconds(cfg.initialDelay);
-     }
-     else if (!cfg.useTimeBasedSpawn)
-     {
+    {
+        yield return new WaitUntil(() => GridManager.Instance._progress >= cfg.progressThreshold);
 
-         yield return new WaitUntil(
-             () => GridManager.Instance._progress >= cfg.progressThreshold
-         );
-     }
+        List<Cube> available = new List<Cube>(GridManager.Instance.GetAllFilledCells());
+        GameManager.Instance.GetCells(); 
 
-     List<Cube> available = new List<Cube>(GridManager.Instance.GetAllFilledCells());
-     GetCells();
-     Vector2Int randomCell = Vector2Int.zero;
-     Vector3 spawnPos = Vector3.zero;
+        for (int i = 0; i < cfg.spawnCount; i++)
+        {
+            if (i > 0 && i - 1 < cfg.subsequentProgressThresholds.Count)
+            {
+                float threshold = cfg.subsequentProgressThresholds[i - 1];
+                yield return new WaitUntil(() => GridManager.Instance._progress >= threshold);
+            }
 
-     for (int i = 0; i < cfg.spawnCount; i++)
-     {
-         Cube cell;
-         if (cfg.enemyType == SpawnablesType.SpikeBall)
-         {
-             int idx = Random.Range(0, available.Count);
-             cell = available[idx];
-             available.RemoveAt(idx);
-             spawnPos = cell.transform.position;
-         }
-         else
-         {
-             randomCell = exposedCells[Random.Range(0, exposedCells.Count)];
-             spawnPos = GridManager.Instance.GridToWorld(randomCell);
-         }
-            spawnPos.y += cfg.yOffset;
+            Vector3 spawnBasePos;
 
-            var enemy = Instantiate(cfg.prefab, spawnPos, Quaternion.identity);
-         if (cfg.usePhysicsDrop)
-         {
-             var rb = enemy.GetComponent<Rigidbody>()
-                      ?? enemy.AddComponent<Rigidbody>();
-             rb.isKinematic = false;
-             rb.useGravity = true;
-             rb.constraints = RigidbodyConstraints.FreezeRotationX
-                              | RigidbodyConstraints.FreezeRotationZ;
-         }
-         else
-         {
-             StartCoroutine(ManualDrop(enemy.transform, spawnPos, SpeedForFallingObjects));
-         }
+            if (cfg.enemyType == SpawnablesType.SpikeBall)
+            {
+                int idx = Random.Range(0, available.Count);
+                var cell = available[idx];
+                available.RemoveAt(idx);
+                spawnBasePos = cell.transform.position;
+            }
+            else
+            {
+                Vector2Int randomCell = exposedCells[Random.Range(0, exposedCells.Count)];
+                spawnBasePos = GridManager.Instance.GridToWorld(randomCell);
+            }
 
-         if (i < cfg.spawnCount - 1)
-             yield return new WaitForSeconds(cfg.subsequentSpawnDelays[i]);
-     }
- }
+            Vector3 finalTargetPos = spawnBasePos + Vector3.up * cfg.yOffset;
+
+            Vector3 skySpawnPos = finalTargetPos + Vector3.up * cfg.initialSpawnHeight;
+
+            var enemy = Instantiate(cfg.prefab, skySpawnPos, Quaternion.identity);
+
+            // always use manual drop
+            StartCoroutine(ManualDropWithYFreeze(enemy, finalTargetPos, cfg.yOffset, SpeedForFallingObjects));
+
+        }
+    }
 
 
-   
 
     public IEnumerator ManualDrop(Transform pos, Vector3 target, float duration)
     {
@@ -233,11 +218,49 @@ public class GameManager : MonoBehaviour
         }
         pos.position = target;
     }
+
+    private IEnumerator ManualDropWithYFreeze(GameObject enemy, Vector3 targetPos, float finalY, float duration)
+    {
+        Vector3 start = enemy.transform.position;
+        Vector3 end = new Vector3(targetPos.x, finalY, targetPos.z);
+        float elapsed = 0f;
+
+        // Drop down over time
+        while (elapsed < duration)
+        {
+            elapsed += Time.deltaTime;
+            enemy.transform.position = Vector3.Lerp(start, end, elapsed / duration);
+            yield return null;
+        }
+
+        enemy.transform.position = end;
+
+        var rb = enemy.GetComponent<Rigidbody>();
+        if (rb == null)
+            rb = enemy.AddComponent<Rigidbody>();
+
+        rb.useGravity = false;
+        rb.isKinematic = false;
+
+    }
+
     public void LevelLose()
     {
         Player.enabled = _gameRunning = false;
         UIManager.Instance?.LevelLose();
         AudioManager.instance?.BGAudioSource.Stop();
+    }
+    public void RandomizeColor(GameObject enemy)
+    {
+        var renderers = enemy.GetComponentsInChildren<Renderer>();
+        foreach (var renderer in renderers)
+        {
+            if (renderer.material.HasProperty("_Color"))
+            {
+                renderer.material = new Material(renderer.material); // instance material
+                renderer.material.color = Random.ColorHSV(0f, 1f, 0.6f, 1f, 0.6f, 1f); // vivid random color
+            }
+        }
     }
 
     public void Replay()
@@ -288,23 +311,8 @@ public class GameManager : MonoBehaviour
     {
         SavePlayerPrefs();
     }
-   
 
-#if UNITY_EDITOR
-    private void OnValidate()
-    {
-        foreach (var cfg in Level.SpwanablesConfigurations)
-        {
-            int needed = Mathf.Max(0, cfg.spawnCount - 1);
-            while (cfg.subsequentSpawnDelays.Count < needed)
-                cfg.subsequentSpawnDelays.Add(0f);
-            while (cfg.subsequentSpawnDelays.Count > needed)
-                cfg.subsequentSpawnDelays.RemoveAt(cfg.subsequentSpawnDelays.Count - 1);
-        }
-    }
-#endif
 }
-
 [System.Serializable]
 public class LevelData
 {
@@ -321,11 +329,12 @@ public class LevelData
 
     public List<PreplacedEnemy> PreplacedEnemies = new List<PreplacedEnemy>();
     public List<Transform> PreplacedSpawnPoints;
+    public List<CubeCell> enemyCubeCells = new();    
     public int Columns = 50;
     public int Rows = 50;
     public List<CubeCell> gridCellPositions;
     public GameObject obstaclePrefab;
-    public GameObject EnemyPrefab;
+    public GameObject enemyCubePrefab;
     public List<EnemyCubeGroup> EnemyGroups = new List<EnemyCubeGroup>();
 
 }
@@ -334,27 +343,22 @@ public class SpawnableConfig
 {
     public SpawnablesType enemyType;
     public GameObject prefab;
-    [Header("Spawn Trigger")]
-    [Space]
-    public bool useTimeBasedSpawn;
-    [Space]
-    public float initialDelay;
-    [Space]
-    [Range(0f, 1f)]
-    public float progressThreshold;
 
-    [Space]
+    [Range(0f, 1f)]
+    public float progressThreshold; 
+
     public int spawnCount = 1;
-    [Space]
-    public List<float> subsequentSpawnDelays = new List<float>() { };
+    public List<float> subsequentProgressThresholds = new(); 
 
     public float yOffset;
     public float initialSpawnHeight = 35f;
 
     [HideInInspector] public bool usePhysicsDrop;
-    public bool useFallDrop = false;
 
+    public int row;
+    public int col;
 }
+
 [System.Serializable]
 public class CubeCell
 {

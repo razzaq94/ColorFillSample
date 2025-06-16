@@ -12,6 +12,7 @@ public class EnemyCubeGroup : MonoBehaviour
     //public bool Static = false;
     public bool moveHorizontal = true;
     public bool moveVertical = false;
+    public bool isStatic = false;
     public int moveCells = 5;
     [HideInInspector]public float cellSize = 1f;
     public float moveSpeed = 2f; 
@@ -26,7 +27,7 @@ public class EnemyCubeGroup : MonoBehaviour
     {
         Cubes = GetComponentsInChildren<EnemyCube>();
         _rb = GetComponent<Rigidbody>();
-
+        _rb.constraints = RigidbodyConstraints.FreezePositionY;
         if (!moveHorizontal && !moveVertical)
         {
             enabled = false;
@@ -37,6 +38,7 @@ public class EnemyCubeGroup : MonoBehaviour
     }
     void FixedUpdate()
     {
+        if (isStatic) return;
         Vector3 newPos = Vector3.MoveTowards(
             _rb.position,
             _target,
@@ -52,23 +54,23 @@ public class EnemyCubeGroup : MonoBehaviour
             SetNextTarget();
         }
     }
-    public void Restart()
-    {
-        Detected = 0;
-        gameObject.SetActive(true);
-        for (int i = 0; i < Cubes.Length; i++)
-            Cubes[i].gameObject.SetActive(true);
-    }
+    //public void Restart()
+    //{
+    //    Detected = 0;
+    //    gameObject.SetActive(true);
+    //    for (int i = 0; i < Cubes.Length; i++)
+    //        Cubes[i].gameObject.SetActive(true);
+    //}
 
-    public void CubeDestroyed()
-    {
-        Detected++;
-        if (Detected == Cubes.Length)
-        {
-            AudioManager.instance?.PlaySFXSound(3);
-            gameObject.SetActive(false);
-        }
-    }
+    //public void CubeDestroyed()
+    //{
+    //    Detected++;
+    //    if (Detected == Cubes.Length)
+    //    {
+    //        AudioManager.instance?.PlaySFXSound(3);
+    //        gameObject.SetActive(false);
+    //    }
+    //}
 
     public void SetNextTarget()
     {
@@ -83,51 +85,17 @@ public class EnemyCubeGroup : MonoBehaviour
         _direction *= -1;
         _cellsMoved = 0;
     }
-
-    //void OnCollisionEnter(Collision col)
-    //{
-    //    if (col.collider.CompareTag("Obstacle") ||
-    //        col.collider.CompareTag("Boundary"))
-    //    {
-    //        ReverseDirection();
-    //        SetNextTarget();
-    //    }
-    //    if (col.collider.GetComponent<Cube>() == null)
-    //        return;
-
-    //    // Dispatch the hit to whichever child-collider actually made contact:
-    //    foreach (var contact in col.contacts)
-    //    {
-    //        // contact.thisCollider is the child‐Collider (or parent’s) that hit the Cube
-    //        var hitGO = contact.thisCollider.gameObject;
-    //        var childDetector = hitGO.GetComponent<EnemyCube>();
-    //        if (childDetector != null)
-    //        {
-    //            childDetector.OnCubeHit(col.collider.GetComponent<Cube>());
-    //        }
-    //    }
-    //}
+   
     private void OnTriggerEnter(Collider other)
     {
         if (other.CompareTag("Obstacle") ||
-            other.CompareTag("Boundary"))
+            other.CompareTag("Boundary") ||
+            other.CompareTag("EnemyGroup"))
         {
             ReverseDirection();
             SetNextTarget();
         }
         if (other.GetComponent<Cube>() == null)
             return;
-
-        //// Dispatch the hit to whichever child-collider actually made contact:
-        //foreach (var contact in other.contacts)
-        //{
-        //    // contact.thisCollider is the child‐Collider (or parent’s) that hit the Cube
-        //    var hitGO = contact.thisCollider.gameObject;
-        //    var childDetector = hitGO.GetComponent<EnemyCube>();
-        //    if (childDetector != null)
-        //    {
-        //        childDetector.OnCubeHit(col.collider.GetComponent<Cube>());
-        //    }
-        //}
     }
 }

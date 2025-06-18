@@ -66,8 +66,8 @@ public class GridManager : MonoBehaviour
         Haptics.Generate(HapticTypes.LightImpact);
 
         bool[,] oldGrid = (bool[,])_grid.Clone();
+        _obstacleMap = new bool[_gridColumns, _gridRows];
 
-        bool[,] obstacleMap = new bool[_gridColumns, _gridRows];
         float half = cellSize * 0.45f;
         for (int x = 0; x < _gridColumns; x++)
             for (int y = 0; y < _gridRows; y++)
@@ -75,9 +75,9 @@ public class GridManager : MonoBehaviour
                 Vector3 ctr = GridToWorld(new Vector2Int(x, y)) + Vector3.up * 0.1f;
                 var hits = Physics.OverlapBox(ctr, new Vector3(half, 0.1f, half), Quaternion.identity);
                 foreach (var h in hits)
-                    if (h.CompareTag("Obstacle"))
+                    if (h.CompareTag("Obstacle") || h.CompareTag("Boundary"))
                     {
-                        obstacleMap[x, y] = true;
+                        _obstacleMap[x, y] = true;
                         break;
                     }
             }
@@ -87,14 +87,14 @@ public class GridManager : MonoBehaviour
         bool[,] boundary = new bool[_gridColumns, _gridRows];
         for (int x = 0; x < _gridColumns; x++)
             for (int y = 0; y < _gridRows; y++)
-                boundary[x, y] = cubeSnapshot[x, y] || obstacleMap[x, y];
+                boundary[x, y] = cubeSnapshot[x, y] || _obstacleMap[x, y];
 
         bool[,] afterFill = FloodFillAlgo(boundary, cubeSnapshot);
 
         DestroyEnemiesInNewlyFilledCells(oldGrid, afterFill);
-        SetProgressBar(afterFill);
 
-        _grid = (bool[,])afterFill.Clone();
+        bool[,] finalGrid = (bool[,])afterFill.Clone();
+        _grid = finalGrid;
 
         FillFullyEnclosedPockets();
         SetProgressBar(_grid);
@@ -267,6 +267,7 @@ public class GridManager : MonoBehaviour
         };
 
         for (int x = 0; x < cols; x++)
+        {
             for (int y = 0; y < rows; y++)
             {
                 if (!boundaryGrid[x, y] && !visited[x, y])
@@ -293,23 +294,31 @@ public class GridManager : MonoBehaviour
                             }
                         }
                     }
+
                     regions.Add(region);
                 }
             }
+        }
 
         if (regions.Count <= 1)
             return originalGrid;
 
-        var smallestRegion = regions.OrderBy(r => r.Count).First();
+        var largestRegion = regions.OrderByDescending(r => r.Count).First();
 
-        MakeCubes(smallestRegion);
+        foreach (var region in regions)
+        {
+            if (region == largestRegion)
+                continue;
 
-        var newGrid = (bool[,])originalGrid.Clone();
-        foreach (var p in smallestRegion)
-            newGrid[p.X, p.Y] = true;
+            foreach (var p in region)
+                originalGrid[p.X, p.Y] = true;
 
-        return newGrid;
+            MakeCubes(region);
+        }
+
+        return originalGrid;
     }
+
 
     private void FillFullyEnclosedPockets()
     {
@@ -510,24 +519,17 @@ public class GridManager : MonoBehaviour
         }
     }
 
+    private bool[,] _obstacleMap; // Store this during flood fill to reuse
+
     public bool IsCellExposed(Vector2Int gridPos)
     {
-        // Define the position of the cell in world space
-        Vector3 worldPos = GridToWorld(gridPos);
+        if (_obstacleMap == null)
+            return true; // fallback if not initialized
 
-        // Check if the cell is covered by an obstacle (can use layers or tags)
-        Collider[] hitColliders = Physics.OverlapBox(worldPos, new Vector3(cellSize / 2, 0.1f, cellSize / 2), Quaternion.identity);
+        if (gridPos.x < 0 || gridPos.x >= _gridColumns || gridPos.y < 0 || gridPos.y >= _gridRows)
+            return false;
 
-        // Check if there's an obstacle at this grid position
-        foreach (var collider in hitColliders)
-        {
-            if (collider.CompareTag("Obstacle"))  // Assuming "Obstacle" is the tag for obstacles
-            {
-                return false;  // This cell is obstructed, not exposed
-            }
-        }
-
-        return true;  // This cell is exposed
+        return !_obstacleMap[gridPos.x, gridPos.y];
     }
 
     public Cube GetCubeAtPosition(Vector2Int position)

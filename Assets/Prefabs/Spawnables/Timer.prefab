@@ -98,6 +98,7 @@ GameObject:
   - component: {fileID: 4556761501219838167}
   - component: {fileID: 8312908793158469888}
   - component: {fileID: 1107514175782074682}
+  - component: {fileID: 1180967485190600685}
   m_Layer: 0
   m_Name: Timer
   m_TagString: Timer
@@ -154,6 +155,33 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: ab3737d3c8fdeb047ab87a9f5f9bff12, type: 3}
   m_Name: 
   m_EditorClassIdentifier: 
+--- !u!54 &1180967485190600685
+Rigidbody:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 7101016809528862508}
+  serializedVersion: 4
+  m_Mass: 1
+  m_Drag: 0
+  m_AngularDrag: 0.05
+  m_CenterOfMass: {x: 0, y: 0, z: 0}
+  m_InertiaTensor: {x: 1, y: 1, z: 1}
+  m_InertiaRotation: {x: 0, y: 0, z: 0, w: 1}
+  m_IncludeLayers:
+    serializedVersion: 2
+    m_Bits: 0
+  m_ExcludeLayers:
+    serializedVersion: 2
+    m_Bits: 0
+  m_ImplicitCom: 1
+  m_ImplicitTensor: 1
+  m_UseGravity: 1
+  m_IsKinematic: 0
+  m_Interpolate: 0
+  m_Constraints: 126
+  m_CollisionDetection: 0
 --- !u!1 &8804667253871101329
 GameObject:
   m_ObjectHideFlags: 0

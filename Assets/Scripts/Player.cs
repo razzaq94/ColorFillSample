@@ -54,9 +54,9 @@ public class Player : MonoBehaviour
     public void Init()
     {
         _rigidbody = GetComponent<Rigidbody>();
-        
+
         if (material != null)
-            material.color = playerColor;
+            material.color = GameManager.Instance.PlayerColor;
         spawnedCubes = new List<Cube>();
         MakeCube();
     }
@@ -96,8 +96,12 @@ public class Player : MonoBehaviour
 
     private void FillCubes()
     {
-        for(int i=0 ; i<spawnedCubes.Count ; i++)
-            spawnedCubes[i].FillCube();
+        foreach (var cube in spawnedCubes)
+        {
+            cube.FillCube();
+            // Safety update to grid just in case
+            GridManager.Instance.ChangeValue(cube.transform.position.x, cube.transform.position.z);
+        }
         spawnedCubes.Clear();
     }
     private void OnCollisionEnter(Collision collision)

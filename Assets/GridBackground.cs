@@ -9,6 +9,17 @@ public class GridBackground : MonoBehaviour
     [Tooltip("The Renderer on your plane (for material tiling)")]
     public Renderer bgRenderer;
 
+    private void Start()
+    {
+        bgRenderer = GetComponent<Renderer>();
+
+        if (Application.isPlaying)
+            bgRenderer.material.color = GameManager.Instance.BackgroundColor;
+        else
+            bgRenderer.sharedMaterial.color = GameManager.Instance.BackgroundColor;
+    }
+
+
     void OnEnable()
     {
         if (gridManager == null && GridManager.Instance != null)

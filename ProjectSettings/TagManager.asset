@@ -20,6 +20,7 @@ TagManager:
   - EnemyGroup
   - MainCanvas
   - EnemyCube
+  - GridBackground
   layers:
   - Default
   - TransparentFX
@@ -35,8 +36,8 @@ TagManager:
   - Camera
   - MainCameraOnly
   - Cube
-  - 
-  - 
+  - inside
+  - outside
   - 
   - 
   - 

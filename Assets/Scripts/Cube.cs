@@ -28,25 +28,34 @@ public class Cube : MonoBehaviour
         transform.position = pos;
         IsFilled = isFilled;
         gameObject.SetActive(true);
-         Color baseColor = Player.Instance.GetPlayerColor();
-        if (IsFilled)
-            ApplyFilledColor();
-        else
-            ApplyUnfilledColor();
+        //Color baseColor = Player.Instance.GetPlayerColor();
+        var renderer = GetComponent<Renderer>();
+        if (renderer)
+            renderer.material.color = GameManager.Instance.CubeFillColor;
+
+        //if (IsFilled)
+        //    ApplyFilledColor();
+        //else
+        //    ApplyUnfilledColor();
     }
 
     public void FillCube()
     {
-        if (!gameObject.activeSelf || IsFilled)
+        if (IsFilled)
             return;
+
         IsFilled = true;
 
-        ApplyFilledColor();
+        // Ensure ChangeValue is always called
+        if (gameObject.activeSelf)
+            GridManager.Instance.ChangeValue(transform.position.x, transform.position.z);
+        else
+            Debug.LogWarning("Tried to FillCube while inactive — may cause grid sync bug!");
 
-        GridManager.Instance.ChangeValue(transform.position.x, transform.position.z);
         transform.DOMoveY((transform.position.y + 0.5f), 0.15f);
         //transform.DOScale(new Vector3(0.5f, 0.5f, 0.5f), 0.15f);
-       
+        //ApplyFilledColor ();
+
 
     }
     public void UnfillCube()

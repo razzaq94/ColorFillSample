@@ -18,9 +18,11 @@ public class LevelDataEditorWindow : EditorWindow
     private const int MinGridSize = 1;
     private const int MaxGridSize = 50;
     private Dictionary<Vector2Int, GameObject> _placedEnemyMap = new Dictionary<Vector2Int, GameObject>();
-    private enum DrawMode { Wall, Empty, Enemy }
+    private enum DrawMode { Wall,Obstacle, Empty, Enemy }
     private DrawMode _drawMode = DrawMode.Wall;
-   
+    private int _prevColumns;
+    private int _prevRows;
+
 
     public Dictionary<SpawnablesType, List<GameObject>> EnemyTypeToPrefabsMap => _enemyTypeToPrefabsMap;
 
@@ -65,8 +67,13 @@ public class LevelDataEditorWindow : EditorWindow
                 }
             }
         }
+
+        _prevColumns = _level.Columns;
+        _prevRows = _level.Rows;
+
         RefreshEnemyCubeMap();
         RefreshSpawnableMap();
+        RefreshPreplacedEnemyMap();
         EditorApplication.playModeStateChanged += OnPlayModeStateChanged;
         _cubeMapDirty = true;
 
@@ -77,9 +84,6 @@ public class LevelDataEditorWindow : EditorWindow
             AssetDatabase.LoadAssetAtPath<GameObject>("Assets/Prefabs/Spawnables/Timer.prefab"),
         };
     }
-
-    
-
 
     private void OnGUI()
     {
@@ -196,16 +200,7 @@ public class LevelDataEditorWindow : EditorWindow
                 EditorGUILayout.EndHorizontal();
             }
 
-            // add new entry
-            if (GUILayout.Button("+ Add Preplaced Enemy"))
-            {
-                _level.PreplacedEnemies.Add(new PreplacedEnemy
-                {
-                    prefab = null,
-                    row = 0,
-                    col = 0
-                });
-            }
+            
 
             
 
@@ -218,37 +213,28 @@ public class LevelDataEditorWindow : EditorWindow
             }
 
             EditorGUILayout.Space();
-            EditorGUILayout.LabelField("Enemy Type Colors", EditorStyles.miniBoldLabel);
+            EditorGUILayout.LabelField("Color Settings", EditorStyles.boldLabel);
 
-            var uniquePrefabs = _level.PreplacedEnemies
-                                     .Where(e => e.prefab != null)
-                                     .Select(e => e.prefab)
-                                     .Distinct()
-                                     .ToList();
+            Color oldWall = _gameManager.WallColor;
+            Color oldPlayer = _gameManager.PlayerColor;
+            Color oldCube = _gameManager.CubeFillColor;
+            Color oldBG = _gameManager.BackgroundColor;
 
-            foreach (var key in _enemyTypeColors.Keys.ToList())
-                if (!uniquePrefabs.Contains(key))
-                    _enemyTypeColors.Remove(key);
+            _gameManager.WallColor = EditorGUILayout.ColorField("Wall Color", _gameManager.WallColor);
+            _gameManager.PlayerColor = EditorGUILayout.ColorField("Player Color", _gameManager.PlayerColor);
+            _gameManager.CubeFillColor = EditorGUILayout.ColorField("Filler Cube Color", _gameManager.CubeFillColor);
+            _gameManager.BackgroundColor = EditorGUILayout.ColorField("Background Color", _gameManager.BackgroundColor);
 
-            foreach (var prefab in uniquePrefabs)
+            if (GUI.changed)
             {
-                if (!_enemyTypeColors.TryGetValue(prefab, out var col))
-                    _enemyTypeColors[prefab] = Color.HSVToRGB(
-                        Random.value, 0.5f, 0.8f
-                    );
-
-                _enemyTypeColors[prefab] = EditorGUILayout.ColorField(
-                    prefab.name, _enemyTypeColors[prefab]
-                );
+                ApplyEditorColors();
+                EditorUtility.SetDirty(_gameManager);
+                EditorSceneManager.MarkSceneDirty(_gameManager.gameObject.scene);
             }
 
             EditorGUILayout.EndVertical();
 
-            if (GUI.changed)
-            {
-                EditorUtility.SetDirty(_gameManager);
-                EditorSceneManager.MarkSceneDirty(_gameManager.gameObject.scene);
-            }
+           
         }
     }
 
@@ -275,9 +261,35 @@ public class LevelDataEditorWindow : EditorWindow
     private void DrawGridSizeControls()
     {
         int cols = EditorGUILayout.IntField("Columns", _level.Columns);
-        _level.Columns = Mathf.Clamp(cols, MinGridSize, MaxGridSize);
+        cols = Mathf.Clamp(cols, MinGridSize, MaxGridSize);
         int rows = EditorGUILayout.IntField("Rows", _level.Rows);
-        _level.Rows = Mathf.Clamp(rows, MinGridSize, MaxGridSize);
+        rows = Mathf.Clamp(rows, MinGridSize, MaxGridSize);
+
+        if (cols != _prevColumns || rows != _prevRows)
+        {
+            _level.Columns = cols;
+            _level.Rows = rows;
+
+            ClearAllCubes();
+
+            RefreshEnemyCubeMap();
+            RefreshSpawnableMap();
+
+#if UNITY_EDITOR
+            EditorUtility.SetDirty(_gameManager);
+            UnityEditor.SceneManagement.EditorSceneManager
+                .MarkSceneDirty(UnityEditor.SceneManagement.EditorSceneManager.GetActiveScene());
+#endif
+
+            _prevColumns = cols;
+            _prevRows = rows;
+        }
+        else
+        {
+            _level.Columns = cols;
+            _level.Rows = rows;
+        }
+
         SyncSceneGridAndBackground();
     }
 
@@ -303,14 +315,25 @@ public class LevelDataEditorWindow : EditorWindow
     private void DrawSelectionTypePopup()
     {
         EditorGUILayout.LabelField("Selection Type", EditorStyles.boldLabel);
-        string[] modes = { "Wall", "Empty", "Enemy" };
+        string[] modes = { "Wall", "Obstacle", "Empty", "Enemy" };
         _drawMode = (DrawMode)EditorGUILayout.Popup("Select Type", (int)_drawMode, modes);
     }
 
+    // ── 1) Change DrawGridCells to calculate cellSize ────────────
     private void DrawGridCells()
     {
-        scrollPosition = EditorGUILayout.BeginScrollView(scrollPosition,
-            GUILayout.Width(700), GUILayout.Height(700));
+        const float viewSize = 700f;
+        // ensure cells fit in both dimensions and stay square
+        float cellSize = Mathf.Min(
+            viewSize / _level.Columns,
+            viewSize / _level.Rows
+        );
+
+        scrollPosition = EditorGUILayout.BeginScrollView(
+            scrollPosition,
+            GUILayout.Width(viewSize),
+            GUILayout.Height(viewSize)
+        );
         GUILayout.Space(10);
 
         var e = Event.current;
@@ -321,12 +344,14 @@ public class LevelDataEditorWindow : EditorWindow
         {
             EditorGUILayout.BeginHorizontal();
             for (int col = 0; col < _level.Columns; col++)
-                DrawCell(row, col, e, hasPlayer);
+                // pass the computed cellSize down
+                DrawCell(row, col, e, hasPlayer, cellSize);
             EditorGUILayout.EndHorizontal();
         }
 
         EditorGUILayout.EndScrollView();
     }
+
     private void EnsureEnemyTypeColors()
     {
         if (_enemyTypeColors == null)
@@ -344,25 +369,24 @@ public class LevelDataEditorWindow : EditorWindow
         }
     }
 
-    private void DrawCell(int row, int col, Event e, bool hasPlayer)
+    private void DrawCell(int row,int col,Event e,bool hasPlayer,float cellSize)
     {
         var key = new Vector2Int(row, col);
-        bool isWall = _level.gridCellPositions.Any(c => c.row == row && c.col == col && c.isObstacle);
+        bool isWall = _level.gridCellPositions.Any(c => c.row == row && c.col == col && c.type == CellType.Wall);
+        bool isObstacleType = _level.gridCellPositions.Any(c => c.row == row && c.col == col && c.type == CellType.Obstacle);
         bool isPre = _placedEnemyMap.ContainsKey(key);
         bool isCube = _placedEnemyCubeMap.ContainsKey(key);
         bool isPlayer = hasPlayer && row == _level.PlayerStartRow && col == _level.PlayerStartCol;
-        bool isSpawnable = _cellSpawnMap != null && _cellSpawnMap.ContainsKey(key);
+        bool isSpawn = _cellSpawnMap != null && _cellSpawnMap.ContainsKey(key);
+        bool occupied = isWall || isObstacleType || isPre || isCube || isSpawn;
 
-        bool occupied = isWall || isPre || isCube || isSpawnable;
+        bool shouldPaint =(_drawMode == DrawMode.Wall && !occupied) || (_drawMode == DrawMode.Obstacle && !occupied)|| (_drawMode == DrawMode.Enemy && !occupied)|| (_drawMode == DrawMode.Empty && occupied);
 
-        bool shouldPaint =
-               (_drawMode == DrawMode.Wall && !occupied)
-            || (_drawMode == DrawMode.Enemy && !occupied)
-            || (_drawMode == DrawMode.Empty && occupied);
 
         // 1) draw box
-        Rect cellRect = GUILayoutUtility.GetRect(30, 30);
-        DrawCellBackground(cellRect, key, isWall, isPre, isCube, isPlayer);
+        Rect cellRect = GUILayoutUtility.GetRect(cellSize, cellSize, GUILayout.Width(cellSize), GUILayout.Height(cellSize));
+
+        DrawCellBackground(cellRect, key, isPre, isCube, isPlayer);
         Handles.DrawSolidRectangleWithOutline(cellRect, Color.clear, Color.black);
 
         if (isCube) DrawMovementArrow(cellRect, key);
@@ -377,8 +401,11 @@ public class LevelDataEditorWindow : EditorWindow
             && (e.type == EventType.MouseDown || e.type == EventType.MouseDrag)
             && e.button == 0
             && cellRect.Contains(e.mousePosition))
-        {
-            if (_drawMode == DrawMode.Wall) HandleCellClick(row, col);
+                    {
+                        if (_drawMode == DrawMode.Wall)
+               HandleCellClick(row, col, _level.wallPrefab);
+                        else if (_drawMode == DrawMode.Obstacle)
+                HandleCellClick(row, col, _level.obstacle);
 
             if (_drawMode == DrawMode.Empty)
             {
@@ -414,29 +441,48 @@ public class LevelDataEditorWindow : EditorWindow
         }
     }
 
-    private void DrawCellBackground(Rect r, Vector2Int key, bool wall, bool pre,bool cube, bool player)
+    private void DrawCellBackground(Rect r, Vector2Int key, bool pre, bool cube, bool player)
     {
+        var cellEntry = _level.gridCellPositions
+            .FirstOrDefault(c => c.row == key.x && c.col == key.y);
+
         Color baseColor;
+
         if (player)
             baseColor = Color.green;
+
         else if (cube)
-            baseColor = Color.yellow;
-        else if (pre && _placedEnemyMap.ContainsKey(key))
-            baseColor = _enemyTypeColors[_placedEnemyMap[key]];
-        else if (wall)
             baseColor = Color.red;
+
+        else if (pre && _placedEnemyMap.TryGetValue(key, out var obj))
+        {
+            if (!_enemyTypeColors.TryGetValue(obj, out baseColor))
+            {
+                baseColor = Color.HSVToRGB(
+                    (_enemyTypeColors.Count * .618f) % 1f, // golden-ratio hue spacing
+                    0.6f,
+                    0.8f
+                );
+                _enemyTypeColors[obj] = baseColor;
+            }
+        }
+        else if (cellEntry != null)
+        {
+            baseColor = cellEntry.type == CellType.Wall
+                ? Color.gray
+                : new Color(1f, 0.5f, 0f);
+        }
         else
             baseColor = Color.white;
 
         EditorGUI.DrawRect(r, baseColor);
 
-        if (_cellSpawnMap != null
-            && _cellSpawnMap.TryGetValue(key, out var cfg))
+        // Draw semi-transparent overlay if spawnable exists
+        if (_cellSpawnMap != null && _cellSpawnMap.TryGetValue(key, out var cfg))
         {
-            Color overlay = cfg.enemyType == SpawnablesType.SpikeBall
+            var overlay = cfg.enemyType == SpawnablesType.SpikeBall
                 ? new Color(1f, 1f, 0f, 0.3f)
                 : new Color(0f, 1f, 1f, 0.5f);
-
             EditorGUI.DrawRect(r, overlay);
         }
     }
@@ -471,6 +517,10 @@ public class LevelDataEditorWindow : EditorWindow
     {
         var menu = new GenericMenu();
         bool isCube = _placedEnemyCubeMap.ContainsKey(key);
+
+        var screenMouse = GUIUtility.GUIToScreenPoint(Event.current.mousePosition);
+        var popupRect = new Rect(screenMouse.x, screenMouse.y, 1, 1);
+
         if (isPre)
         {
             menu.AddItem(new GUIContent("Remove Preplaced Enemy"), false, () =>
@@ -494,85 +544,113 @@ public class LevelDataEditorWindow : EditorWindow
             menu.AddItem(new GUIContent("Set Player Start"), false, () => SetPlayerStart(row, col));
             menu.AddSeparator("");
             AddPreplacedSpawnItems(menu, row, col);
-        }
-        var screenMouse = GUIUtility.GUIToScreenPoint(Event.current.mousePosition);
-        var rect = new Rect(screenMouse.x, screenMouse.y, 1, 1);
-
-        menu.AddSeparator("Spawnable/");
-        if (_cellSpawnMap != null&& _cellSpawnMap.TryGetValue(key, out var cellCfg))
-        {
-            // already has a config → edit or remove
-            menu.AddItem(new GUIContent("Spawnable/Edit Config"), false, () =>
-            {
-                SpawnableCellPopup.Open(cellCfg, _enemyTypeToPrefabsMap, new Rect(screenMouse.x, screenMouse.y, 1, 1));
-            });
-
-            menu.AddItem(new GUIContent("Spawnable/Remove Config"), false, () => {
-                EditorApplication.delayCall += () =>
-                {
-                    _level.SpwanablesConfigurations.Remove(cellCfg);
-                    RefreshSpawnableMap();
-                    Repaint();
-                    EditorUtility.SetDirty(_gameManager);
-                };
-            });
-        }
-        else
-        {
             menu.AddSeparator("Spawnable/");
-            // loop over all types…
-            foreach (SpawnablesType t in System.Enum.GetValues(typeof(SpawnablesType)))
+            if (_cellSpawnMap != null && _cellSpawnMap.TryGetValue(key, out var cellCfg))
+{
+    // Directly open the config popup and return — skip showing a menu
+    SpawnableCellPopup.Open(cellCfg, _enemyTypeToPrefabsMap, new Rect(screenMouse.x, screenMouse.y, 1, 1));
+    return; // skip menu entirely
+}
+
+
+
+            else
             {
-                // capture the current value so each lambda gets its own copy
-                var spawnType = t;
-                menu.AddItem(new GUIContent($"Spawnable/{spawnType}"), false, () =>
+                menu.AddSeparator("Spawnable/");
+
+                // 1) handle Pickups as a special submenu
+                string[] pickupVariants = { "Timer", "SlowDown", "DIAMOND" };
+                menu.AddSeparator("Spawnable/Pickups/");
+                foreach (var variant in pickupVariants)
                 {
-                    // decide yOffset (and useFallDrop if you like) *before* creating cfg
+                    // build path & load asset
+                    string path = $"Assets/Prefabs/Spawnables/{variant}.prefab";
+                    var prefab = AssetDatabase.LoadAssetAtPath<GameObject>(path);
+
+                    menu.AddItem(
+                        new GUIContent($"Spawnable/Pickups/{variant}"),
+                        false,
+                        () =>
+                        {
+                            var cfg = new SpawnableConfig
+                            {
+                                enemyType = SpawnablesType.Pickups,
+                                prefab = prefab,
+                                row = row,
+                                col = col,
+                                spawnCount = 1,
+                                progressThreshold = 0.5f,
+                                subsequentProgressThresholds = new List<float>(),
+                                usePhysicsDrop = true,
+                                yOffset = 1.4f
+                            };
+                            _level.SpwanablesConfigurations.Add(cfg);
+                            RefreshSpawnableMap();
+                            EditorUtility.SetDirty(_gameManager);
+
+
+                            SpawnableCellPopup.Open(
+                                cfg,
+                                _enemyTypeToPrefabsMap,
+                                new Rect(screenMouse.x, screenMouse.y, 1, 1)
+                            );
+                        }
+                    );
+                }
+
+                // 2) all other spawnables load prefab by enum name
+                foreach (SpawnablesType t in System.Enum.GetValues(typeof(SpawnablesType)))
+                {
+                    if (t == SpawnablesType.Pickups)
+                        continue; // already handled above
+
+                    // load the matching prefab
+                    string name = t.ToString();
+                    string path = $"Assets/Prefabs/Spawnables/{name}.prefab";
+                    var prefab = AssetDatabase.LoadAssetAtPath<GameObject>(path);
+
+                    // decide yOffset/useFallDrop per type
                     float yOffset;
                     bool useFall = false;
-                    switch (spawnType)
+                    switch (t)
                     {
                         case SpawnablesType.FlyingHoop:
-                            yOffset = 2f;
-                            useFall = false;
-                            break;
-                        case SpawnablesType.Pickups:
-                            yOffset = 1.4f;
-                            useFall = true;
-                            break;
+                            yOffset = 2.4f; useFall = true; break;
                         case SpawnablesType.SpikeBall:
-                            yOffset = 1.6f;
-                            useFall = false;
-                            break;
+                            yOffset = 0.7f; useFall = true; break;
                         default:
-                            yOffset = 0f;
-                            break;
+                            yOffset = 0f; useFall = false; break;
                     }
 
-                    var cfg = new SpawnableConfig
-                    {
-                        enemyType = spawnType,
-                        prefab = null,
-                        row = row,
-                        col = col,
-                        spawnCount = 1,
-                        progressThreshold = 0.5f,
-                        subsequentProgressThresholds = new List<float>(),
-                        usePhysicsDrop = useFall,
-                        yOffset = yOffset
-                    };
+                    menu.AddItem(
+                        new GUIContent($"Spawnable/{name}"),
+                        false,
+                        () =>
+                        {
+                            var cfg = new SpawnableConfig
+                            {
+                                enemyType = t,
+                                prefab = prefab,
+                                row = row,
+                                col = col,
+                                spawnCount = 1,
+                                progressThreshold = 0.5f,
+                                subsequentProgressThresholds = new List<float>(),
+                                usePhysicsDrop = useFall,
+                                yOffset = yOffset
+                            };
+                            _level.SpwanablesConfigurations.Add(cfg);
+                            RefreshSpawnableMap();
+                            EditorUtility.SetDirty(_gameManager);
 
-                    _level.SpwanablesConfigurations.Add(cfg);
-                    RefreshSpawnableMap();
-                    EditorUtility.SetDirty(_gameManager);
-
-                    var screenMouse = GUIUtility.GUIToScreenPoint(Event.current.mousePosition);
-                    SpawnableCellPopup.Open(
-                        cfg,
-                        _enemyTypeToPrefabsMap,
-                        new Rect(screenMouse.x, screenMouse.y, 1, 1)
+                            SpawnableCellPopup.Open(
+                                cfg,
+                                _enemyTypeToPrefabsMap,
+                                new Rect(screenMouse.x, screenMouse.y, 1, 1)
+                            );
+                        }
                     );
-                });
+                }
             }
 
         }
@@ -609,17 +687,17 @@ public class LevelDataEditorWindow : EditorWindow
             }
         );
 
-        menu.AddSeparator("Group/");
-        menu.AddItem(new GUIContent("Group/Remove Entire Group"), false, () => {
-            var grp = ec.transform.parent.GetComponent<EnemyCubeGroup>();
-            EditorApplication.delayCall += () => {
-                if (grp != null)
-                    Undo.DestroyObjectImmediate(grp.gameObject);
-                _cubeMapDirty = true;
-                RefreshEnemyCubeMap();
-                Repaint();
-            };
-        });
+        //menu.AddSeparator("Group/");
+        //menu.AddItem(new GUIContent("Group/Remove Entire Group"), false, () => {
+        //    var grp = ec.transform.parent.GetComponent<EnemyCubeGroup>();
+        //    EditorApplication.delayCall += () => {
+        //        if (grp != null)
+        //            Undo.DestroyObjectImmediate(grp.gameObject);
+        //        _cubeMapDirty = true;
+        //        RefreshEnemyCubeMap();
+        //        Repaint();
+        //    };
+        //});
 
     }
 
@@ -630,16 +708,26 @@ public class LevelDataEditorWindow : EditorWindow
             foreach (var entry in _level.PreplacedEnemies)
             {
                 if (entry.prefab == null) continue;
-                int r = row, c = col;
+                int r1 = row, c = col;
                 GameObject prefab = entry.prefab;
                 menu.AddItem(new GUIContent($"Preplaced Enemy/{prefab.name}"), false, () => {
                     var gm = FindFirstObjectByType<GridManager>();
-                    var wp = gm.GridToWorld(new Vector2Int(c, r));
+                    var wp = gm.GridToWorld(new Vector2Int(c, r1));
                     wp.y = prefab.transform.position.y;
-                    var go = (GameObject)PrefabUtility.InstantiatePrefab(prefab);
+                    var go = Object.Instantiate(prefab, wp, Quaternion.identity);
                     _gameManager.RandomizeColor(go);
+                    var r = go.GetComponent<Renderer>();
+                    if (r != null)
+                    {
+                        r.sharedMaterial = new Material(r.sharedMaterial); // clone material
+                        r.sharedMaterial.color = r.material.color;
+                        EditorUtility.SetDirty(r);
+                        EditorSceneManager.MarkSceneDirty(go.scene);
+                    }
+                    go.name = prefab.name;
                     go.transform.position = wp;
-                    _placedEnemyMap[new Vector2Int(r, c)] = go;
+                    go.AddComponent<PreplacedMarker>();
+                    _placedEnemyMap[new Vector2Int(r1, c)] = go;
                     Repaint();
                 });
             }
@@ -655,7 +743,7 @@ public class LevelDataEditorWindow : EditorWindow
         var wp = gm.GridToWorld(new Vector2Int(col, row));
         wp.y = prefab.transform.position.y;
 
-        var go = (GameObject)PrefabUtility.InstantiatePrefab(prefab);
+        var go = Object.Instantiate(prefab, wp, prefab.transform.rotation);
         go.transform.position = wp;
 
         _placedEnemyCubeMap[key] = go.GetComponent<EnemyCube>();
@@ -705,42 +793,64 @@ public class LevelDataEditorWindow : EditorWindow
 
         Repaint();
     }
-
-
-    private void HandleCellClick(int row, int col)
+    private void RefreshPreplacedEnemyMap()
     {
-        bool isObstacle = _selectedSelectionIndex == 0;
+        if (_placedEnemyMap == null)
+            _placedEnemyMap = new Dictionary<Vector2Int, GameObject>();
+        else
+            _placedEnemyMap.Clear();
 
+        var gm = Object.FindFirstObjectByType<GridManager>();
+        if (gm == null) return;
+
+        foreach (var marker in Object.FindObjectsByType<PreplacedMarker>(FindObjectsSortMode.None))
+        {
+            if (marker == null || marker.gameObject == null) continue;
+
+            Vector3 pos = marker.transform.position;
+            Vector2Int grid = gm.WorldToGrid(pos);
+            var key = new Vector2Int(grid.y, grid.x);
+
+            if (!_placedEnemyMap.ContainsKey(key))
+                _placedEnemyMap[key] = marker.gameObject;
+
+            if (!_enemyTypeColors.ContainsKey(marker.gameObject))
+            {
+                _enemyTypeColors[marker.gameObject] = Color.HSVToRGB(
+                    (_enemyTypeColors.Count * .618f) % 1f,
+                    0.6f,
+                    0.8f
+                );
+            }
+        }
+
+        Repaint();
+    }
+
+
+
+
+    private void HandleCellClick(int row, int col, GameObject prefab)
+    {
         float baseOffsetX = -(_level.Columns - 1) * 0.5f;
         float baseOffsetZ = -(_level.Rows - 1) * 0.5f;
-
         float offsetX = baseOffsetX - 0.5f;
         float offsetZ = baseOffsetZ + 0.5f;
         int flippedRow = _level.Rows - row - 1;
         Vector3 spawnPosition = new Vector3(col + offsetX, 0.5f, flippedRow + offsetZ);
 
-        bool isOccupied = _level.gridCellPositions.Exists(c => c.row == row && c.col == col && c.isObstacle);
+        var cellType = _drawMode == DrawMode.Wall? CellType.Wall : CellType.Obstacle;
+        _level.gridCellPositions.Add(new CubeCell { row = row, col = col, type = cellType });
 
-        if (isObstacle)
-        {
-            if (!isOccupied)
-            {
-                _level.gridCellPositions.Add(new CubeCell { row = row, col = col, isObstacle = true });
-                Instantiate(_level.obstaclePrefab, spawnPosition, Quaternion.identity);
-            }
-        }
-        else
-        {
-            if (isOccupied)
-            {
-                _level.gridCellPositions.RemoveAll(c => c.row == row && c.col == col && c.isObstacle);
-                DestroyAt(row, col);
-            }
-        }
-
+        var go = (GameObject)Object.Instantiate(prefab, spawnPosition, Quaternion.identity);
+        //go.transform.position = spawnPosition;
+        go.tag = (cellType == CellType.Wall) ? "Boundary" : "Obstacle";
+        Undo.RegisterCreatedObjectUndo(go, $"Place {cellType}");
         EditorUtility.SetDirty(_gameManager);
-        UnityEditor.SceneManagement.EditorSceneManager.MarkSceneDirty(_gameManager.gameObject.scene);
+        EditorSceneManager.MarkSceneDirty(EditorSceneManager.GetActiveScene());
     }
+
+    
     private void FillAllCubes()
     {
         float baseOffsetX = -(_level.Columns - 1) * 0.5f;
@@ -753,12 +863,12 @@ public class LevelDataEditorWindow : EditorWindow
         {
             for (int col = 0; col < _level.Columns; col++)
             {
-                if (!_level.gridCellPositions.Exists(c => c.row == row && c.col == col && c.isObstacle))
+                if (!_level.gridCellPositions.Exists(c => c.row == row && c.col == col && c.type == CellType.Wall)) 
                 {
-                    _level.gridCellPositions.Add(new CubeCell { row = row, col = col, isObstacle = true });
+                    _level.gridCellPositions.Add(new CubeCell { row = row, col = col, type = CellType.Wall });
 
                     Vector3 spawnPosition = new Vector3(col + offsetX, 0.5f, (_level.Rows - row - 1) + offsetZ);
-                    Instantiate(_level.obstaclePrefab, spawnPosition, Quaternion.identity);
+                    Instantiate(_level.wallPrefab, spawnPosition, Quaternion.identity);
                 }
             }
         }
@@ -768,34 +878,36 @@ public class LevelDataEditorWindow : EditorWindow
 
     private void ClearAllCubes()
     {
-        _level.gridCellPositions.RemoveAll(c => c.isObstacle);
+        // 1) Clear grid data
+        _level.gridCellPositions.Clear();
 
-        var obstacles = GameObject.FindGameObjectsWithTag("Obstacle");
-        foreach (var obstacle in obstacles)
-        {
-            DestroyImmediate(obstacle);
-        }
+        // 2) Destroy all walls & obstacles
+        foreach (var tag in new[] { "Boundary", "Obstacle" })
+            foreach (var go in GameObject.FindGameObjectsWithTag(tag))
+                DestroyImmediate(go);
 
-        var enemies = GameObject.FindGameObjectsWithTag("Enemy");
-        foreach (var enemy in enemies)
-        {
-            DestroyImmediate(enemy);
-        }
+        foreach (var kvp in _placedEnemyMap.ToList())
+            DestroyImmediate(kvp.Value);
+        _placedEnemyMap.Clear();
+
+        foreach (var kvp in _placedEnemyCubeMap.ToList())
+            DestroyImmediate(kvp.Value.gameObject);
+        _placedEnemyCubeMap.Clear();
+
         foreach (var grp in Object.FindObjectsOfType<EnemyCubeGroup>())
             DestroyImmediate(grp.gameObject);
-
-        var enemyGroups = GameObject.FindGameObjectsWithTag("EnemyGroup");
-        foreach (var grp in enemyGroups)
-        {
-            DestroyImmediate(grp);
-        }
 
         _level.SpwanablesConfigurations.Clear();
         RefreshSpawnableMap();
 
+        _cubeMapDirty = true;
+        Repaint();
+#if UNITY_EDITOR
         EditorUtility.SetDirty(_gameManager);
-        UnityEditor.SceneManagement.EditorSceneManager.MarkSceneDirty(_gameManager.gameObject.scene);
+        EditorSceneManager.MarkSceneDirty(EditorSceneManager.GetActiveScene());
+#endif
     }
+
 
     private void CreateEnemyGroup()
     {
@@ -926,66 +1038,69 @@ public class LevelDataEditorWindow : EditorWindow
     {
         var key = new Vector2Int(row, col);
 
-        // ── 1) Remove any spawnable-config on this cell ─────────────
+        // ── 1) Remove any spawnable config ─────────────────────────
         var cfg = _level.SpwanablesConfigurations
             .FirstOrDefault(c => c.row == row && c.col == col);
         if (cfg != null)
         {
             _level.SpwanablesConfigurations.Remove(cfg);
             RefreshSpawnableMap();
-
-#if UNITY_EDITOR
-            // Mark dirty & repaint so the colored-cell overlay disappears
-            UnityEditor.EditorUtility.SetDirty(_gameManager);
-            UnityEditor.SceneManagement.EditorSceneManager
-                .MarkSceneDirty(UnityEditor.SceneManagement.EditorSceneManager.GetActiveScene());
-#endif
-            Repaint();
-            // continue on to also clear walls/enemies/etc.
         }
 
-        // ── 2) Your existing wall/obstacle cleanup ──────────────────
-        float baseOffsetX = -(_level.Columns - 1) * 0.5f;
-        float baseOffsetZ = -(_level.Rows - 1) * 0.5f;
-        float offsetX = baseOffsetX - 0.5f;
-        float offsetZ = baseOffsetZ + 0.5f;
-        int flippedRow = _level.Rows - row - 1;
-        Vector3 worldPos = new Vector3(col + offsetX, 0.5f, flippedRow + offsetZ);
-
-        _level.gridCellPositions.RemoveAll(c => c.row == row && c.col == col && c.isObstacle);
-
-        foreach (var obstacle in GameObject.FindGameObjectsWithTag("Obstacle"))
+        // ── 2) Get the exact world‐position via your GridManager ───
+        var gm = Object.FindFirstObjectByType<GridManager>();
+        Vector3 worldPos = Vector3.zero;
+        if (gm != null)
         {
-            if (Vector3.Distance(obstacle.transform.position, worldPos) < 0.1f)
+            worldPos = gm.GridToWorld(new Vector2Int(col, row));
+            worldPos.y = 0.5f; // match your spawn‐height
+        }
+        else
+        {
+            // fallback to your manual offset if needed…
+            float baseX = -(_level.Columns - 1) * .5f - .5f;
+            float baseZ = -(_level.Rows - 1) * .5f + .5f;
+            int flip = _level.Rows - row - 1;
+            worldPos = new Vector3(col + baseX, 0.5f, flip + baseZ);
+        }
+
+        // ── 3) Remove the data entry for both Walls & Obstacles ───
+        _level.gridCellPositions.RemoveAll(c =>
+            c.row == row && c.col == col &&
+            (c.type == CellType.Wall || c.type == CellType.Obstacle)
+        );
+
+        // ── 4) Destroy any Obstacle‐tagged instance ───────────────
+        foreach (var obj in GameObject.FindGameObjectsWithTag("Obstacle"))
+        {
+            if (Vector3.Distance(obj.transform.position, worldPos) < 0.1f)
             {
-#if UNITY_EDITOR
-                DestroyImmediate(obstacle);
-#else
-            Destroy(obstacle);
-#endif
+                DestroyImmediate(obj);
                 break;
             }
         }
 
-        // ── 3) Preplaced-enemy cleanup ─────────────────────────────
-        if (_placedEnemyMap.TryGetValue(key, out var preGo))
+        // ── 5) Destroy any Boundary‐tagged (Wall) instance ────────
+        foreach (var obj in GameObject.FindGameObjectsWithTag("Boundary"))
         {
-#if UNITY_EDITOR
+            if (Vector3.Distance(obj.transform.position, worldPos) < 0.1f)
+            {
+                DestroyImmediate(obj);
+                break;
+            }
+        }
+
+        // ── 6) Remove preplaced‐enemy GameObject ──────────────────
+        if (_placedEnemyMap.TryGetValue(key, out var preGo) && preGo != null)
+        {
             DestroyImmediate(preGo);
-#else
-        Destroy(preGo);
-#endif
             _placedEnemyMap.Remove(key);
         }
 
-        // ── 4) Enemy-cube cleanup ──────────────────────────────────
+        // ── 7) Remove EnemyCube GameObject ────────────────────────
         if (_placedEnemyCubeMap.TryGetValue(key, out var ec) && ec != null)
         {
-#if UNITY_EDITOR
             DestroyImmediate(ec.gameObject);
-#else
-        Destroy(ec.gameObject);
-#endif
             _placedEnemyCubeMap.Remove(key);
         }
         else
@@ -994,22 +1109,20 @@ public class LevelDataEditorWindow : EditorWindow
             {
                 if (Vector3.Distance(other.transform.position, worldPos) < 0.1f)
                 {
-#if UNITY_EDITOR
                     DestroyImmediate(other.gameObject);
-#else
-                Destroy(other.gameObject);
-#endif
                     _placedEnemyCubeMap.Remove(key);
                     break;
                 }
             }
         }
 
-        // ── 5) Final dirty + scene-dirty if desired ──────────────
+        // ── 8) Final UI/scene updates ─────────────────────────────
+        RefreshSpawnableMap();
+        _cubeMapDirty = true;
+        Repaint();
 #if UNITY_EDITOR
-        UnityEditor.EditorUtility.SetDirty(_gameManager);
-        UnityEditor.SceneManagement.EditorSceneManager
-            .MarkSceneDirty(UnityEditor.SceneManagement.EditorSceneManager.GetActiveScene());
+        EditorUtility.SetDirty(_gameManager);
+        EditorSceneManager.MarkSceneDirty(EditorSceneManager.GetActiveScene());
 #endif
     }
 
@@ -1024,6 +1137,7 @@ public class LevelDataEditorWindow : EditorWindow
     {
         _cubeMapDirty = true;
         RefreshEnemyCubeMap();
+        RefreshPreplacedEnemyMap();
     }
 
     private void OnPlayModeStateChanged(PlayModeStateChange state)
@@ -1032,6 +1146,7 @@ public class LevelDataEditorWindow : EditorWindow
         {
         _cubeMapDirty = true;
             RefreshEnemyCubeMap();
+            RefreshPreplacedEnemyMap();
         }
     }
 
@@ -1040,7 +1155,7 @@ public class LevelDataEditorWindow : EditorWindow
         var key = new Vector2Int(row, col);
 
         bool isWall = _level.gridCellPositions
-            .Any(c => c.row == row && c.col == col && c.isObstacle);
+            .Any(c => c.row == row && c.col == col && c.type == CellType.Wall);
 
         bool isPreplaced = _placedEnemyMap.ContainsKey(key);
         bool isCube = _placedEnemyCubeMap.ContainsKey(key);
@@ -1067,6 +1182,32 @@ public class LevelDataEditorWindow : EditorWindow
                 cfg => new Vector2Int(cfg.row, cfg.col),
                 cfg => cfg
             );
+    }
+    private void ApplyEditorColors()
+    {
+        // Wall cubes (tagged as "Boundary")
+        foreach (var wall in GameObject.FindGameObjectsWithTag("Boundary"))
+        {
+            if (wall.TryGetComponent<Renderer>(out var r))
+                r.sharedMaterial.color = _gameManager.WallColor;
+        }
+
+        // Player
+        var player = GameObject.FindWithTag("Player");
+        if (player != null && player.TryGetComponent<Renderer>(out var pr))
+            pr.sharedMaterial.color = _gameManager.PlayerColor;
+
+        // Filled cubes (Cube.cs instances)
+        foreach (var cube in Object.FindObjectsOfType<Cube>())
+        {
+            if (cube.IsFilled && cube.TryGetComponent<Renderer>(out var r))
+                r.sharedMaterial.color = _gameManager.CubeFillColor;
+        }
+
+        // Background
+        var bg = GameObject.FindWithTag("GridBackground"); // Or by name
+        if (bg && bg.TryGetComponent<Renderer>(out var br))
+            br.sharedMaterial.color = _gameManager.BackgroundColor;
     }
 
 
@@ -1341,7 +1482,7 @@ internal class SpawnableCellPopup : EditorWindow
 
         // ── Initial Progress Slider (0–100) ────────────────────────────
         float initialPct = cfg.progressThreshold * 100f;
-        initialPct = EditorGUILayout.Slider("Progress (%)", initialPct, 0f, 100f);
+        initialPct = Mathf.Round(EditorGUILayout.Slider("Progress (%)", initialPct, 0f, 100f));
         cfg.progressThreshold = initialPct * 0.01f;
 
         EditorGUILayout.Space();
@@ -1364,11 +1505,10 @@ internal class SpawnableCellPopup : EditorWindow
             {
                 float minPct = cfg.progressThreshold * 100f;
                 float subPct = cfg.subsequentProgressThresholds[i] * 100f;
-                subPct = EditorGUILayout.Slider($"After spawn #{i + 1}", subPct, minPct, 100f);
+                subPct = Mathf.Round(EditorGUILayout.Slider($"After spawn #{i + 1}", subPct, minPct, 100f));
                 cfg.subsequentProgressThresholds[i] = subPct * 0.01f;
             }
         }
-
         EditorGUILayout.EndScrollView();
 
         if (GUI.changed)

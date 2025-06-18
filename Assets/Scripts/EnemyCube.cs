@@ -16,29 +16,13 @@ public class EnemyCube : MonoBehaviour
 
     private void OnCollisionEnter(Collision collision)
     {
-        //if (collision.gameObject.CompareTag("Obstacle") || collision.gameObject.CompareTag("Boundary"))
-        //{
-        //        print("wrt");
-
-        //    if (enemyCubeGroup != null)
-        //    {
-        //        print("Reversing Direction");
-        //        enemyCubeGroup.ReverseDirection();
-        //        enemyCubeGroup.SetNextTarget();
-        //    }
-
-        //}
-        if (collision.gameObject.CompareTag("Player"))
-        {
-            AudioManager.instance.PlaySFXSound(3);
-            GameManager.Instance.LevelLose();
-        }
+       
         if (collision.gameObject.TryGetComponent<Cube>(out Cube cube))
         {
             if (cube.IsFilled)
             {
-                particle.Play();
                 Destroy(gameObject);
+                //particle.Play();
             }
             else
             {
@@ -46,6 +30,11 @@ public class EnemyCube : MonoBehaviour
                 Haptics.Generate(HapticTypes.HeavyImpact);
                 GameManager.Instance.LevelLose();
             }
+        }
+        if (collision.gameObject.CompareTag("Player"))
+        {
+            AudioManager.instance.PlaySFXSound(3);
+            GameManager.Instance.LevelLose();
         }
     }
 }

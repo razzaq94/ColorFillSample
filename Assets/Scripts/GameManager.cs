@@ -5,6 +5,8 @@ using System.Linq;
 using System.Collections;
 using Sirenix.OdinInspector;
 using UnityEngine.SceneManagement;
+using UnityEditor.SceneManagement;
+using UnityEditor;
 //[HideMonoScript]    
 public class GameManager : MonoBehaviour
 {
@@ -20,6 +22,12 @@ public class GameManager : MonoBehaviour
     public Player Player;
     [FoldoutGroup("Player References")]
     public Transform Camera = null;
+
+    [Header("Color Settings")]
+    public Color WallColor = Color.gray;
+    public Color PlayerColor = Color.green;
+    public Color CubeFillColor = Color.red;
+    public Color BackgroundColor = new Color(1f, 1f, 1f, 1f); // Assuming white by default
 
     public int StartLevel = 0;
     public int CurrentLevel = 1;
@@ -67,6 +75,13 @@ public class GameManager : MonoBehaviour
         GridManager.Instance.InitGrid(Level.Columns, Level.Rows);
         Player.Init();
         GetCells();
+
+        foreach (var wall in GameObject.FindGameObjectsWithTag("Boundary"))
+        {
+            var renderer = wall.GetComponent<Renderer>();
+            if (renderer) renderer.sharedMaterial.color = WallColor;
+        }
+
     }
 
 
@@ -187,8 +202,9 @@ public class GameManager : MonoBehaviour
             }
             else
             {
-                Vector2Int randomCell = exposedCells[Random.Range(0, exposedCells.Count)];
-                spawnBasePos = GridManager.Instance.GridToWorld(randomCell);
+                Vector2Int configCell = new Vector2Int(cfg.col, cfg.row);
+                spawnBasePos = GridManager.Instance.GridToWorld(configCell);
+
             }
 
             Vector3 finalTargetPos = spawnBasePos + Vector3.up * cfg.yOffset;
@@ -196,8 +212,14 @@ public class GameManager : MonoBehaviour
             Vector3 skySpawnPos = finalTargetPos + Vector3.up * cfg.initialSpawnHeight;
 
             var enemy = Instantiate(cfg.prefab, skySpawnPos, Quaternion.identity);
-
-            // always use manual drop
+            RandomizeColor(enemy);
+            var r = enemy.GetComponent<Renderer>();
+            if (r != null)
+            {
+                r.sharedMaterial = new Material(r.sharedMaterial); // clone material
+                r.sharedMaterial.color = r.material.color;
+               
+            }
             StartCoroutine(ManualDropWithYFreeze(enemy, finalTargetPos, cfg.yOffset, SpeedForFallingObjects));
 
         }
@@ -250,18 +272,36 @@ public class GameManager : MonoBehaviour
         UIManager.Instance?.LevelLose();
         AudioManager.instance?.BGAudioSource.Stop();
     }
-    public void RandomizeColor(GameObject enemy)
+    public void RandomizeColor(GameObject go)
     {
-        var renderers = enemy.GetComponentsInChildren<Renderer>();
-        foreach (var renderer in renderers)
+        if (go.TryGetComponent<Renderer>(out var rootRenderer))
         {
-            if (renderer.material.HasProperty("_Color"))
+            var sharedMats = rootRenderer.sharedMaterials;
+            for (int i = 0; i < sharedMats.Length; i++)
             {
-                renderer.material = new Material(renderer.material); // instance material
-                renderer.material.color = Random.ColorHSV(0f, 1f, 0.6f, 1f, 0.6f, 1f); // vivid random color
+                var mat = new Material(sharedMats[i]);
+                mat.color = Random.ColorHSV(0f, 1f, 0.5f, 1f, 0.5f, 1f);
+                sharedMats[i] = mat;
             }
+            rootRenderer.sharedMaterials = sharedMats;
+        }
+
+        foreach (var renderer in go.GetComponentsInChildren<Renderer>())
+        {
+            if (renderer == rootRenderer) continue;
+
+            var sharedMats = renderer.sharedMaterials;
+            for (int i = 0; i < sharedMats.Length; i++)
+            {
+                var mat = new Material(sharedMats[i]);
+                mat.color = Random.ColorHSV(0f, 1f, 0.5f, 1f, 0.5f, 1f);
+                sharedMats[i] = mat;
+            }
+            renderer.sharedMaterials = sharedMats;
         }
     }
+
+
 
     public void Replay()
     {
@@ -329,13 +369,16 @@ public class LevelData
 
     public List<PreplacedEnemy> PreplacedEnemies = new List<PreplacedEnemy>();
     public List<Transform> PreplacedSpawnPoints;
-    public List<CubeCell> enemyCubeCells = new();    
+    public List<CubeCell> enemyCubeCells = new();
     public int Columns = 50;
     public int Rows = 50;
     public List<CubeCell> gridCellPositions;
-    public GameObject obstaclePrefab;
+    public GameObject wallPrefab;
+    public GameObject obstacle;
     public GameObject enemyCubePrefab;
     public List<EnemyCubeGroup> EnemyGroups = new List<EnemyCubeGroup>();
+
+
 
 }
 [System.Serializable]
@@ -359,13 +402,16 @@ public class SpawnableConfig
     public int col;
 }
 
+public enum CellType { Wall, Obstacle }
+
 [System.Serializable]
 public class CubeCell
 {
     public int row;
     public int col;
-    public bool isObstacle;
+    public CellType type;
 }
+
 [System.Serializable]
 public class PreplacedEnemy
 {

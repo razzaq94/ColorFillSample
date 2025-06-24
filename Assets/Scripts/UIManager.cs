@@ -28,6 +28,11 @@ public class UIManager : MonoBehaviour
     }
     public void Start()
     {
+        if (GameManager.Instance.Level.isTimeless)
+        {
+            timerText.text = "Timelesss";
+        }
+
         Fill.fillAmount = 0f;
         NextLevelText.text = (GameManager.Instance.GetCurrentLevel + 1).ToString();
         CurrentLevelText.text = GameManager.Instance.GetCurrentLevel.ToString();

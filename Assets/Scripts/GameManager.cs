@@ -17,7 +17,7 @@ public class GameManager : MonoBehaviour
     public bool _gameRunning = false;
     public bool Debug = false;
     private bool _gameStarted = false;
-
+    public GameObject _wallParent;
     [FoldoutGroup("Player References")]
     public Player Player;
     [FoldoutGroup("Player References")]
@@ -50,6 +50,10 @@ public class GameManager : MonoBehaviour
     private Vector2 gridOrigin = Vector2.zero;
     [HideInInspector] public Vector2 cellSize = Vector2.one;
 
+    [Header("Enemy Model Variants")]
+    public List<EnemyVariantGroup> enemyVariantGroups;
+    private Dictionary<SpawnablesType, List<GameObject>> enemyPrefabVariants;
+
 
 
     private bool isGameOver = false;
@@ -59,6 +63,7 @@ public class GameManager : MonoBehaviour
         Instance = this;
         DOTween.Init();
         LoadPlayerPrefs();
+        FillEnemyVariants();
     }
 
     private void Start()
@@ -97,14 +102,14 @@ public class GameManager : MonoBehaviour
 
     private void Update()
     {
-        if (!isGameOver && Level.levelTime > 0)
+        if (!isGameOver && !Level.isTimeless && Level.levelTime > 0)
         {
             Level.levelTime -= Time.deltaTime;
             Level.levelTime = Mathf.Clamp(Level.levelTime, 0, 9999);
             UpdateTimerDisplay();
         }
 
-        if (!isGameOver && Level.levelTime <= 0)
+        if (!isGameOver && !Level.isTimeless && Level.levelTime <= 0)
         {
             LevelLose();
         }
@@ -193,6 +198,7 @@ public class GameManager : MonoBehaviour
 
             Vector3 spawnBasePos;
 
+
             if (cfg.enemyType == SpawnablesType.SpikeBall)
             {
                 int idx = Random.Range(0, available.Count);
@@ -211,17 +217,28 @@ public class GameManager : MonoBehaviour
 
             Vector3 skySpawnPos = finalTargetPos + Vector3.up * cfg.initialSpawnHeight;
 
-            var enemy = Instantiate(cfg.prefab, skySpawnPos, Quaternion.identity);
-            RandomizeColor(enemy);
-            var r = enemy.GetComponent<Renderer>();
-            if (r != null)
-            {
-                r.sharedMaterial = new Material(r.sharedMaterial); // clone material
-                r.sharedMaterial.color = r.material.color;
-               
-            }
-            StartCoroutine(ManualDropWithYFreeze(enemy, finalTargetPos, cfg.yOffset, SpeedForFallingObjects));
+            GameObject prefabToUse = cfg.prefab;
 
+            if (enemyPrefabVariants.TryGetValue(cfg.enemyType, out var variants) && variants.Count > 0)
+            {
+                prefabToUse = variants[Random.Range(0, variants.Count)];
+            }
+
+            var enemy = Instantiate(prefabToUse, skySpawnPos, Quaternion.identity);
+            StartCoroutine(ManualDropWithYFreeze(enemy, finalTargetPos, cfg.yOffset, SpeedForFallingObjects));
+            if (cfg.enemyType == SpawnablesType.FlyingHoop)
+            {
+                RandomizeColor(enemy);
+            }
+            if (enemy.TryGetComponent<EnemyBehaviors>(out var eb))
+            {
+                eb.speed = cfg.moveSpeed;
+                
+            }
+            else if (enemy.TryGetComponent<CubeEater>(out var ce))
+            {
+                ce.speed = cfg.moveSpeed;
+            }
         }
     }
 
@@ -256,6 +273,10 @@ public class GameManager : MonoBehaviour
         }
 
         enemy.transform.position = end;
+
+        var eater = enemy.GetComponent<CubeEater>();
+        if (eater != null)
+            eater.Init();
 
         var rb = enemy.GetComponent<Rigidbody>();
         if (rb == null)
@@ -332,7 +353,21 @@ public class GameManager : MonoBehaviour
         }
     }
 
+    private void FillEnemyVariants()
+    {
+        enemyPrefabVariants = new Dictionary<SpawnablesType, List<GameObject>>();
+        foreach (var group in enemyVariantGroups)
+        {
+            if (!enemyPrefabVariants.ContainsKey(group.type))
+                enemyPrefabVariants[group.type] = new List<GameObject>();
 
+            foreach (var prefab in group.variants)
+            {
+                if (prefab != null)
+                    enemyPrefabVariants[group.type].Add(prefab);
+            }
+        }
+    }
 
     public void SavePlayerPrefs()
     {
@@ -361,6 +396,7 @@ public class LevelData
     // add these:
     public int PlayerStartRow = -1;
     public int PlayerStartCol = -1;
+    public bool isTimeless = false;
     public float levelTime = 0f;
     public List<Cube> gridPositions;
     [FoldoutGroup("Spawnables-Data")]
@@ -397,7 +433,7 @@ public class SpawnableConfig
     public float initialSpawnHeight = 35f;
 
     [HideInInspector] public bool usePhysicsDrop;
-
+    public float moveSpeed = 2f;
     public int row;
     public int col;
 }
@@ -418,4 +454,11 @@ public class PreplacedEnemy
     public GameObject prefab;
     public int row, col;
     public string prefabName;
+}
+
+[System.Serializable]
+public class EnemyVariantGroup
+{
+    public SpawnablesType type;
+    public List<GameObject> variants;
 }

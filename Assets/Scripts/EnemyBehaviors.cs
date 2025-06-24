@@ -159,6 +159,7 @@ public class EnemyBehaviors : MonoBehaviour
             if (enemyType == SpawnablesType.MultiColoredBall && cube.IsFilled && Time.frameCount != _lastDestroyFrame)
             {
                 gridManager.RemoveCubeAt(cube);
+
                 BounceOffNormal(collision.contacts[0].normal);
 
                 _lastDestroyFrame = Time.frameCount;
@@ -173,23 +174,33 @@ public class EnemyBehaviors : MonoBehaviour
         else if (collision.transform.CompareTag("Player"))
         {
             AudioManager.instance.PlaySFXSound(3);
-            //GameManager.Instance.LevelLose();
+            GameManager.Instance.LevelLose();
         }
-        else if (collision.transform.CompareTag("Boundary") || collision.transform.CompareTag("Obstacle") || collision.transform.CompareTag("EnemyGroup") || collision.transform.CompareTag("Enemy"))
+        else if (collision.transform.CompareTag("Boundary")
+            || collision.transform.CompareTag("Obstacle")
+            || collision.transform.CompareTag("EnemyGroup")
+            || collision.transform.CompareTag("Enemy")
+            && Time.frameCount != _lastDestroyFrame)
         {
             BounceOffNormal(collision.contacts[0].normal);
+            _lastDestroyFrame = Time.frameCount;
+
         }
     }
 
 
     private void BounceOffNormal(Vector3 normal)
     {
+        rb.linearVelocity = Vector3.zero;
         dir = Vector3.Reflect(dir, normal).normalized;
+
         float jitter = Random.Range(-bounceAngle, bounceAngle);
         dir = Quaternion.Euler(0f, jitter, 0f) * dir;
         dir.Normalize();
+
         rb.linearVelocity = dir * speed;
     }
+
 }
 
 public enum SpawnablesType

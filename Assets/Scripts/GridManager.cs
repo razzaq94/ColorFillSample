@@ -55,11 +55,24 @@ public class GridManager : MonoBehaviour
 
     public void ChangeValue(float x, float z)
     {
-        int col = Mathf.RoundToInt(x + (_gridColumns / 2));
-        int row = Mathf.Abs(Mathf.RoundToInt(z - (_gridRows / 2)));
-        _grid[col, row] = true;
+        Vector2Int index = WorldToGrid(new Vector3(x, 0, z));
+
+        if (_grid[index.x, index.y])
+        {
+            Debug.LogWarning($"Cube already filled at {index}, skipping duplicate fill.");
+            return;
+        }
+
+        _grid[index.x, index.y] = true;
         _trueCount++;
     }
+    public bool IsFilled(Vector2Int index)
+    {
+        if (index.x < 0 || index.x >= _grid.GetLength(0) || index.y < 0 || index.y >= _grid.GetLength(1))
+            return false;
+        return _grid[index.x, index.y];
+    }
+
 
     public void PerformFloodFill()
     {
@@ -133,9 +146,19 @@ public class GridManager : MonoBehaviour
 
         // Get the list of exposed cells instead of just counting
         List<Vector2Int> exposedCells = GetExposedGridCells();
+        if (exposedCells.Count <= 0)
+        {
+            Debug.LogWarning("No exposed cells found — possible progress bar bug");
+            return;
+        }
 
-        _progress = (float)_trueCount / exposedCells.Count;  
+        _progress = (float)_trueCount / exposedCells.Count;
         UIManager.Instance.FillAmount(_progress);
+        if (_progress < 0.1f && _trueCount > 100)
+        {
+            Debug.LogWarning($"Progress dropped unexpectedly: TrueCount = {_trueCount}, Exposed = {exposedCells.Count}, GridSize = {_gridColumns}x{_gridRows}");
+        }
+
     }
 
 
@@ -480,14 +503,22 @@ public class GridManager : MonoBehaviour
     public void RemoveCubeAt(Cube cube)
     {
         Vector2Int idx = WorldToGrid(cube.transform.position);
+
+
         if (_grid[idx.x, idx.y])
         {
             _grid[idx.x, idx.y] = false;
             _trueCount = Mathf.Max(0, _trueCount - 1);
         }
 
+        print(cube.gameObject.name);
+        cube.IsFilled = false; // always reset
+        cube.CanHarm = false;
+        cube.gameObject.SetActive(false);
+
         CubeGrid.Instance.PutBackInQueue(cube);
     }
+
 
 
     public List<Cube> GetAllFilledCells()

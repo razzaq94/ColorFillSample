@@ -1,4 +1,4 @@
-using UnityEngine;
+﻿using UnityEngine;
 using DG.Tweening;
 using Sirenix.OdinInspector;
 
@@ -26,37 +26,38 @@ public class Cube : MonoBehaviour
     public void Initalize(Vector3 pos, bool isFilled = false)
     {
         transform.position = pos;
-        IsFilled = isFilled;
         gameObject.SetActive(true);
-        //Color baseColor = Player.Instance.GetPlayerColor();
         var renderer = GetComponent<Renderer>();
         if (renderer)
             renderer.material.color = GameManager.Instance.CubeFillColor;
 
-        //if (IsFilled)
-        //    ApplyFilledColor();
-        //else
-        //    ApplyUnfilledColor();
+        IsFilled = false; // always start clean
+
+        if (isFilled)
+            FillCube();
     }
 
     public void FillCube()
     {
-        if (IsFilled)
+        if (!gameObject.activeSelf)
             return;
+
+        Vector2Int index = GridManager.Instance.WorldToGrid(transform.position);
+
+        // 🧠 Check if grid already has cube
+        if (GridManager.Instance.IsFilled(index))
+        {
+            Debug.LogWarning($"Duplicate cube fill attempt at {index} from {name}");
+            gameObject.SetActive(false); // disable this cube immediately
+            return;
+        }
 
         IsFilled = true;
 
-        // Ensure ChangeValue is always called
-        if (gameObject.activeSelf)
-            GridManager.Instance.ChangeValue(transform.position.x, transform.position.z);
-        else
-            Debug.LogWarning("Tried to FillCube while inactive � may cause grid sync bug!");
-
-        transform.DOMoveY((transform.position.y + 0.5f), 0.15f);
-        //transform.DOScale(new Vector3(0.5f, 0.5f, 0.5f), 0.15f);
-        //ApplyFilledColor ();
-
-
+        transform.position = new Vector3(transform.position.x, 0.3f, transform.position.z);
+        transform.DOMoveY(0.5f, 0.15f); // animate upward
+                                        //transform.DOScale(new Vector3(0.5f, 0.5f, 0.5f), 0.15f);
+                                        //ApplyFilledColor ();
     }
     public void UnfillCube()
     {

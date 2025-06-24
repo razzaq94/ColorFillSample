@@ -21,7 +21,22 @@ public class CubeEater : MonoBehaviour
 
     void Start()
     {
-        gridManager = GridManager.Instance; 
+        //gridManager = GridManager.Instance; 
+        //Vector3 p = transform.position;
+        //transform.position = new Vector3(
+        //    Mathf.Round(p.x / gridSize) * gridSize,
+        //    p.y,
+        //    Mathf.Round(p.z / gridSize) * gridSize
+        //);
+
+        //currentDir = PickRandomDirection(excludeOpposite: false);
+        //StartCoroutine(GridMove());
+        //InvokeRepeating(nameof(ChangeDirection), 3f, 3f);
+    }
+    public void Init()
+    {
+        gridManager = GridManager.Instance;
+
         Vector3 p = transform.position;
         transform.position = new Vector3(
             Mathf.Round(p.x / gridSize) * gridSize,
@@ -33,7 +48,6 @@ public class CubeEater : MonoBehaviour
         StartCoroutine(GridMove());
         InvokeRepeating(nameof(ChangeDirection), 3f, 3f);
     }
-
     private void ChangeDirection()
     {
         currentDir = PickRandomDirection(excludeOpposite: true);
@@ -41,47 +55,42 @@ public class CubeEater : MonoBehaviour
 
     private IEnumerator GridMove()
     {
+        while (true)
         {
-            while (true)
+            Vector3 start = transform.position;
+            Vector3 target = start + currentDir * gridSize;
+
+            // Round target position to nearest grid point
+            target.x = Mathf.Round(target.x / gridSize) * gridSize;
+            target.z = Mathf.Round(target.z / gridSize) * gridSize;
+
+            // Use Physics check before moving
+            Vector3 boxCenter = target + Vector3.up * 0.5f;
+            Vector3 halfExtents = new Vector3(gridSize * 0.45f, 0.45f, gridSize * 0.45f);
+
+            Collider[] hits = Physics.OverlapBox(
+                boxCenter,
+                halfExtents,
+                Quaternion.identity,
+                ~0,
+                QueryTriggerInteraction.Collide
+            );
+
+            bool blocked = false;
+            foreach (var hit in hits)
             {
-                Vector3 start = transform.position;
-                Vector3 target = start + currentDir * gridSize;
-
-                Vector3 boxCenter = target + Vector3.up * 0.5f;
-                Vector3 halfExtents = new Vector3(gridSize * 0.45f, 0.45f, gridSize * 0.45f);
-
-                Collider[] hits = Physics.OverlapBox(
-                    boxCenter,
-                    halfExtents,
-                    Quaternion.identity,
-                    /*layerMask:*/ ~0,
-                    QueryTriggerInteraction.Collide
-                );
-
-                bool blocked = false;
-                foreach (var hit in hits)
+                if (hit.CompareTag("Boundary") || hit.CompareTag("Obstacle") || hit.CompareTag("Enemy") || hit.CompareTag("EnemyGroup"))
                 {
-                    if (hit.CompareTag("Boundary") || hit.CompareTag("Obstacle") || hit.CompareTag("Enemy") || hit.CompareTag("EnemyGroup"))
-                    {
-                        currentDir = PickRandomDirection(excludeOpposite: true);
-                        blocked = true;
-                        break;
-                    }
+                    currentDir = PickRandomDirection(excludeOpposite: true);
+                    blocked = true;
+                    break;
+                }
 
-                    if (hit.TryGetComponent<Cube>(out Cube cube))
-                    {
-                        if (cube.IsFilled)
-                            gridManager.RemoveCubeAt(cube);
-                        else if (cube.CanHarm)
-                        {
-                            AudioManager.instance.PlaySFXSound(3);
-                            Haptics.Generate(HapticTypes.HeavyImpact);
-                            GameManager.Instance.LevelLose();
-                        }
-
-                    }
-
-                    if (hit.CompareTag("Player"))
+                if (hit.TryGetComponent<Cube>(out Cube cube))
+                {
+                    if (cube.IsFilled)
+                        gridManager.RemoveCubeAt(cube);
+                    else if (cube.CanHarm)
                     {
                         AudioManager.instance.PlaySFXSound(3);
                         Haptics.Generate(HapticTypes.HeavyImpact);
@@ -89,22 +98,33 @@ public class CubeEater : MonoBehaviour
                     }
                 }
 
-                if (blocked)
+                if (hit.CompareTag("Player"))
                 {
-                    yield return null;
-                    continue;
+                    AudioManager.instance.PlaySFXSound(3);
+                    Haptics.Generate(HapticTypes.HeavyImpact);
+                    GameManager.Instance.LevelLose();
                 }
-
-                float t = 0f;
-                float duration = gridSize / speed;
-                while (t < duration)
-                {
-                    transform.position = Vector3.Lerp(start, target, t / duration);
-                    t += Time.deltaTime;
-                    yield return null;
-                }
-                transform.position = target;
             }
+
+            if (blocked)
+            {
+                yield return null;
+                continue;
+            }
+
+            float elapsed = 0f;
+            float duration = gridSize / speed;
+
+            while (elapsed < duration)
+            {
+                elapsed += Time.deltaTime;
+                float t = Mathf.Clamp01(elapsed / duration);
+                transform.position = Vector3.Lerp(start, target, t);
+                yield return null;
+            }
+
+            // Snap to final position to prevent float drift
+            transform.position = target;
         }
     }
 

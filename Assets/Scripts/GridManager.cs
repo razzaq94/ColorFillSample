@@ -113,7 +113,11 @@ public class GridManager : MonoBehaviour
         SetProgressBar(_grid);
         if (_progress >= 1f)
             GameManager.Instance.LevelComplete();
-    }
+
+        ForceFillRemainingVisuals();
+    
+
+        }
 
 
 
@@ -437,35 +441,43 @@ public class GridManager : MonoBehaviour
         int cols = _gridColumns;
         int rows = _gridRows;
 
-        bool allFilled = true;
         for (int x = 0; x < cols; x++)
         {
             for (int y = 0; y < rows; y++)
             {
-                if (!_grid[x, y]) // unfilled cells
+                if (!_grid[x, y])
                 {
-                    allFilled = false;
-                    break;
+                    Vector3 position = GridToWorld(new Vector2Int(x, y));
+                    Cube cube = CubeGrid.Instance.GetCube();
+                    cube.Initalize(position);  // clean init
+                    cube.FillCube();           // handles grid mark + visual
                 }
             }
-            if (!allFilled) break;
-        }
-
-        if (!allFilled)
-        {
-            for (int x = 0; x < cols; x++)
-                for (int y = 0; y < rows; y++)
-                {
-                    if (!_grid[x, y]) // if the cell is unfilled
-                    {
-                        _grid[x, y] = true;
-                        Vector3 position = GridToWorld(new Vector2Int(x, y));
-                        Cube cube = CubeGrid.Instance.GetCube();
-                        cube.Initalize(position, true);
-                    }
-                }
         }
     }
+    public void ForceFillRemainingVisuals()
+    {
+        for (int x = 0; x < _gridColumns; x++)
+        {
+            for (int y = 0; y < _gridRows; y++)
+            {
+                if (_grid[x, y])
+                {
+                    Vector2Int pos = new Vector2Int(x, y);
+                    Cube existing = GetCubeAtPosition(pos);
+                    if (existing == null || !existing.IsFilled)
+                    {
+                        Cube cube = CubeGrid.Instance.GetCube();
+                        cube.Initalize(GridToWorld(pos));
+                        cube.FillCube(true); // force both visual + logic
+                    }
+                }
+            }
+        }
+    }
+
+
+
 
     private Vector3 FindTransformFromPoint(Point point) => new Vector3((float)(point.X - (float)_gridColumns / 2f), 0.3f, (float)((float)_gridRows / 2f - point.Y));
 

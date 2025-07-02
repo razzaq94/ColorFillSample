@@ -142,30 +142,14 @@ public class CubeEater : MonoBehaviour
         while (excludeOpposite && Vector3.Dot(d, opposite) > 0.9f);
         return d;
     }
-    //private void OnCollisionEnter(Collision collision)
-    //{
-    //    if (collision.gameObject.TryGetComponent<Cube>(out Cube cube))
-    //    {
-    //        if (cube.IsFilled)
-    //        {
-    //            gridManager.RemoveCubeAt(cube);
-    //        }
-    //        else
-    //        {
-    //            if (cube.CanHarm)
-    //            {
-    //                GameManager.Instance.LevelLose();
-    //            }
-    //        }
-    //    }
-    //    if (collision.gameObject.CompareTag("Player"))
-    //    {
-    //        GameManager.Instance.LevelLose();
-    //    }
-    //    if (collision.gameObject.CompareTag("Boundary"))
-    //    {
-    //        StartCoroutine(GridMove());
-    //        ChangeDirection();
-    //    }
-    //}
+    private void OnCollisionEnter(Collision collision)
+    {
+        if (collision.gameObject.CompareTag("Player"))
+        {
+            AudioManager.instance.PlaySFXSound(3);
+            Haptics.Generate(HapticTypes.HeavyImpact);
+            GameManager.Instance.LevelLose();
+        }
+        
+    }
 }

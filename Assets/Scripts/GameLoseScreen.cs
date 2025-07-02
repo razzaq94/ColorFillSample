@@ -8,14 +8,16 @@ public class GameLoseScreen : MonoBehaviour
 {
     public static GameLoseScreen instance;
     [SerializeField] private TextMeshProUGUI countdownText;
-    [SerializeField] private GameObject noThanksButton;
+    public GameObject TimeOutOptions;
+    public GameObject CrashOptions;
+
+
     private void Awake()
     {
         instance = this;
     }
     private void Start()
     {
-        noThanksButton.SetActive(false);
 
         StartCoroutine(CountdownRoutine());
     }
@@ -37,15 +39,24 @@ public class GameLoseScreen : MonoBehaviour
         for (int i = 9; i >= 0; i--)
         {
             countdownText.text = i.ToString("00");
-            if (i == 7)
-                noThanksButton.SetActive(true);
-
             yield return new WaitForSecondsRealtime(1f);
         }
 
         countdownText.text = "00";
-        RestartButton();    //will call watch add after implementation;
+        RestartButton();    
         Destroy(gameObject);
+    }
+
+    public void ShowCrashOptions()
+    {
+        TimeOutOptions?.SetActive(false);
+        CrashOptions?.SetActive(true);
+    }
+
+    public void ShowTimeOutOptions()
+    {
+        TimeOutOptions?.SetActive(true);
+        CrashOptions?.SetActive(false);
     }
 
     public void RestartButton()
@@ -57,9 +68,52 @@ public class GameLoseScreen : MonoBehaviour
             Time.timeScale = 1.0f;
 
     }
-
-    public void WatchAdd()
+    public void OnClick_AddExtraMinute()
     {
+        AdManager_Admob.instance.ShowRewardedVideoAd(() =>
+        {
+            GameManager.Instance.AddTime(60); 
+            GameManager.Instance.ResumeAfterAd();
+        });
+    }
 
+    public void OnClick_ReplayLevel()
+    {
+        AdManager_Admob.instance.ShowInterstitialAd();
+        GameManager.Instance.Replay();
+    }
+
+    public void OnClick_SkipLevel()
+    {
+        AdManager_Admob.instance.ShowRewardedVideoAd(() =>
+        {
+            GameManager.Instance.LevelComplete();
+        });
+    }
+    public void OnClick_Revive()
+    {
+        AdManager_Admob.instance.ShowRewardedVideoAd(() =>
+        {
+            GameManager.Instance.ReviveFromCollision();
+        });
+    }
+
+    public void OnClick_CrashRestart()
+    {
+        AdManager_Admob.instance.ShowInterstitialAd();
+        GameManager.Instance.Replay();
+    }
+
+    public void OnClick_CrashSkip()
+    {
+        AdManager_Admob.instance.ShowRewardedVideoAd(() =>
+        {
+            GameManager.Instance.LevelComplete();
+        });
+    }
+
+    public void ClosePanael()
+    {
+        Destroy(gameObject);
     }
 }

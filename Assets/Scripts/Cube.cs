@@ -37,15 +37,15 @@ public class Cube : MonoBehaviour
             FillCube();
     }
 
-    public void FillCube()
+    public void FillCube(bool force = false)
     {
         if (!gameObject.activeSelf)
             return;
 
         Vector2Int index = GridManager.Instance.WorldToGrid(transform.position);
 
-        // 🧠 Check if grid already has cube
-        if (GridManager.Instance.IsFilled(index))
+        // 🧠 Check if already filled unless forcing
+        if (!force && GridManager.Instance.IsFilled(index))
         {
             Debug.LogWarning($"Duplicate cube fill attempt at {index} from {name}");
             gameObject.SetActive(false); // disable this cube immediately
@@ -54,11 +54,14 @@ public class Cube : MonoBehaviour
 
         IsFilled = true;
 
+        // ✅ Update grid + progress
+        GridManager.Instance.ChangeValue(transform.position.x, transform.position.z);
+
+        // ✅ Visuals
         transform.position = new Vector3(transform.position.x, 0.3f, transform.position.z);
-        transform.DOMoveY(0.5f, 0.15f); // animate upward
-                                        //transform.DOScale(new Vector3(0.5f, 0.5f, 0.5f), 0.15f);
-                                        //ApplyFilledColor ();
+        transform.DOMoveY(0.5f, 0.15f);
     }
+
     public void UnfillCube()
     {
         IsFilled = false;

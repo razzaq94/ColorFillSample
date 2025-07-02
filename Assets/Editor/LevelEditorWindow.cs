@@ -8,7 +8,7 @@ using System.Linq;
 public class LevelDataEditorWindow : EditorWindow
 {
     private GameManager _gameManager;
-    private LevelData _level;          
+    private LevelData _level;
 
     private int _selectedTab = 0;
     private int _prevRows;
@@ -24,7 +24,7 @@ public class LevelDataEditorWindow : EditorWindow
     private bool _cubeMapDirty = true;
 
     private string[] _tabs = new string[] { "General", "Grid" };
-    private enum DrawMode { Wall,Obstacle, Empty, Enemy }
+    private enum DrawMode { Wall, Obstacle, Empty, Enemy }
     public Dictionary<SpawnablesType, List<GameObject>> EnemyTypeToPrefabsMap => _enemyTypeToPrefabsMap;
 
     private Vector2 scrollPosition = Vector2.zero;
@@ -129,7 +129,7 @@ public class LevelDataEditorWindow : EditorWindow
                 DrawGeneralTab();
                 break;
             case 1:
-                DrawGridTab();  
+                DrawGridTab();
                 break;
         }
 
@@ -203,6 +203,70 @@ public class LevelDataEditorWindow : EditorWindow
                 EditorGUILayout.HelpBox("Player reference is missing in GameManager.", MessageType.Warning);
             }
 
+            if (_gameManager != null && _gameManager.Camera != null)
+            {
+                EditorGUILayout.Space();
+                EditorGUILayout.LabelField("Camera Settings", EditorStyles.boldLabel);
+
+                _level.useAutoCameraPositioning = EditorGUILayout.ToggleLeft("Auto Camera", _level.useAutoCameraPositioning);
+
+                EditorGUI.BeginDisabledGroup(_level.useAutoCameraPositioning);
+
+                float newY = EditorGUILayout.FloatField("Camera Y Position", _level.cameraYPosition);
+                float newZ = EditorGUILayout.FloatField("Camera Z Position", _level.cameraZPosition);
+
+                Camera cam = _gameManager.Camera.GetComponent<Camera>();
+                float newFOV = _level.zoomSize;
+
+                if (cam != null && !cam.orthographic)
+                    newFOV = EditorGUILayout.Slider("Field of View (FOV)", _level.zoomSize, 1f, 179f);
+                else if (cam != null && cam.orthographic)
+                    newFOV = EditorGUILayout.FloatField("Ortho Size", _level.zoomSize);
+
+                EditorGUI.EndDisabledGroup();
+
+                if (!_level.useAutoCameraPositioning)
+                {
+                    if (!Mathf.Approximately(newY, _level.cameraYPosition))
+                    {
+                        _level.cameraYPosition = newY;
+                        Vector3 pos = _gameManager.Camera.position;
+                        pos.y = newY;
+                        _gameManager.Camera.position = pos;
+                        EditorUtility.SetDirty(_gameManager.Camera.gameObject);
+                    }
+
+                    if (!Mathf.Approximately(newZ, _level.cameraZPosition))
+                    {
+                        _level.cameraZPosition = newZ;
+                        Vector3 pos = _gameManager.Camera.position;
+                        pos.z = newZ;
+                        _gameManager.Camera.position = pos;
+                        EditorUtility.SetDirty(_gameManager.Camera.gameObject);
+                    }
+
+                    if (!Mathf.Approximately(newFOV, _level.zoomSize) && cam != null)
+                    {
+                        _level.zoomSize = newFOV;
+
+                        if (cam.orthographic)
+                            cam.orthographicSize = newFOV;
+                        else
+                            cam.fieldOfView = newFOV;
+
+                        EditorUtility.SetDirty(cam);
+                    }
+                }
+                else
+                {
+                    // Apply auto camera positioning
+                    CameraSettings settings = _gameManager.CameraValues.Find(a => a.columnSize == _level.Columns);
+                    if (settings != null)
+                    {
+                        _gameManager.Camera.position = settings.CameraAngle + _gameManager.Offset;
+                    }
+                }
+            }
 
 
             if (GUI.changed)
@@ -212,6 +276,14 @@ public class LevelDataEditorWindow : EditorWindow
                 UnityEditor.SceneManagement.EditorSceneManager.MarkSceneDirty(_gameManager.gameObject.scene);
 #endif
             }
+
+            //EditorGUILayout.Space();
+
+            //if (GUILayout.Button("Auto Fit Camera to Level"))
+            //{
+            //    Camera.main.GetComponent<CameraIntro>().Start();
+            //}
+
 
             EditorGUILayout.Space();
             EditorGUILayout.LabelField("Color Settings", EditorStyles.boldLabel);
@@ -235,7 +307,7 @@ public class LevelDataEditorWindow : EditorWindow
 
             EditorGUILayout.EndVertical();
 
-           
+
         }
     }
 
@@ -258,11 +330,13 @@ public class LevelDataEditorWindow : EditorWindow
         EditorGUILayout.EndVertical();
     }
 
+
+
     private void DrawGridSizeControls()
     {
         int cols = EditorGUILayout.IntField("Columns", _level.Columns);
         cols = Mathf.Clamp(cols, MinGridSize, MaxGridSize);
-        if (cols % 2 != 0) cols++; 
+        if (cols % 2 != 0) cols++;
         int rows = EditorGUILayout.IntField("Rows", _level.Rows);
         rows = Mathf.Clamp(rows, MinGridSize, MaxGridSize);
         if (rows % 2 != 0) rows++;
@@ -291,10 +365,19 @@ public class LevelDataEditorWindow : EditorWindow
             _level.Columns = cols;
             _level.Rows = rows;
         }
-        if (Camera.main != null && Camera.main.orthographic)
+        if (_level.useAutoCameraPositioning && Camera.main != null)
         {
-            Camera.main.orthographicSize = _level.Columns + 3.5f;
+            CameraSettings settings = _gameManager.CameraValues.Find(a => a.columnSize == _level.Columns);
+            if (settings != null)
+            {
+                Camera.main.transform.position = settings.CameraAngle + _gameManager.Offset;
+            }
+            else
+            {
+                Camera.main.transform.position = new Vector3(-0.5f, _level.Columns * 2, -10);
+            }
         }
+
 
         SyncSceneGridAndBackground();
     }
@@ -364,14 +447,14 @@ public class LevelDataEditorWindow : EditorWindow
         {
             if (!_enemyTypeColors.ContainsKey(go))
                 _enemyTypeColors[go] = Color.HSVToRGB(
-                    (_enemyTypeColors.Count * .618f) % 1f,  
+                    (_enemyTypeColors.Count * .618f) % 1f,
                     .6f,
                     .8f
                 );
         }
     }
 
-    private void DrawCell(int row,int col,Event e,bool hasPlayer,float cellSize)
+    private void DrawCell(int row, int col, Event e, bool hasPlayer, float cellSize)
     {
         var key = new Vector2Int(row, col);
         bool isWall = _level.gridCellPositions.Any(c => c.row == row && c.col == col && c.type == CellType.Wall);
@@ -382,7 +465,7 @@ public class LevelDataEditorWindow : EditorWindow
         bool isSpawn = _cellSpawnMap != null && _cellSpawnMap.ContainsKey(key);
         bool occupied = isWall || isObstacleType || isPre || isCube || isSpawn;
 
-        bool shouldPaint =(_drawMode == DrawMode.Wall && !occupied) || (_drawMode == DrawMode.Obstacle && !occupied)|| (_drawMode == DrawMode.Enemy && !occupied)|| (_drawMode == DrawMode.Empty && occupied);
+        bool shouldPaint = (_drawMode == DrawMode.Wall && !occupied) || (_drawMode == DrawMode.Obstacle && !occupied) || (_drawMode == DrawMode.Enemy && !occupied) || (_drawMode == DrawMode.Empty && occupied);
 
 
         // 1) draw box
@@ -407,10 +490,10 @@ public class LevelDataEditorWindow : EditorWindow
             && (e.type == EventType.MouseDown || e.type == EventType.MouseDrag)
             && e.button == 0
             && cellRect.Contains(e.mousePosition))
-                    {
-                        if (_drawMode == DrawMode.Wall)
-               HandleCellClick(row, col, _level.wallPrefab);
-                        else if (_drawMode == DrawMode.Obstacle)
+        {
+            if (_drawMode == DrawMode.Wall)
+                HandleCellClick(row, col, _level.wallPrefab);
+            else if (_drawMode == DrawMode.Obstacle)
                 HandleCellClick(row, col, _level.obstacle);
 
             if (_drawMode == DrawMode.Empty)
@@ -435,7 +518,7 @@ public class LevelDataEditorWindow : EditorWindow
                     Repaint();
                 }
 
-                e.Use(); 
+                e.Use();
                 return;
             }
 
@@ -465,7 +548,7 @@ public class LevelDataEditorWindow : EditorWindow
             if (!_enemyTypeColors.TryGetValue(obj, out baseColor))
             {
                 baseColor = Color.HSVToRGB(
-                    (_enemyTypeColors.Count * .618f) % 1f, 
+                    (_enemyTypeColors.Count * .618f) % 1f,
                     0.6f,
                     0.8f
                 );
@@ -511,8 +594,7 @@ public class LevelDataEditorWindow : EditorWindow
             EditorStyles.boldLabel);
     }
 
-    private void ShowCellContextMenu(Rect r, Vector2Int key,
-        bool isWall, bool isPre, bool occupied, int row, int col)
+    private void ShowCellContextMenu(Rect r, Vector2Int key, bool isWall, bool isPre, bool occupied, int row, int col)
     {
         var menu = new GenericMenu();
         bool isCube = _placedEnemyCubeMap.ContainsKey(key);
@@ -528,8 +610,6 @@ public class LevelDataEditorWindow : EditorWindow
             PreplacedSpeedPopup.Open(go, popupRect1);
             return;
         }
-
-
         else if (isCube)
         {
             AddCubeContextItems(menu, key);
@@ -541,13 +621,10 @@ public class LevelDataEditorWindow : EditorWindow
             AddPreplacedSpawnItems(menu, row, col);
             menu.AddSeparator("Spawnable/");
             if (_cellSpawnMap != null && _cellSpawnMap.TryGetValue(key, out var cellCfg))
-{
-    SpawnableCellPopup.Open(cellCfg, _enemyTypeToPrefabsMap, new Rect(screenMouse.x, screenMouse.y, 1, 1));
-    return; // skip menu entirely
-}
-
-
-
+            {
+                SpawnableCellPopup.Open(cellCfg, _enemyTypeToPrefabsMap, new Rect(screenMouse.x, screenMouse.y, 1, 1));
+                return;
+            }
             else
             {
                 menu.AddSeparator("Spawnable/");
@@ -580,7 +657,6 @@ public class LevelDataEditorWindow : EditorWindow
                             RefreshSpawnableMap();
                             EditorUtility.SetDirty(_gameManager);
 
-
                             SpawnableCellPopup.Open(
                                 cfg,
                                 _enemyTypeToPrefabsMap,
@@ -593,7 +669,7 @@ public class LevelDataEditorWindow : EditorWindow
                 foreach (SpawnablesType t in System.Enum.GetValues(typeof(SpawnablesType)))
                 {
                     if (t == SpawnablesType.Pickups)
-                        continue; // already handled above
+                        continue;
 
                     string name = t.ToString();
                     string path = $"Assets/Prefabs/Spawnables/{name}.prefab";
@@ -619,7 +695,7 @@ public class LevelDataEditorWindow : EditorWindow
                             var cfg = new SpawnableConfig
                             {
                                 enemyType = t,
-                                prefab = prefab,
+                                prefab = (t == SpawnablesType.CubeEater) ? prefab : GetRandomPrefabVariant(prefab), // <── FIX: no random for CubeEater
                                 row = row,
                                 col = col,
                                 spawnCount = 1,
@@ -641,8 +717,8 @@ public class LevelDataEditorWindow : EditorWindow
                     );
                 }
             }
-
         }
+
         menu.ShowAsContext();
     }
 
@@ -703,7 +779,8 @@ public class LevelDataEditorWindow : EditorWindow
                 if (entry.prefab == null) continue;
                 int r1 = row, c = col;
                 GameObject prefab = entry.prefab;
-                menu.AddItem(new GUIContent($"Preplaced Enemy/{prefab.name}"), false, () => {
+                menu.AddItem(new GUIContent($"Preplaced Enemy/{prefab.name}"), false, () =>
+                {
                     var gm = FindFirstObjectByType<GridManager>();
                     var wp = gm.GridToWorld(new Vector2Int(c, r1));
                     wp.y = prefab.transform.position.y;
@@ -844,7 +921,7 @@ public class LevelDataEditorWindow : EditorWindow
         int flippedRow = _level.Rows - row - 1;
         Vector3 spawnPosition = new Vector3(col + offsetX, 0.5f, flippedRow + offsetZ);
 
-        var cellType = _drawMode == DrawMode.Wall? CellType.Wall : CellType.Obstacle;
+        var cellType = _drawMode == DrawMode.Wall ? CellType.Wall : CellType.Obstacle;
         _level.gridCellPositions.Add(new CubeCell { row = row, col = col, type = cellType });
 
         var go = (GameObject)Object.Instantiate(prefab, spawnPosition, Quaternion.identity);
@@ -856,7 +933,7 @@ public class LevelDataEditorWindow : EditorWindow
         EditorUtility.SetDirty(_gameManager);
         EditorSceneManager.MarkSceneDirty(EditorSceneManager.GetActiveScene());
     }
-    
+
     private void FillAllCubes()
     {
         float baseOffsetX = -(_level.Columns - 1) * 0.5f;
@@ -869,7 +946,7 @@ public class LevelDataEditorWindow : EditorWindow
         {
             for (int col = 0; col < _level.Columns; col++)
             {
-                if (!_level.gridCellPositions.Exists(c => c.row == row && c.col == col && c.type == CellType.Wall)) 
+                if (!_level.gridCellPositions.Exists(c => c.row == row && c.col == col && c.type == CellType.Wall))
                 {
                     _level.gridCellPositions.Add(new CubeCell { row = row, col = col, type = CellType.Wall });
 
@@ -996,7 +1073,7 @@ public class LevelDataEditorWindow : EditorWindow
         UnityEditor.EditorUtility.SetDirty(_gameManager);
 #endif
 
-        Repaint();  
+        Repaint();
 
         var gm = Object.FindFirstObjectByType<GridManager>();
         if (gm == null) return;
@@ -1097,10 +1174,17 @@ public class LevelDataEditorWindow : EditorWindow
             _placedEnemyMap.Remove(key);
         }
 
-        if (_placedEnemyCubeMap.TryGetValue(key, out var ec) && ec != null)
+        if (_placedEnemyCubeMap.TryGetValue(key, out var cube))
         {
-            DestroyImmediate(ec.gameObject);
+            Transform parent = cube.transform.parent;
+            DestroyImmediate(cube.gameObject);
             _placedEnemyCubeMap.Remove(key);
+
+            if (parent != null && parent.GetComponentsInChildren<EnemyCube>().Length == 0)
+            {
+                _level.EnemyGroups.RemoveAll(g => g != null && g.gameObject == parent.gameObject);
+                DestroyImmediate(parent.gameObject);
+            }
         }
         else
         {
@@ -1141,7 +1225,7 @@ public class LevelDataEditorWindow : EditorWindow
     {
         if (state == PlayModeStateChange.EnteredEditMode)
         {
-        _cubeMapDirty = true;
+            _cubeMapDirty = true;
             RefreshEnemyCubeMap();
             RefreshPreplacedEnemyMap();
         }
@@ -1154,20 +1238,18 @@ public class LevelDataEditorWindow : EditorWindow
         bool isWall = _level.gridCellPositions.Any(c => c.row == row && c.col == col && c.type == CellType.Wall);
         bool isSpawnableCell = _cellSpawnMap.ContainsKey(key);
         bool isPre = _placedEnemyMap.ContainsKey(key);
-        bool occupied = _placedEnemyCubeMap.ContainsKey(key);
+        bool isCube = _placedEnemyCubeMap.ContainsKey(key);
         bool isPlayer = row == _level.PlayerStartRow && col == _level.PlayerStartCol;
 
-        if (isPre)
+        if (isPre || isCube || isSpawnableCell)
             return true;
 
-        if (occupied || isPlayer || isWall)
+        if (isWall || isPlayer)
             return false;
-
-        if (isSpawnableCell)
-            return true;
 
         return true;
     }
+
 
     private void RefreshSpawnableMap()
     {
@@ -1200,6 +1282,7 @@ public class LevelDataEditorWindow : EditorWindow
         if (bg && bg.TryGetComponent<Renderer>(out var br))
             br.sharedMaterial.color = _gameManager.BackgroundColor;
     }
+
 }
 
 

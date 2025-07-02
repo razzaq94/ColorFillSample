@@ -7,54 +7,48 @@ using Sirenix.OdinInspector;
 using UnityEngine.SceneManagement;
 using UnityEditor.SceneManagement;
 using UnityEditor;
-//[HideMonoScript]    
+[HideMonoScript]
 public class GameManager : MonoBehaviour
 {
     public static GameManager Instance;
+
     [Title("GAME-MANAGER", null, titleAlignment: TitleAlignments.Centered)]
     [Header("Core Settings")]
-    [DisplayAsString]
-    public bool _gameRunning = false;
+    [DisplayAsString] public bool _gameRunning = false;
     public bool Debug = false;
     private bool _gameStarted = false;
+
     public GameObject _wallParent;
-    [FoldoutGroup("Player References")]
     public Player Player;
-    [FoldoutGroup("Player References")]
-    public Transform Camera = null;
+    public Transform Camera;
+    public Vector3 Offset = new Vector3(0, 1, 0);
+    public List<CameraSettings> CameraValues;
 
     [Header("Color Settings")]
     public Color WallColor = Color.gray;
     public Color PlayerColor = Color.green;
     public Color CubeFillColor = Color.red;
-    public Color BackgroundColor = new Color(1f, 1f, 1f, 1f); // Assuming white by default
+    public Color BackgroundColor = Color.white;
 
+    [Header("Level Info")]
     public int StartLevel = 0;
     public int CurrentLevel = 1;
     public int firstLevelBuildIndex = 1;
     public int TotalLevels => SceneManager.sceneCountInBuildSettings - firstLevelBuildIndex;
     public int Diamonds;
     private int LevelToUse = 1;
-
+    public int GetCurrentLevel => CurrentLevel;
 
     [Header("Fall Speed")]
-    [Range(0f, 1f)]
-    public float SpeedForFallingObjects = 2;
+    [Range(0f, 1f)] public float SpeedForFallingObjects = 2;
 
-    public int GetCurrentLevel => CurrentLevel;
     [FoldoutGroup("Level Data")]
     [ListDrawerSettings(ShowFoldout = true, ShowIndexLabels = true, DraggableItems = true)]
     public LevelData Level;
 
-    [Header("Assign Enemy Spawn Positions Here")]
-    private Vector2 gridOrigin = Vector2.zero;
-    [HideInInspector] public Vector2 cellSize = Vector2.one;
-
-    [Header("Enemy Model Variants")]
+    [Header("Enemy Variants")]
     public List<EnemyVariantGroup> enemyVariantGroups;
     private Dictionary<SpawnablesType, List<GameObject>> enemyPrefabVariants;
-
-
 
     private bool isGameOver = false;
 
@@ -68,38 +62,21 @@ public class GameManager : MonoBehaviour
 
     private void Start()
     {
+        if (!Application.isEditor) Debug = false;
 
-        if (!Application.isEditor)
-            Debug = false;
-        GridManager.Instance.InitGrid(Level.Columns, Level.Rows);
-        //if (Level.PlayerPos)
-        //    Player.transform.position = Level.PlayerPos.position;
-        Haptics.Generate(HapticTypes.LightImpact);
-        if (AudioManager.instance)
-            AudioManager.instance?.PlayBGMusic(0);
         GridManager.Instance.InitGrid(Level.Columns, Level.Rows);
         Player.Init();
         GetCells();
 
         foreach (var wall in GameObject.FindGameObjectsWithTag("Boundary"))
         {
-            var renderer = wall.GetComponent<Renderer>();
-            if (renderer) renderer.sharedMaterial.color = WallColor;
+            if (wall.TryGetComponent<Renderer>(out var renderer))
+                renderer.sharedMaterial.color = WallColor;
         }
 
+        Haptics.Generate(HapticTypes.LightImpact);
+        AudioManager.instance?.PlayBGMusic(0);
     }
-
-
-
-    public void GetCells()
-    {
-        var availableEmpty = new List<Cube>(GridManager.Instance.GetAnyCells());
-        for (int i = 0; i < Level.gridPositions.Count; i++)
-        {
-            Level.gridPositions[i] = availableEmpty[Random.Range(0, availableEmpty.Count)];
-        }
-    }
-
     private void Update()
     {
         if (!isGameOver && !Level.isTimeless && Level.levelTime > 0)
@@ -109,9 +86,10 @@ public class GameManager : MonoBehaviour
             UpdateTimerDisplay();
         }
 
-        if (!isGameOver && !Level.isTimeless && Level.levelTime <= 0)
+        if (!isGameOver && Level.levelTime <= 0)
         {
-            LevelLose();
+            isGameOver = true;
+            ShowTimeOutAdOptions();
         }
         void UpdateTimerDisplay()
         {
@@ -127,26 +105,95 @@ public class GameManager : MonoBehaviour
         _gameStarted = true;
         AudioManager.instance.PlayUISound(0);
         UIManager.Instance.StartGame();
-        UIManager.Instance.SwipeToStart.gameObject.SetActive(false);
         _gameRunning = true;
-        //PlacePreplacedEnemies();
         ScheduleEnemySpawns();
     }
+
+
+
+    public void GetCells()
+    {
+        var availableEmpty = new List<Cube>(GridManager.Instance.GetAnyCells());
+        for (int i = 0; i < Level.gridPositions.Count; i++)
+        {
+            Level.gridPositions[i] = availableEmpty[Random.Range(0, availableEmpty.Count)];
+        }
+    }
+
+    private void ShowTimeOutAdOptions()
+    {
+        Player.enabled = _gameRunning = false;
+        UIManager.Instance?.LevelLoseTimeOut();
+        AudioManager.instance.BGAudioSource.Stop();
+    }
+
+    public void ShowRewardedForExtraTime()
+    {
+        AdManager_Admob.instance.ShowRewardedVideoAd(() =>
+        {
+            AddTime(60); 
+            isGameOver = false;
+        });
+    }
+    public void ShowInterstitialAndReplay()
+    {
+        AdManager_Admob.instance.ShowInterstitialAd();
+        Replay();
+    }
+
+    public void ShowRewardedAndSkipLevel()
+    {
+        AdManager_Admob.instance.ShowRewardedVideoAd(() =>
+        {
+            LevelComplete();
+        });
+    }
+
     public void AddTime(int time)
     {
         Level.levelTime += time;
     }
 
+    public void ReviveFromCollision()
+    {
+        GameLoseScreen.instance?.ClosePanael();
+        AdManager_Admob.instance.ShowRewardedVideoAd(() =>
+        {
+            Player.enabled = true;
+            isGameOver = false;
+            Player.IsMoving = true;
+            Player.transform.position = Player.lastRestingPosition;
+
+            Player.ForceInitialCube();
+        });
+
+    }
+
+
 
     public void LevelComplete()
     {
+        if (isGameOver) return; 
+
         Player.enabled = _gameRunning = false;
         CurrentLevel++;
         LevelToUse++;
         UIManager.Instance.LevelComplete();
         MarkLevelCompleted(SceneManager.GetActiveScene().buildIndex);
     }
-
+    public void ResumeAfterAd()
+    {
+        isGameOver = false;
+        Player.enabled = true;
+        GameLoseScreen.instance.ClosePanael();
+        AudioManager.instance?.PlayBGMusic(0);
+    }
+    public void LevelLose()
+    {
+        Player.enabled = _gameRunning = false;
+        UIManager.Instance?.LevelLoseCrash();
+        AudioManager.instance.BGAudioSource.Stop();
+    }
     [Button]
     //public void PlacePreplacedEnemies()
     //{
@@ -163,6 +210,7 @@ public class GameManager : MonoBehaviour
     //        }
     //    }
     //}
+   
 
     private void ScheduleEnemySpawns()
     {
@@ -226,7 +274,7 @@ public class GameManager : MonoBehaviour
 
             var enemy = Instantiate(prefabToUse, skySpawnPos, Quaternion.identity);
             StartCoroutine(ManualDropWithYFreeze(enemy, finalTargetPos, cfg.yOffset, SpeedForFallingObjects));
-            if (cfg.enemyType == SpawnablesType.FlyingHoop)
+            if (cfg.enemyType == SpawnablesType.FlyingHoop || cfg.enemyType == SpawnablesType.CubeEater)
             {
                 RandomizeColor(enemy);
             }
@@ -287,12 +335,7 @@ public class GameManager : MonoBehaviour
 
     }
 
-    public void LevelLose()
-    {
-        Player.enabled = _gameRunning = false;
-        UIManager.Instance?.LevelLose();
-        AudioManager.instance?.BGAudioSource.Stop();
-    }
+
     public void RandomizeColor(GameObject go)
     {
         if (go.TryGetComponent<Renderer>(out var rootRenderer))
@@ -309,7 +352,10 @@ public class GameManager : MonoBehaviour
 
         foreach (var renderer in go.GetComponentsInChildren<Renderer>())
         {
-            if (renderer == rootRenderer) continue;
+            string[] excludedNames = { "pCone1", "pCone2", "pCone3", "pCone4" };
+
+            if (renderer == rootRenderer || excludedNames.Contains(renderer.gameObject.name))
+                continue;
 
             var sharedMats = renderer.sharedMaterials;
             for (int i = 0; i < sharedMats.Length; i++)
@@ -326,14 +372,19 @@ public class GameManager : MonoBehaviour
 
     public void Replay()
     {
-        AudioManager.instance?.PlayUISound(0);
-        CubeGrid.Instance.Restart();
-        UIManager.Instance.Start();
-        Start();
-        Player.Restart();
-        DeleteEnemies();
-
+        StartCoroutine(RestartWithDelay());
     }
+
+    private IEnumerator RestartWithDelay()
+    {
+
+        GameLoseScreen.instance?.ClosePanael();
+        yield return new WaitForSeconds(0.2f); 
+        SceneManager.LoadScene(SceneManager.GetActiveScene().buildIndex);
+    }
+
+
+
     public bool IsLevelCompleted(int buildIndex)
     {
         return PlayerPrefs.GetInt($"Level_{buildIndex}_Completed", 0) == 1;
@@ -392,8 +443,6 @@ public class GameManager : MonoBehaviour
 public class LevelData
 {
     public GameObject LevelObject = null;
-    //public Transform PlayerPos = null;
-    // add these:
     public int PlayerStartRow = -1;
     public int PlayerStartCol = -1;
     public bool isTimeless = false;
@@ -414,7 +463,15 @@ public class LevelData
     public GameObject enemyCubePrefab;
     public List<EnemyCubeGroup> EnemyGroups = new List<EnemyCubeGroup>();
 
+    [FoldoutGroup("Camera Settings")]
+    public float cameraZPosition = 2.5f;
 
+    public float cameraYPosition = 10f;
+    [FoldoutGroup("Camera Settings")]
+    public float zoomSize = 5f;
+    public float cameraFOVMin = 30f;
+    public float cameraFOVMax = 70f;
+    public bool useAutoCameraPositioning = true;  
 
 }
 [System.Serializable]

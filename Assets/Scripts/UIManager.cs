@@ -19,7 +19,6 @@ public class UIManager : MonoBehaviour
     public TextMeshProUGUI Diamonds;
     public TextMeshProUGUI timerText;
     public TextMeshProUGUI NextLevelText;
-    public TextMeshProUGUI SwipeToStart;
 
     public GameObject LinePrefab;
     private void Awake()
@@ -41,7 +40,7 @@ public class UIManager : MonoBehaviour
 
     public void StartTextDelay()
     {
-        SwipeToStart.gameObject.SetActive(true);
+        //SwipeToStart.gameObject.SetActive(true);
     }
 
     public void FillAmount(float amount) => Fill.DOFillAmount(amount, 0.25f);
@@ -57,21 +56,37 @@ public class UIManager : MonoBehaviour
         Destroy(line, 1.6f);
     }
 
-    public void LevelLose()
+    public void LevelLoseTimeOut()
     {
         AudioManager.instance?.PlaySFXSound(1);
         //GameObject line = Instantiate(LinePrefab, GameObject.FindGameObjectWithTag("MainCanvas").transform.position, LinePrefab.transform.rotation);
         //line.transform.SetParent(GameObject.FindGameObjectWithTag("MainCanvas").transform, false);
-        Invoke(nameof(ShowGameLoseUI), 0.1f);
+        Invoke(nameof(ShowGameLoseUITimeOut), 0.1f);
         //Destroy(line, 1.6f);
     }
-
-    private void ShowGameLoseUI()
+    public void LevelLoseCrash()
+    {
+        AudioManager.instance?.PlaySFXSound(1);
+        Invoke(nameof(ShowGameLoseUICrash), 0.1f);
+    }
+    private void ShowGameLoseUITimeOut()
     {
         GameLoseScreen.ShowUI();
-    }private void ShowGamWinUI()
+        GameLoseScreen.instance.ShowTimeOutOptions();
+    }
+    private void ShowGameLoseUICrash()
+    {
+        GameLoseScreen.ShowUI();
+        GameLoseScreen.instance.ShowCrashOptions();
+    }
+    private void ShowGamWinUI()
     {
         GameWinScreen.ShowUI();
+    }
+    public void ShowDeathAdOptions()
+    {
+
+       
     }
 
     public void ReturnToMenu()

@@ -86,11 +86,32 @@ public class EnemyCubeGroup : MonoBehaviour
 
     public void ReverseDirection()
     {
-        print("Reversing direction");
         _direction *= -1;
         _cellsMoved = 0;
+
+        Vector3 offset = (moveHorizontal ? Vector3.right : Vector3.forward) * _direction * cellSize * 0.5f;
+        StartCoroutine(SmoothReverseOffset(offset));
     }
-    bool hit = false;
+
+
+    private IEnumerator SmoothReverseOffset(Vector3 offset)
+    {
+        Vector3 start = transform.position;
+        Vector3 end = start + offset;
+        float duration = 0.1f; // you can tweak this
+        float elapsed = 0f;
+
+        while (elapsed < duration)
+        {
+            elapsed += Time.deltaTime;
+            transform.position = Vector3.Lerp(start, end, elapsed / duration);
+            yield return null;
+        }
+
+        transform.position = end;
+    }
+
+    public bool hit = false;
 
     private void OnTriggerEnter(Collider other)
     {
@@ -110,6 +131,24 @@ public class EnemyCubeGroup : MonoBehaviour
         }
         if (other.GetComponent<Cube>() == null)
             return;
+    }
+    private void OnTriggerStay(Collider other)
+    {
+        if (hit)
+            return;
+
+        if (other.CompareTag("Obstacle") || other.CompareTag("Boundary") || other.CompareTag("EnemyGroup"))
+        {
+            hit = true;
+            Invoke(nameof(HitReset), HitResetTime);
+            ReverseDirection();
+            SetNextTarget();
+        }
+    }
+    private void OnTriggerExit(Collider other)
+    {
+        if (other.CompareTag("Obstacle") || other.CompareTag("Boundary") || other.CompareTag("EnemyGroup"))
+            hit = false;
     }
 
     void HitReset()

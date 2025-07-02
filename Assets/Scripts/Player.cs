@@ -1,8 +1,9 @@
-using UnityEngine;
-using DG.Tweening;
-using System.Collections.Generic;
+﻿using DG.Tweening;
 using Sirenix.OdinInspector;
+using System.Collections;
+using System.Collections.Generic;
 using System.Linq;
+using UnityEngine;
 
 
 [HideMonoScript]
@@ -28,6 +29,10 @@ public class Player : MonoBehaviour
     private Vector3 _moveVector = Vector3.zero;
     private Vector3 _targetPos = Vector3.zero;
     private Vector2 _startPos2 = Vector2.zero;
+    public Vector3 lastSafePosition;
+    public Vector3 lastRestingPosition { get; private set; }
+
+
 
     [SerializeField] List<Cube> spawnedCubes = new List<Cube>();
     [SerializeField] private Color playerColor = Color.white;
@@ -69,7 +74,10 @@ public class Player : MonoBehaviour
     private void FixedUpdate()
     {
         if (!_isMoving)
+        {
+            lastSafePosition = transform.position;
             return;
+        }
         if (Vector3.Distance(_startPos3, transform.position) >= DistanceThreshold)
         {
             transform.position = _targetPos;
@@ -79,6 +87,8 @@ public class Player : MonoBehaviour
         }
         transform.position += (_targetPos - _startPos3) * moveSpeed * Time.fixedDeltaTime;
     }
+
+
     private Vector3 RoundPos() => new Vector3((float)Mathf.Round(transform.position.x), transform.position.y, (float)Mathf.Round(transform.position.z));
 
     public void SpawnCube()
@@ -106,6 +116,8 @@ public class Player : MonoBehaviour
     }
     private void OnCollisionEnter(Collision collision)
     {
+        
+
         if (collision.gameObject.CompareTag("Boundary") || collision.gameObject.CompareTag("Obstacle"))
         {
             IsMoving = false;
@@ -129,6 +141,8 @@ public class Player : MonoBehaviour
     }
     private void OnTriggerEnter(Collider other)
     {
+       
+
         if (other.TryGetComponent<Cube>(out Cube cube))
         {
             if (cube.IsFilled)
@@ -265,19 +279,46 @@ public class Player : MonoBehaviour
     {
         if (_isMoving)
             return;
+
+        lastRestingPosition = transform.position; // ✅ capture true last grounded position
+
         SpawnCubes = _isMoving = true;
         _targetPos = transform.position + _moveVector;
         _startPos3 = transform.position;
     }
-    
+
+
+
     public void Restart()
     {
         SpawnCubes = _isMoving = false;
         _rigidbody.linearVelocity = _startPos3 = _targetPos = _moveVector = Vector3.zero;
         _startPos2 = Vector2.zero;
         _startTime = 0f;
+
+        foreach (var cube in spawnedCubes)
+        {
+            CubeGrid.Instance.PutBackInQueue(cube);
+        }
+        spawnedCubes.Clear();
+
         this.enabled = true;
     }
+    public void ForceInitialCube()
+    {
+        if (CubeGrid.Instance == null) return;
+
+        Cube cube = CubeGrid.Instance.GetCube();
+        Vector3 spawnPos = new Vector3(
+            Mathf.Round(transform.position.x),
+            transform.position.y - 0.7f,
+            Mathf.Round(transform.position.z)
+        );
+
+        cube.Initalize(spawnPos, false);
+        spawnedCubes.Add(cube);
+    }
+
 }
 public enum Direction
 {

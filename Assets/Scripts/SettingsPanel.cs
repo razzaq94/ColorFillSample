@@ -76,7 +76,7 @@ public class SettingsPanel : MonoBehaviour
     {
         vibrationToggle.onValueChanged.RemoveListener(OnVibrationToggleChanged);
     }
-   
+
     public void OnVibrationToggleChanged(bool isOn)
     {
         Haptics.SetEnabled(isOn);
@@ -94,5 +94,11 @@ public class SettingsPanel : MonoBehaviour
         if (Time.timeScale == 0) Time.timeScale = 1;
         AudioManager.instance.PlayUISound(0);
     }
-       
+
+
+    public void PrivacyPolicy()
+    {
+        Application.OpenURL("https://sites.google.com/view/colorin3d?usp=sharing");
+    }
+
 }

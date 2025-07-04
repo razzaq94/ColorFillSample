@@ -21,6 +21,11 @@ public class UIManager : MonoBehaviour
     public TextMeshProUGUI NextLevelText;
 
     public GameObject LinePrefab;
+    public GameObject confetti;
+    public Transform confettiHolder;
+    public RandomTextSpawner RandomTextSpawner;
+
+
     private void Awake()
     {
         Instance = this;
@@ -51,9 +56,13 @@ public class UIManager : MonoBehaviour
     {
         AudioManager.instance.PlaySFXSound(0);
         GameObject line = Instantiate(LinePrefab, GameObject.FindGameObjectWithTag("MainCanvas").transform.position, LinePrefab.transform.rotation);
+        GameObject Confetti = Instantiate(confetti, confettiHolder.position, Quaternion.identity);
+        RandomTextSpawner.SpawnRandomText();
         line.transform.SetParent(GameObject.FindGameObjectWithTag("MainCanvas").transform, false);
+        Confetti.transform.SetParent(confettiHolder);
         Invoke(nameof(ShowGamWinUI), 1f);
         Destroy(line, 1.6f);
+        Destroy(Confetti, 1.6f);
     }
 
     public void LevelLoseTimeOut()

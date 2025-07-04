@@ -67,8 +67,34 @@ public class Cube : MonoBehaviour
         IsFilled = false;
         ApplyUnfilledColor();
     }
+    public void Illuminate(float duration = 0.5f)
+    {
+        if (!TryGetComponent<Renderer>(out Renderer renderer)) return;
 
-   
+        Material mat = renderer.material;
+        if (!mat.HasProperty("_EmissionColor")) return;
+
+        Color baseColor = GameManager.Instance.CubeFillColor; 
+
+        Color glow = baseColor * 1.5f; 
+
+        if (!mat.IsKeywordEnabled("_EMISSION"))
+            mat.EnableKeyword("_EMISSION");
+
+        mat.SetColor("_EmissionColor", glow);
+        mat.globalIlluminationFlags = MaterialGlobalIlluminationFlags.RealtimeEmissive;
+
+        DOTween.To(() => mat.GetColor("_EmissionColor"),
+                   c => mat.SetColor("_EmissionColor", c),
+                   Color.black,
+                   duration);
+    }
+
+
+
+
+
+
     private void ApplyFilledColor()
     {
         if (_renderer == null) return;

@@ -277,6 +277,8 @@ public class GridManager : MonoBehaviour
             Vector3 repCubePos = FindTransformFromPoint(point);
             Cube cube = CubeGrid.Instance.GetCube();
             cube.Initalize(repCubePos, true);
+
+            cube.Illuminate(0.5f);
         }
     }
 
@@ -341,6 +343,8 @@ public class GridManager : MonoBehaviour
                 originalGrid[p.X, p.Y] = true;
 
             MakeCubes(region);
+            
+
         }
 
         return originalGrid;
@@ -414,9 +418,16 @@ public class GridManager : MonoBehaviour
         {
             foreach (var p in pocket)
                 _grid[p.X, p.Y] = true;
+
             MakeCubes(pocket);
+
+           
+           
+
             lastPocketFilled = true;
         }
+
+
 
         if (lastPocketFilled)
             FillRemainingUnfilledCells();
@@ -431,6 +442,7 @@ public class GridManager : MonoBehaviour
             Debug.Log("Auto-filling remaining exposed cells...");
             FillRemainingUnfilledCells();
         }
+       
 
 
 

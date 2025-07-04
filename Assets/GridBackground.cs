@@ -12,11 +12,13 @@ public class GridBackground : MonoBehaviour
     private void Start()
     {
         bgRenderer = GetComponent<Renderer>();
+        var gameManager = FindAnyObjectByType<GameManager>();
+
 
         if (Application.isPlaying)
             bgRenderer.material.color = GameManager.Instance.BackgroundColor;
         else
-            bgRenderer.sharedMaterial.color = GameManager.Instance.BackgroundColor;
+            bgRenderer.sharedMaterial.color = gameManager.BackgroundColor;
     }
 
 

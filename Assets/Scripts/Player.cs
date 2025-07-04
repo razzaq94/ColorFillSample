@@ -106,11 +106,11 @@ public class Player : MonoBehaviour
 
     private void FillCubes()
     {
-        foreach (var cube in spawnedCubes)
+        for (int i = 0; i < spawnedCubes.Count; i++)
         {
-            cube.FillCube();
-            // Safety update to grid just in case
-            GridManager.Instance.ChangeValue(cube.transform.position.x, cube.transform.position.z);
+            spawnedCubes[i].FillCube();
+            spawnedCubes[i].Illuminate(0.5f); // 🔥 Add this line
+            GridManager.Instance.ChangeValue(spawnedCubes[i].transform.position.x, spawnedCubes[i].transform.position.z);
         }
         spawnedCubes.Clear();
     }

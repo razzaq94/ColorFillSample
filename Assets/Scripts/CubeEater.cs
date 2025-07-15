@@ -102,6 +102,10 @@ public class CubeEater : MonoBehaviour
                 {
                     AudioManager.instance.PlaySFXSound(3);
                     Haptics.Generate(HapticTypes.HeavyImpact);
+                    var renderer = hit.gameObject.GetComponent<Renderer>();
+                    GameManager.Instance.SpawnDeathParticles(hit.transform.gameObject, renderer.material.color);
+                    GameManager.Instance.CameraShake(0.35f, 0.15f);
+                    hit.gameObject.SetActive(false);
                     GameManager.Instance.LevelLose();
                 }
             }
@@ -148,6 +152,7 @@ public class CubeEater : MonoBehaviour
         {
             AudioManager.instance.PlaySFXSound(3);
             Haptics.Generate(HapticTypes.HeavyImpact);
+            collision.gameObject.SetActive(false);
             GameManager.Instance.LevelLose();
         }
         

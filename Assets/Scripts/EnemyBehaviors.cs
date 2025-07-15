@@ -174,6 +174,10 @@ public class EnemyBehaviors : MonoBehaviour
         else if (collision.transform.CompareTag("Player"))
         {
             AudioManager.instance.PlaySFXSound(3);
+            collision.gameObject.SetActive(false);
+            var renderer = collision.gameObject.GetComponent<Renderer>();
+            GameManager.Instance.SpawnDeathParticles(collision.transform.gameObject, renderer.material.color);
+            GameManager.Instance.CameraShake(0.35f, 0.15f);
             GameManager.Instance.LevelLose();
         }
         else if (collision.transform.CompareTag("Boundary")

@@ -96,6 +96,8 @@ public class GameLoseScreen : MonoBehaviour
         {
             GameManager.Instance.ReviveFromCollision();
         });
+        GameManager.Instance.Player.gameObject.SetActive(true);
+        GameManager.Instance.Player.enabled = true;
     }
 
     public void OnClick_CrashRestart()

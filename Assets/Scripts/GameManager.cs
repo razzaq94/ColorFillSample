@@ -5,8 +5,6 @@ using System.Linq;
 using System.Collections;
 using Sirenix.OdinInspector;
 using UnityEngine.SceneManagement;
-using UnityEditor.SceneManagement;
-using UnityEditor;
 [HideMonoScript]
 public class GameManager : MonoBehaviour
 {
@@ -23,12 +21,14 @@ public class GameManager : MonoBehaviour
     public Transform Camera;
     public Vector3 Offset = new Vector3(0, 1, 0);
     public List<CameraSettings> CameraValues;
+    public GameObject deathParticlePrefab; 
 
     [Header("Color Settings")]
     public Color WallColor = Color.gray;
     public Color PlayerColor = Color.green;
-    public Color CubeFillColor = Color.red;
+    public Color CubeFillColor = Color.yellow;
     public Color BackgroundColor = Color.white;
+    public Color EnemyCubeColor = Color.red;
 
     [Header("Level Info")]
     public int StartLevel = 0;
@@ -104,7 +104,7 @@ public class GameManager : MonoBehaviour
     {
         _gameStarted = true;
         AudioManager.instance.PlayUISound(0);
-        UIManager.Instance.StartGame();
+        //UIManager.Instance.StartGame();
         _gameRunning = true;
         ScheduleEnemySpawns();
     }
@@ -156,13 +156,15 @@ public class GameManager : MonoBehaviour
 
     public void ReviveFromCollision()
     {
-        GameLoseScreen.instance?.ClosePanael();
+        Player.transform.position = Player.lastSafeFilledPosition;
+        Player.ClearUnfilledTrail();
+        GameLoseScreen.instance.ClosePanael();
         AdManager_Admob.instance.ShowRewardedVideoAd(() =>
         {
+            Player.gameObject.SetActive(true);
             Player.enabled = true;
             isGameOver = false;
             Player.IsMoving = true;
-            Player.transform.position = Player.lastRestingPosition;
 
             Player.ForceInitialCube();
         });
@@ -191,8 +193,14 @@ public class GameManager : MonoBehaviour
     public void LevelLose()
     {
         Player.enabled = _gameRunning = false;
-        UIManager.Instance?.LevelLoseCrash();
+        Invoke(nameof(HandleLevelLoseCrash), 0.5f);
         AudioManager.instance.BGAudioSource.Stop();
+    }
+
+    public void  HandleLevelLoseCrash()
+    {
+        UIManager.Instance?.LevelLoseCrash();
+
     }
     [Button]
     //public void PlacePreplacedEnemies()
@@ -210,7 +218,32 @@ public class GameManager : MonoBehaviour
     //        }
     //    }
     //}
-   
+    public void CameraShake(float duration = 0.5f, float magnitude = 0.2f)
+    {
+        StartCoroutine(DoShake(duration, magnitude));
+    }
+
+    private IEnumerator DoShake(float duration, float magnitude)
+    {
+        Transform cam = Camera.transform;
+        Vector3 originalPos = cam.localPosition;
+
+        float elapsed = 0f;
+
+        while (elapsed < duration)
+        {
+            float x = Random.Range(-1f, 1f) * magnitude;
+            float y = Random.Range(-1f, 1f) * magnitude;
+
+            cam.localPosition = originalPos + new Vector3(x, y, 0f);
+
+            elapsed += Time.deltaTime;
+            yield return null;
+        }
+
+        cam.localPosition = originalPos;
+    }
+
 
     private void ScheduleEnemySpawns()
     {
@@ -437,6 +470,28 @@ public class GameManager : MonoBehaviour
     {
         SavePlayerPrefs();
     }
+    public GameObject playerParticlePrefab;
+
+    public void SpawnDeathParticles(GameObject sourceObject, Color color)
+    {
+        print("funcCalled");
+
+        Vector3 position = sourceObject.transform.position + new Vector3(0, 1.5f, 0);
+        GameObject prefabToUse = sourceObject.CompareTag("Player") ? playerParticlePrefab : deathParticlePrefab;
+
+        GameObject fx = Instantiate(prefabToUse, position, Quaternion.identity);
+
+        var ps = fx.GetComponent<ParticleSystem>();
+        if (ps != null)
+        {
+            var main = ps.main;
+            main.startColor = color;
+        }
+
+        print(fx.name + " spawned at " + position);
+        Destroy(fx, 2f);
+    }
+
 
 }
 [System.Serializable]

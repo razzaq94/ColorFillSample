@@ -12,7 +12,7 @@ public class UIManager : MonoBehaviour
 
     [Title("UI-MANAGER", null, titleAlignment: TitleAlignments.Centered)]
 
-    public Image StartScreen;
+    //public Image StartScreen;
     public Image Fill;
 
     public TextMeshProUGUI CurrentLevelText;
@@ -50,7 +50,7 @@ public class UIManager : MonoBehaviour
 
     public void FillAmount(float amount) => Fill.DOFillAmount(amount, 0.25f);
 
-    public void StartGame() => StartScreen.DOFade(0.0f, 0.5f).OnComplete(() => StartScreen.gameObject.SetActive(false));
+    //public void StartGame() => StartScreen.DOFade(0.0f, 0.5f).OnComplete(() => StartScreen.gameObject.SetActive(false));
 
     public void LevelComplete()
     {
@@ -75,6 +75,7 @@ public class UIManager : MonoBehaviour
     }
     public void LevelLoseCrash()
     {
+        Player.Instance.gameObject.SetActive(false);
         AudioManager.instance?.PlaySFXSound(1);
         Invoke(nameof(ShowGameLoseUICrash), 0.1f);
     }

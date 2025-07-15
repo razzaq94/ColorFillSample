@@ -1,0 +1,23 @@
+# ninja log v5
+15	1623	7737633599672129	GameActivity/CMakeFiles/game.dir/UGAApplication.cpp.o	cfda9def961eb09b
+169	495	7737633588358222	FramePacing/CMakeFiles/swappywrapper.dir/UnitySwappyWrapper.cpp.o	a48d43510bd90017
+495	937	7737633592842149	D:/Github/Color Trek 3D/Library/Bee/Android/Prj/IL2CPP/Gradle/unityLibrary/build/intermediates/cxx/RelWithDebInfo/1b5z2iv6/obj/arm64-v8a/libswappywrapper.so	7c94a3bdaaf430d2
+162	1529	7737633598687266	GameActivity/CMakeFiles/game.dir/UGAInput.cpp.o	9f48f7e4bbc1d6d0
+86	1167	7737633595089078	GameActivity/CMakeFiles/game.dir/UGAInputKeyEvent.cpp.o	f511db405966eeaf
+112	1247	7737633595843663	GameActivity/CMakeFiles/game.dir/UGAInputMotionEvent.cpp.o	7623751e6435fceb
+38	1409	7737633597502424	GameActivity/CMakeFiles/game.dir/UGADebug.cpp.o	9bb5768a545a01b2
+44	1252	7737633595939763	GameActivity/CMakeFiles/game.dir/UGAConfiguration.cpp.o	2c870ee6f17390eb
+79	1327	7737633596646914	GameActivity/CMakeFiles/game.dir/UGASoftKeyboard.cpp.o	a1fdf1164c48dd6c
+71	1229	7737633595690356	GameActivity/CMakeFiles/game.dir/UGAEntry.cpp.o	2771a4aa1f001cd
+1623	1746	7737633601016507	D:/Github/Color Trek 3D/Library/Bee/Android/Prj/IL2CPP/Gradle/unityLibrary/build/intermediates/cxx/RelWithDebInfo/1b5z2iv6/obj/arm64-v8a/libgame.so	2f78101c421e1eec
+193	1570	7741751554861813	FramePacing/CMakeFiles/swappywrapper.dir/UnitySwappyWrapper.cpp.o	a48d43510bd90017
+1571	2435	7741751564046830	D:/Github/Color Trek 3D/Library/Bee/Android/Prj/IL2CPP/Gradle/unityLibrary/build/intermediates/cxx/RelWithDebInfo/1b5z2iv6/obj/arm64-v8a/libswappywrapper.so	7c94a3bdaaf430d2
+176	4686	7741751586433058	GameActivity/CMakeFiles/game.dir/UGAInputKeyEvent.cpp.o	f511db405966eeaf
+81	4735	7741751586996224	GameActivity/CMakeFiles/game.dir/UGAConfiguration.cpp.o	2c870ee6f17390eb
+131	4736	7741751587001344	GameActivity/CMakeFiles/game.dir/UGAInputMotionEvent.cpp.o	7623751e6435fceb
+115	4842	7741751588070960	GameActivity/CMakeFiles/game.dir/UGASoftKeyboard.cpp.o	a1fdf1164c48dd6c
+67	4850	7741751588157561	GameActivity/CMakeFiles/game.dir/UGAEntry.cpp.o	2771a4aa1f001cd
+98	4937	7741751588925138	GameActivity/CMakeFiles/game.dir/UGADebug.cpp.o	9bb5768a545a01b2
+152	5217	7741751591727948	GameActivity/CMakeFiles/game.dir/UGAInput.cpp.o	9f48f7e4bbc1d6d0
+11	5423	7741751593857115	GameActivity/CMakeFiles/game.dir/UGAApplication.cpp.o	cfda9def961eb09b
+5423	5603	7741751595625802	D:/Github/Color Trek 3D/Library/Bee/Android/Prj/IL2CPP/Gradle/unityLibrary/build/intermediates/cxx/RelWithDebInfo/1b5z2iv6/obj/arm64-v8a/libgame.so	2f78101c421e1eec

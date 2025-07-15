@@ -31,6 +31,7 @@ public class Player : MonoBehaviour
     private Vector2 _startPos2 = Vector2.zero;
     public Vector3 lastSafePosition;
     public Vector3 lastRestingPosition { get; private set; }
+    public Vector3 lastSafeFilledPosition { get; private set; }
 
 
 
@@ -53,6 +54,7 @@ public class Player : MonoBehaviour
     private void Awake()
     {
         Instance = this;
+        lastSafeFilledPosition = RoundPos();
     }
     public bool SpawnCubes{get => _spawnCubes; set => _spawnCubes = value; }
 
@@ -113,11 +115,23 @@ public class Player : MonoBehaviour
             GridManager.Instance.ChangeValue(spawnedCubes[i].transform.position.x, spawnedCubes[i].transform.position.z);
         }
         spawnedCubes.Clear();
+        lastSafeFilledPosition = RoundPos();
     }
+    public void ClearUnfilledTrail()
+    {
+        for (int i = 0; i < spawnedCubes.Count; i++)
+        {
+            if (spawnedCubes[i] != null)
+            {
+                CubeGrid.Instance.PutBackInQueue(spawnedCubes[i]);
+            }
+        }
+        spawnedCubes.Clear();
+    }
+
+
     private void OnCollisionEnter(Collision collision)
     {
-        
-
         if (collision.gameObject.CompareTag("Boundary") || collision.gameObject.CompareTag("Obstacle"))
         {
             IsMoving = false;
@@ -136,8 +150,16 @@ public class Player : MonoBehaviour
             transform.position = RoundPos();
             AudioManager.instance.PlaySFXSound(3);
             Haptics.Generate(HapticTypes.HeavyImpact);
-            GameManager.Instance.LevelLose();
+            GameManager.Instance.SpawnDeathParticles(transform.gameObject, material.color);
+            GameManager.Instance.CameraShake(0.35f, 0.15f);
+            gameObject.SetActive(false);
+            //Invoke(nameof(HandleLevelLose), 2f); 
         }
+    }
+
+    private void HandleLevelLose()
+    {
+        GameManager.Instance.LevelLose();
     }
     private void OnTriggerEnter(Collider other)
     {

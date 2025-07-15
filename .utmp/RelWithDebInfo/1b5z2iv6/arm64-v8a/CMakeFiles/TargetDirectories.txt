@@ -1,0 +1,8 @@
+D:/Github/Color Trek 3D/.utmp/RelWithDebInfo/1b5z2iv6/arm64-v8a/CMakeFiles/edit_cache.dir
+D:/Github/Color Trek 3D/.utmp/RelWithDebInfo/1b5z2iv6/arm64-v8a/CMakeFiles/rebuild_cache.dir
+D:/Github/Color Trek 3D/.utmp/RelWithDebInfo/1b5z2iv6/arm64-v8a/GameActivity/CMakeFiles/game.dir
+D:/Github/Color Trek 3D/.utmp/RelWithDebInfo/1b5z2iv6/arm64-v8a/GameActivity/CMakeFiles/edit_cache.dir
+D:/Github/Color Trek 3D/.utmp/RelWithDebInfo/1b5z2iv6/arm64-v8a/GameActivity/CMakeFiles/rebuild_cache.dir
+D:/Github/Color Trek 3D/.utmp/RelWithDebInfo/1b5z2iv6/arm64-v8a/FramePacing/CMakeFiles/swappywrapper.dir
+D:/Github/Color Trek 3D/.utmp/RelWithDebInfo/1b5z2iv6/arm64-v8a/FramePacing/CMakeFiles/edit_cache.dir
+D:/Github/Color Trek 3D/.utmp/RelWithDebInfo/1b5z2iv6/arm64-v8a/FramePacing/CMakeFiles/rebuild_cache.dir

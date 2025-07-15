@@ -1,9 +1,10 @@
-﻿using UnityEngine;
+﻿using Sirenix.OdinInspector;
+using System.Collections;
 using System.Collections.Generic;
 using System.Drawing;
-using UnityEngine.InputSystem.Haptics;
 using System.Linq;
-using Sirenix.OdinInspector;
+using UnityEngine;
+using UnityEngine.InputSystem.Haptics;
 
 [HideMonoScript]
 public class GridManager : MonoBehaviour
@@ -16,7 +17,7 @@ public class GridManager : MonoBehaviour
     public int _gridRows = 50;
     public int TotalExposedGridCount;
     [SerializeField, DisplayAsString] int _totalCount = 0;
-    [SerializeField, DisplayAsString] int _trueCount = 0;
+    [SerializeField, DisplayAsString]public int _trueCount = 0;
     [ProgressBar(0f, 1f, Height = 20)]public float _progress = 0f;
 
     public float cellSize = 1f;
@@ -57,15 +58,16 @@ public class GridManager : MonoBehaviour
     {
         Vector2Int index = WorldToGrid(new Vector3(x, 0, z));
 
-        if (_grid[index.x, index.y])
-        {
-            Debug.LogWarning($"Cube already filled at {index}, skipping duplicate fill.");
+        if (index.x < 0 || index.x >= _gridColumns || index.y < 0 || index.y >= _gridRows)
             return;
-        }
+
+        if (_grid[index.x, index.y])
+            return;
 
         _grid[index.x, index.y] = true;
-        _trueCount++;
+        //_trueCount++;
     }
+
     public bool IsFilled(Vector2Int index)
     {
         if (index.x < 0 || index.x >= _grid.GetLength(0) || index.y < 0 || index.y >= _grid.GetLength(1))
@@ -110,15 +112,22 @@ public class GridManager : MonoBehaviour
         _grid = finalGrid;
 
         FillFullyEnclosedPockets();
+
         SetProgressBar(_grid);
-        if (_progress >= 1f)
-            GameManager.Instance.LevelComplete();
-
         ForceFillRemainingVisuals();
-    
 
-        }
+        if (_progress >= 1f)
+            StartCoroutine(DelayedLevelWin());
 
+
+    }
+
+    private IEnumerator DelayedLevelWin()
+    {
+        yield return new WaitForEndOfFrame(); // let cube visuals render
+        yield return new WaitForSeconds(0.1f); // optional buffer
+        GameManager.Instance.LevelComplete();
+    }
 
 
     void DestroyEnemiesInNewlyFilledCells(bool[,] oldGrid, bool[,] newGrid)
@@ -139,6 +148,11 @@ public class GridManager : MonoBehaviour
 
             if (!oldGrid[col, row] && newGrid[col, row])
             {
+                var renderer = enemy.GetComponent<EnemyCube>()?._renderer;
+                if(renderer != null)
+                {
+                    GameManager.Instance.SpawnDeathParticles(enemy.transform.gameObject, renderer.material.color);
+                }
                 Destroy(enemy.gameObject);
             }
         }
@@ -274,13 +288,19 @@ public class GridManager : MonoBehaviour
     {
         foreach (Point point in pointList)
         {
+            Vector2Int pos = new Vector2Int(point.X, point.Y);
+
+            if (GetCubeAtPosition(pos) != null)
+                continue; // ✅ Skip if a cube already exists here
+
             Vector3 repCubePos = FindTransformFromPoint(point);
             Cube cube = CubeGrid.Instance.GetCube();
             cube.Initalize(repCubePos, true);
-
+            cube.FillCube(); // ✅ Ensure grid + count is updated
             cube.Illuminate(0.5f);
         }
     }
+
 
     private bool[,] FloodFillAlgo(bool[,] boundaryGrid, bool[,] originalGrid)
     {
@@ -417,16 +437,18 @@ public class GridManager : MonoBehaviour
         foreach (var pocket in allPockets)
         {
             foreach (var p in pocket)
-                _grid[p.X, p.Y] = true;
-
-            MakeCubes(pocket);
-
-           
-           
+            {
+                Vector2Int pos = new Vector2Int(p.X, p.Y);
+                if (GetCubeAtPosition(pos) == null)
+                {
+                    Cube cube = CubeGrid.Instance.GetCube();
+                    cube.Initalize(GridToWorld(pos), true);
+                    cube.FillCube(); // handles grid mark + count
+                }
+            }
 
             lastPocketFilled = true;
         }
-
 
 
         if (lastPocketFilled)
@@ -459,10 +481,14 @@ public class GridManager : MonoBehaviour
             {
                 if (!_grid[x, y])
                 {
-                    Vector3 position = GridToWorld(new Vector2Int(x, y));
-                    Cube cube = CubeGrid.Instance.GetCube();
-                    cube.Initalize(position);  // clean init
-                    cube.FillCube();           // handles grid mark + visual
+                    Vector2Int pos = new Vector2Int(x, y);
+                    if (GetCubeAtPosition(pos) == null)
+                    {
+                        Cube cube = CubeGrid.Instance.GetCube();
+                        cube.Initalize(GridToWorld(pos), true);
+                        cube.FillCube();
+                    }
+                    // handles grid mark + visual
                 }
             }
         }
@@ -477,18 +503,22 @@ public class GridManager : MonoBehaviour
                 {
                     Vector2Int pos = new Vector2Int(x, y);
                     Cube existing = GetCubeAtPosition(pos);
-                    if (existing == null || !existing.IsFilled)
+
+                    if (existing == null)
                     {
                         Cube cube = CubeGrid.Instance.GetCube();
-                        cube.Initalize(GridToWorld(pos));
-                        cube.FillCube(true); // force both visual + logic
+                        cube.Initalize(GridToWorld(pos), true);
+                        cube.FillCube(true);
+                    }
+                    else if (!existing.IsFilled || !existing.gameObject.activeInHierarchy)
+                    {
+                        existing.Initalize(GridToWorld(pos), true);
+                        existing.FillCube(true);
                     }
                 }
             }
         }
     }
-
-
 
 
     private Vector3 FindTransformFromPoint(Point point) => new Vector3((float)(point.X - (float)_gridColumns / 2f), 0.3f, (float)((float)_gridRows / 2f - point.Y));
@@ -566,9 +596,14 @@ public class GridManager : MonoBehaviour
             {
                 if (_grid[x, y] && IsCellExposed(new Vector2Int(x, y)))
                 {
-                    var cube = CubeGrid.Instance.GetCube();
-                    cube.Initalize(GridToWorld(new Vector2Int(x, y)), true);
-                    cube.FillCube();
+                    Vector2Int pos = new Vector2Int(x, y);
+                    if (GetCubeAtPosition(pos) == null)
+                    {
+                        Cube cube = CubeGrid.Instance.GetCube();
+                        cube.Initalize(GridToWorld(pos), true);
+                        cube.FillCube();
+                    }
+
                 }
             }
         }
@@ -579,7 +614,7 @@ public class GridManager : MonoBehaviour
     public bool IsCellExposed(Vector2Int gridPos)
     {
         if (_obstacleMap == null)
-            return true; // fallback if not initialized
+            return true; 
 
         if (gridPos.x < 0 || gridPos.x >= _gridColumns || gridPos.y < 0 || gridPos.y >= _gridRows)
             return false;
@@ -591,14 +626,17 @@ public class GridManager : MonoBehaviour
     {
         foreach (Cube cube in CubeGrid.Instance.AllCubes)
         {
-            Vector2Int cubePos = GridManager.Instance.WorldToGrid(cube.transform.position);
+            if (!cube.gameObject.activeInHierarchy)
+                continue;
+
+            Vector2Int cubePos = WorldToGrid(cube.transform.position);
             if (cubePos == position)
-            {
                 return cube;
-            }
         }
-        return null; // Return null if no cube is found at the position (shouldn't happen if logic is correct)
+
+        return null;
     }
+
 
 
 

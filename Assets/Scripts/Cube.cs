@@ -40,27 +40,38 @@ public class Cube : MonoBehaviour
     public void FillCube(bool force = false)
     {
         if (!gameObject.activeSelf)
-            return;
+            gameObject.SetActive(true); // ✅ Ensure it's visible
 
         Vector2Int index = GridManager.Instance.WorldToGrid(transform.position);
 
-        // 🧠 Check if already filled unless forcing
+        // Prevent double-counting
         if (!force && GridManager.Instance.IsFilled(index))
         {
             Debug.LogWarning($"Duplicate cube fill attempt at {index} from {name}");
-            gameObject.SetActive(false); // disable this cube immediately
+            IsFilled = true;
             return;
         }
 
         IsFilled = true;
 
-        // ✅ Update grid + progress
+        // ✅ Always mark grid and count
         GridManager.Instance.ChangeValue(transform.position.x, transform.position.z);
+        GridManager.Instance._trueCount++;
 
-        // ✅ Visuals
         transform.position = new Vector3(transform.position.x, 0.3f, transform.position.z);
         transform.DOMoveY(0.5f, 0.15f);
+        transform.DOScale(Vector3.one, 0.1f);
     }
+    public void SetTiling(int gridCols, int gridRows)
+    {
+        Renderer r = GetComponent<Renderer>();
+        if (r != null)
+        {
+            Material mat = r.material; // Use `sharedMaterial` only if not instancing
+            mat.mainTextureScale = new Vector2(gridCols / 5f, gridRows / 5f);
+        }
+    }
+
 
     public void UnfillCube()
     {

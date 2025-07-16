@@ -29,9 +29,7 @@ public class Player : MonoBehaviour
     private Vector3 _moveVector = Vector3.zero;
     private Vector3 _targetPos = Vector3.zero;
     private Vector2 _startPos2 = Vector2.zero;
-    public Vector3 lastSafePosition;
-    public Vector3 lastRestingPosition { get; private set; }
-    public Vector3 lastSafeFilledPosition { get; private set; }
+    public Vector3 lastSafeFilledPosition;
 
 
 
@@ -77,7 +75,7 @@ public class Player : MonoBehaviour
     {
         if (!_isMoving)
         {
-            lastSafePosition = transform.position;
+            lastSafeFilledPosition = transform.position;
             return;
         }
         if (Vector3.Distance(_startPos3, transform.position) >= DistanceThreshold)
@@ -119,15 +117,40 @@ public class Player : MonoBehaviour
     }
     public void ClearUnfilledTrail()
     {
+        // Stop physics or any leftover game behavior
+        if (Time.timeScale == 0f)
+        {
+            Time.timeScale = 1f; // Ensure game is unpaused to process cleanup
+        }
+
+        // First, clear all spawned cubes in the trail
         for (int i = 0; i < spawnedCubes.Count; i++)
         {
             if (spawnedCubes[i] != null)
             {
-                CubeGrid.Instance.PutBackInQueue(spawnedCubes[i]);
+                // Check if the cube is filled or unfilled
+                if (!spawnedCubes[i].IsFilled)
+                {
+                    // Mark as inactive and clear it from the scene
+                    CubeGrid.Instance.PutBackInQueue(spawnedCubes[i]);
+                }
             }
         }
+
+        // Ensure any cube at the last position (collision point) is also cleared
+        if (spawnedCubes.Count > 0 && spawnedCubes[spawnedCubes.Count - 1] != null)
+        {
+            // Check if the cube at the collision point is filled or unfilled
+            if (!spawnedCubes[spawnedCubes.Count - 1].IsFilled)
+            {
+                CubeGrid.Instance.PutBackInQueue(spawnedCubes[spawnedCubes.Count - 1]); // Clear it
+            }
+        }
+
+        // Clear the list of spawned cubes to reset the trail
         spawnedCubes.Clear();
     }
+
 
 
     private void OnCollisionEnter(Collision collision)
@@ -302,7 +325,7 @@ public class Player : MonoBehaviour
         if (_isMoving)
             return;
 
-        lastRestingPosition = transform.position; // ✅ capture true last grounded position
+        lastSafeFilledPosition = transform.position; // ✅ capture true last grounded position
 
         SpawnCubes = _isMoving = true;
         _targetPos = transform.position + _moveVector;

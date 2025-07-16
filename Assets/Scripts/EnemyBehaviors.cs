@@ -168,6 +168,8 @@ public class EnemyBehaviors : MonoBehaviour
             {
                 AudioManager.instance.PlaySFXSound(3);
                 Haptics.Generate(HapticTypes.HeavyImpact);
+                GameManager.Instance.CameraShake(0.35f, 0.15f);
+                GameManager.Instance.SpawnDeathParticles(GameManager.Instance.Player.transform.gameObject, GameManager.Instance.Player.material.color);
                 GameManager.Instance.LevelLose();
             }
         }

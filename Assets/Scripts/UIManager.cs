@@ -1,9 +1,10 @@
-using DG.Tweening;
+﻿using DG.Tweening;
 using TMPro;
 using UnityEngine;
 using UnityEngine.UI;
 using Sirenix.OdinInspector;
 using UnityEngine.SceneManagement;
+using System.Collections;
 
 [HideMonoScript]
 public class UIManager : MonoBehaviour
@@ -25,6 +26,12 @@ public class UIManager : MonoBehaviour
     public Transform confettiHolder;
     public RandomTextSpawner RandomTextSpawner;
 
+    [Header("Lives UI")]
+    public GameObject[] lifeIcons; // Assign 3 GameObjects in Inspector representing life icons
+    public int currentLives = 3;
+    public TextMeshProUGUI countDown;
+    private bool isReviving = false;
+
 
     private void Awake()
     {
@@ -40,6 +47,7 @@ public class UIManager : MonoBehaviour
         Fill.fillAmount = 0f;
         NextLevelText.text = (GameManager.Instance.GetCurrentLevel + 1).ToString();
         CurrentLevelText.text = GameManager.Instance.GetCurrentLevel.ToString();
+        ResetLives();
         Invoke(nameof(StartTextDelay), 0.7f);
     }
 
@@ -68,19 +76,39 @@ public class UIManager : MonoBehaviour
     public void LevelLoseTimeOut()
     {
         AudioManager.instance?.PlaySFXSound(1);
+        Time.timeScale = 0f; 
         //GameObject line = Instantiate(LinePrefab, GameObject.FindGameObjectWithTag("MainCanvas").transform.position, LinePrefab.transform.rotation);
         //line.transform.SetParent(GameObject.FindGameObjectWithTag("MainCanvas").transform, false);
-        Invoke(nameof(ShowGameLoseUITimeOut), 0.1f);
+        if (currentLives > 1) // means lives will remain after LoseLife()
+        {
+            LoseLife(); 
+        }
+        else
+        {
+            LoseLife(); 
+            Invoke(nameof(ShowGameLoseUITimeOut), 0.1f);
+        }
         //Destroy(line, 1.6f);
     }
     public void LevelLoseCrash()
     {
         Player.Instance.gameObject.SetActive(false);
         AudioManager.instance?.PlaySFXSound(1);
-        Invoke(nameof(ShowGameLoseUICrash), 0.1f);
+
+        if (currentLives > 1)
+        {
+            LoseLife(); 
+        }
+        else
+        {
+            LoseLife();
+            Invoke(nameof(ShowGameLoseUICrash), 0.1f);
+        }
     }
+
     private void ShowGameLoseUITimeOut()
     {
+        
         GameLoseScreen.ShowUI();
         GameLoseScreen.instance.ShowTimeOutOptions();
     }
@@ -93,10 +121,12 @@ public class UIManager : MonoBehaviour
     {
         GameWinScreen.ShowUI();
     }
+   
+
     public void ShowDeathAdOptions()
     {
 
-       
+
     }
 
     public void ReturnToMenu()
@@ -124,5 +154,73 @@ public class UIManager : MonoBehaviour
     {
         //ShopPanel.ShowUI();
     }
+    public void ResetLives()
+    {
+        currentLives = 3;
+        UpdateLifeIcons();
+    }
+
+    public void LoseLife()
+    {
+        if (currentLives <= 0 || isReviving)
+            return;
+
+        currentLives--;
+        UpdateLifeIcons();
+
+        if (currentLives <= 0)
+        {
+            Time.timeScale = 1f; // just in case it was frozen
+            GameManager.Instance.LevelLose(); // Final loss
+        }
+        else
+        {
+            StartCoroutine(ReviveCountdownRoutine());
+        }
+    }
+
+    public void GainLife()
+    {
+        if (currentLives >= lifeIcons.Length)
+            return;
+
+        currentLives++;
+        UpdateLifeIcons();
+    }
+
+    private void UpdateLifeIcons()
+    {
+        for (int i = 0; i < lifeIcons.Length; i++)
+            lifeIcons[i].SetActive(i < currentLives);
+    }
+
+    [ContextMenu("Revive Button")]
+    public void reviveButton()
+    {
+        StartCoroutine(ReviveCountdownRoutine());
+    }
+    private IEnumerator ReviveCountdownRoutine()
+    {
+        isReviving = true;
+        countDown.gameObject.SetActive(true);
+        
+        GameManager.Instance.ReviveFromLife();
+        Time.timeScale = 0f;
+        yield return null;
+        //for (int i = 3; i > 0; i--)
+        //{
+        //    countDown.text = i.ToString("00");
+        //    yield return new WaitForSecondsRealtime(1f); 
+        //}
+
+        countDown.text = "0";  
+        countDown.gameObject.SetActive(false);
+
+        Time.timeScale = 1f;
+        GameManager.Instance.Player.gameObject.SetActive(true);
+        GameManager.Instance.Player.enabled = true;
+        isReviving = false;
+    }
+
 
 }

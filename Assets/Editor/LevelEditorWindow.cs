@@ -247,13 +247,13 @@ public class LevelDataEditorWindow : EditorWindow
 
                 Camera cam = _gameManager.Camera.GetComponent<Camera>();
                 if (cam != null)
-                    cam.orthographic = false; // 🔄 Force perspective
+                    cam.orthographic = true; // ✅ Use orthographic mode
 
                 EditorGUI.BeginDisabledGroup(_level.useAutoCameraPositioning);
 
                 float newY = EditorGUILayout.FloatField("Camera Y Position", _level.cameraYPosition);
                 float newZ = EditorGUILayout.FloatField("Camera Z Position", _level.cameraZPosition);
-                float newFOV = EditorGUILayout.FloatField("Field of View (FOV)", _level.zoomSize);
+                float newSize = EditorGUILayout.FloatField("Orthographic Size", _level.zoomSize);
 
                 EditorGUI.EndDisabledGroup();
 
@@ -277,23 +277,26 @@ public class LevelDataEditorWindow : EditorWindow
                         EditorUtility.SetDirty(_gameManager.Camera.gameObject);
                     }
 
-                    if (!Mathf.Approximately(newFOV, _level.zoomSize) && cam != null)
+                    if (!Mathf.Approximately(newSize, _level.zoomSize) && cam != null)
                     {
-                        _level.zoomSize = newFOV;
-                        cam.fieldOfView = newFOV;
+                        _level.zoomSize = newSize;
+                        cam.orthographicSize = newSize;
                         EditorUtility.SetDirty(cam);
                     }
                 }
                 else
                 {
-                    if (cam != null && ColumnToCamYZ.TryGetValue(_level.Columns, out Vector2 yz))
+                    if (cam != null && ColumnToCamOrtho.TryGetValue(_level.Columns, out Vector3 orthoData))
                     {
-                        _level.cameraYPosition = yz.x;
-                        _level.cameraZPosition = yz.y;
+                        _level.zoomSize = orthoData.x;
+                        _level.cameraYPosition = orthoData.y;
+                        _level.cameraZPosition = orthoData.z;
+
+                        cam.orthographicSize = orthoData.x;
 
                         Vector3 pos = _gameManager.Camera.position;
-                        pos.y = yz.x;
-                        pos.z = yz.y;
+                        pos.y = orthoData.y;
+                        pos.z = orthoData.z;
                         _gameManager.Camera.position = pos;
 
                         EditorUtility.SetDirty(cam);
@@ -301,10 +304,11 @@ public class LevelDataEditorWindow : EditorWindow
                     }
                     else
                     {
-                        Debug.LogWarning($"❌ No camera Y/Z mapping found for column count {_level.Columns}.");
+                        Debug.LogWarning($"❌ No orthographic camera settings defined for column count: {_level.Columns}");
                     }
                 }
             }
+
 
             if (GUI.changed)
             {
@@ -359,10 +363,10 @@ public class LevelDataEditorWindow : EditorWindow
         int rows = EditorGUILayout.IntField("Rows", _level.Rows);
 
         cols = Mathf.Clamp(cols, MinGridSize, MaxGridSize);
-        rows = Mathf.Clamp(rows, MinGridSize, MaxGridSize);
+        rows = Mathf.Clamp(rows, MinGridSize, MaxGridSize+30);
 
-        if (cols % 2 != 0) cols++;
-        if (rows % 2 != 0) rows++;
+        //if (cols % 2 != 0) cols++;
+        //if (rows % 2 != 0) rows++;
 
         // ✅ Compare directly with current level, not _prev
         bool sizeChanged = (cols != _level.Columns || rows != _level.Rows);
@@ -399,17 +403,19 @@ public class LevelDataEditorWindow : EditorWindow
             var cam = Camera.main != null ? Camera.main : _gameManager.Camera.GetComponent<Camera>();
             if (cam != null)
             {
-                cam.orthographic = false;
+                cam.orthographic = true;
 
-                if (ColumnToCamYZ.TryGetValue(_level.Columns, out Vector2 yz))
+                if (ColumnToCamOrtho.TryGetValue(_level.Columns, out Vector3 orthoData))
                 {
+                    cam.orthographicSize = orthoData.x;
+
                     Vector3 camPos = cam.transform.position;
-                    camPos.y = yz.x;
-                    camPos.z = yz.y;
+                    camPos.y = orthoData.y;
+                    camPos.z = orthoData.z;
                     cam.transform.position = camPos;
 
-                    _level.cameraYPosition = yz.x;
-                    _level.cameraZPosition = yz.y;
+                    _level.cameraYPosition = orthoData.y;
+                    _level.cameraZPosition = orthoData.z;
 
                     EditorUtility.SetDirty(cam);
                     if (_gameManager.Camera != null)
@@ -417,7 +423,7 @@ public class LevelDataEditorWindow : EditorWindow
                 }
                 else
                 {
-                    Debug.LogWarning($"No camera offset defined for column count: {_level.Columns}");
+                    Debug.LogWarning($"No orthographic camera settings defined for column count: {_level.Columns}");
                 }
             }
         }
@@ -1387,31 +1393,32 @@ public class LevelDataEditorWindow : EditorWindow
 
 
 
-    private static readonly Dictionary<int, Vector2> ColumnToCamYZ = new()
+    private static readonly Dictionary<int, Vector3> ColumnToCamOrtho = new()
 {
-    { 8,  new Vector2(42.8f, -10f) },
-    { 10, new Vector2(56.5f, -13.5f) },
-    { 12, new Vector2(66.13f, -17f) },
-    { 14, new Vector2(79.2f, -20.7f) },
-    { 16, new Vector2(91.01f, -22.3f) },
-    { 18, new Vector2(102.1f, -25.2f) },
-    { 20, new Vector2(114.72f, -28.3f) },
-    { 22, new Vector2(125.76f, -29.8f) },
-    { 24, new Vector2(138.9f, -34.3f) },
-    { 26, new Vector2(151.3f, -35.6f) },
-    { 28, new Vector2(165.3f, -40.2f) },
-    { 30, new Vector2(176.98f, -42.9f) },
-    { 32, new Vector2(217.6f, -52.3f) },
-    { 34, new Vector2(232f, -56f) },
-    { 36, new Vector2(246f, -58f) },
-    { 38, new Vector2(260f, -62f) },
-    { 40, new Vector2(270.99f, -66.3f) },
-    { 42, new Vector2(288f, -68f) },
-    { 44, new Vector2(310f, -75f) },
-    { 46, new Vector2(325f, -78f) },
-    { 48, new Vector2(345f, -82f) },
-    { 50, new Vector2(355f, -85f) },
+    { 8,  new Vector3(7f, 10f, -0.5f) },
+    { 10, new Vector3(9.36f, 10f, -0.5f) },
+    { 12, new Vector3(11.67f, 10f, 0f) },
+    { 14, new Vector3(14.04f, 10f, 0.5f) },
+    { 16, new Vector3(16.4f, 10f, 1f) },
+    { 18, new Vector3(18.78f, 10f, 2f) },
+    { 20, new Vector3(21.2f, 10f, 2f) },
+    { 22, new Vector3(23.5f, 10f, 2f) },
+    { 24, new Vector3(25.8f, 10f, 2.5f) },
+    { 26, new Vector3(28.3f, 10f, 3f) },
+    { 28, new Vector3(30.6f, 10f, 3.5f) },
+    { 30, new Vector3(33f, 10f, 3.5f) },
+    { 32, new Vector3(35.4f, 10f, 3.5f) },
+    { 34, new Vector3(37.8f, 15f, 4f) },
+    { 36, new Vector3(40f, 15f, 4f) },
+    { 38, new Vector3(42.5f, 15f, 4f) },
+    { 40, new Vector3(44.8f, 15f, 4f) },
+    { 42, new Vector3(47f, 20f, 4f) },
+    { 44, new Vector3(49.5f, 20f, 4.5f) },
+    { 46, new Vector3(51.7f, 20f, 5f) },
+    { 48, new Vector3(54f, 20f, 5f) },
+    { 50, new Vector3(56.5f, 20f, 5f) },
 };
+
 }
 
 

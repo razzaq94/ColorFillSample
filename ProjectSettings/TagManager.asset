@@ -21,6 +21,7 @@ TagManager:
   - MainCanvas
   - EnemyCube
   - GridBackground
+  - Heart
   layers:
   - Default
   - TransparentFX

@@ -36,6 +36,7 @@ public class GameManager : MonoBehaviour
     public int firstLevelBuildIndex = 1;
     public int TotalLevels => SceneManager.sceneCountInBuildSettings - firstLevelBuildIndex;
     public int Diamonds;
+    public int Life;
     private int LevelToUse = 1;
     public int GetCurrentLevel => CurrentLevel;
 
@@ -158,7 +159,7 @@ public class GameManager : MonoBehaviour
     {
         Player.transform.position = Player.lastSafeFilledPosition;
         Player.ClearUnfilledTrail();
-        GameLoseScreen.instance.ClosePanael();
+        GameLoseScreen.instance?.ClosePanael();
         AdManager_Admob.instance.ShowRewardedVideoAd(() =>
         {
             Player.gameObject.SetActive(true);
@@ -169,6 +170,20 @@ public class GameManager : MonoBehaviour
             Player.ForceInitialCube();
         });
 
+    }
+    public void ReviveFromLife()
+    {
+        print(Player.lastSafeFilledPosition + " before revive");
+
+        Player.gameObject.SetActive(true); 
+        Player.enabled = true;             
+        Player.transform.position = Player.lastSafeFilledPosition;
+        Player.ClearUnfilledTrail();
+        isGameOver = false;
+        Player.IsMoving = true;
+        Player.ForceInitialCube();
+
+        print(Player.lastSafeFilledPosition + " after revive");
     }
 
 

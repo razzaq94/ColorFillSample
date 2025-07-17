@@ -217,4 +217,5 @@ public enum SpawnablesType
     CubeEater,
     SolidBall,
     Pickups,
+    RotatingMine,
 }

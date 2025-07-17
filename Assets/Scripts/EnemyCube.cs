@@ -17,11 +17,13 @@ public class EnemyCube : MonoBehaviour
         if (_renderer)
             _renderer.material.color = GameManager.Instance.EnemyCubeColor;
     }
+    bool collided = false;
 
     private void OnCollisionEnter(Collision collision)
     {
-        if (collision.gameObject.TryGetComponent<Cube>(out Cube cube))
+        if (collision.gameObject.TryGetComponent<Cube>(out Cube cube) && !collided)
         {
+            collided = true;
             if (cube.IsFilled)
             {
                 gameObject.SetActive(false);
@@ -32,21 +34,28 @@ public class EnemyCube : MonoBehaviour
             {
                 AudioManager.instance.PlaySFXSound(3);
                 Haptics.Generate(HapticTypes.HeavyImpact);
-                //GameManager.Instance.CameraShake(0.35f, 0.15f);
-                //GameManager.Instance.SpawnDeathParticles(GameManager.Instance.Player.transform.gameObject, GameManager.Instance.Player.material.color);
+                GameManager.Instance.CameraShake(0.35f, 0.15f);
+                GameManager.Instance.SpawnDeathParticles(GameManager.Instance.Player.transform.gameObject, GameManager.Instance.Player.material.color);
                 GameManager.Instance.LevelLose();
             }
+            Invoke(nameof(enableAgain), 0.6f);
         }
-        if (collision.gameObject.CompareTag("Player"))
+        else if (collision.gameObject.CompareTag("Player") && !collided)
         {
+            collided = true;
             AudioManager.instance.PlaySFXSound(3);
-            Invoke(nameof(HandleLevelLose), 0.5f);
+            Invoke(nameof(HandleLevelLoseCrash), 0.5f);
         }
     }
 
-    public void HandleLevelLose() 
+    void enableAgain()
     {
-        GameManager.Instance.LevelLose();
+        collided = false;
+    }
 
+    public void HandleLevelLoseCrash() 
+    {
+        UIManager.Instance.LevelLoseCrash();
+        collided = false;
     }
 }

@@ -92,6 +92,7 @@ public class GameLoseScreen : MonoBehaviour
     }
     public void OnClick_Revive()
     {
+        UIManager.Instance.currentLives++;
         AdManager_Admob.instance.ShowRewardedVideoAd(() =>
         {
             GameManager.Instance.ReviveFromCollision();

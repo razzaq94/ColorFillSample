@@ -52,6 +52,7 @@ public class GameManager : MonoBehaviour
     private Dictionary<SpawnablesType, List<GameObject>> enemyPrefabVariants;
 
     private bool isGameOver = false;
+    public bool loosed = false;
 
     private void Awake()
     {
@@ -157,34 +158,44 @@ public class GameManager : MonoBehaviour
 
     public void ReviveFromCollision()
     {
-        Player.transform.position = Player.lastSafeFilledPosition;
         Player.ClearUnfilledTrail();
+        Player.ResetMovement();
+        Player.transform.position = Player.lastSafeFilledPosition;
         GameLoseScreen.instance?.ClosePanael();
+        Player.ForceInitialCube();
         AdManager_Admob.instance.ShowRewardedVideoAd(() =>
         {
             Player.gameObject.SetActive(true);
             Player.enabled = true;
             isGameOver = false;
             Player.IsMoving = true;
-
-            Player.ForceInitialCube();
+            loosed = false; 
         });
 
     }
     public void ReviveFromLife()
     {
         print(Player.lastSafeFilledPosition + " before revive");
-
-        Player.gameObject.SetActive(true); 
-        Player.enabled = true;             
-        Player.transform.position = Player.lastSafeFilledPosition;
         Player.ClearUnfilledTrail();
+
+        Player.gameObject.SetActive(true);
+        Player.enabled = true;
+
+        Player.IsMoving = false; 
+        Player.SpawnCubes = false; 
+
+        Player.ResetMovement();
+
+        Player.transform.position = Player.lastSafeFilledPosition;
+
+
         isGameOver = false;
-        Player.IsMoving = true;
+        loosed = false;
         Player.ForceInitialCube();
 
         print(Player.lastSafeFilledPosition + " after revive");
     }
+
 
 
 
@@ -207,6 +218,12 @@ public class GameManager : MonoBehaviour
     }
     public void LevelLose()
     {
+        if(loosed)
+        {
+            return;
+        }
+        loosed = true;
+        print("Lose called");   
         Player.enabled = _gameRunning = false;
         Invoke(nameof(HandleLevelLoseCrash), 0.5f);
         AudioManager.instance.BGAudioSource.Stop();

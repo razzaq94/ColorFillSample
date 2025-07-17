@@ -5,6 +5,7 @@ using UnityEngine.UI;
 using Sirenix.OdinInspector;
 using UnityEngine.SceneManagement;
 using System.Collections;
+using Unity.Cinemachine;
 
 [HideMonoScript]
 public class UIManager : MonoBehaviour
@@ -30,7 +31,7 @@ public class UIManager : MonoBehaviour
     public GameObject[] lifeIcons; // Assign 3 GameObjects in Inspector representing life icons
     public int currentLives = 3;
     public TextMeshProUGUI countDown;
-    private bool isReviving = false;
+    public bool isReviving = false;
 
 
     private void Awake()
@@ -170,7 +171,8 @@ public class UIManager : MonoBehaviour
 
         if (currentLives <= 0)
         {
-            Time.timeScale = 1f; // just in case it was frozen
+            GameManager.Instance.loosed = false;
+            Time.timeScale = 1f; 
             GameManager.Instance.LevelLose(); // Final loss
         }
         else
@@ -203,24 +205,23 @@ public class UIManager : MonoBehaviour
     {
         isReviving = true;
         countDown.gameObject.SetActive(true);
-        
-        GameManager.Instance.ReviveFromLife();
         Time.timeScale = 0f;
-        yield return null;
-        //for (int i = 3; i > 0; i--)
-        //{
-        //    countDown.text = i.ToString("00");
-        //    yield return new WaitForSecondsRealtime(1f); 
-        //}
 
-        countDown.text = "0";  
+        GameManager.Instance.ReviveFromLife();
+        // Countdown loop
+        for (int i = 3; i > 0; i--)
+        {
+            countDown.text = i.ToString("00");
+            yield return new WaitForSecondsRealtime(1f); // Countdown waits in real time, not affected by Time.timeScale
+        }
+
+        countDown.text = "00";  // Optional: set to "00" after countdown
         countDown.gameObject.SetActive(false);
 
+        //GameManager.Instance.Player.gameObject.SetActive(true);
+        //GameManager.Instance.Player.enabled = true;
+
         Time.timeScale = 1f;
-        GameManager.Instance.Player.gameObject.SetActive(true);
-        GameManager.Instance.Player.enabled = true;
         isReviving = false;
     }
-
-
 }

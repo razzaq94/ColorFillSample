@@ -72,6 +72,7 @@ public class LevelDataEditorWindow : EditorWindow
         AssetDatabase.LoadAssetAtPath<GameObject>("Assets/Prefabs/Spawnables/DIAMOND.prefab"),
         AssetDatabase.LoadAssetAtPath<GameObject>("Assets/Prefabs/Spawnables/SlowDown.prefab"),
         AssetDatabase.LoadAssetAtPath<GameObject>("Assets/Prefabs/Spawnables/Timer.prefab"),
+        AssetDatabase.LoadAssetAtPath<GameObject>("Assets/Prefabs/Spawnables/Heart.prefab"),
     };
 
         if (_level != null)
@@ -365,8 +366,8 @@ public class LevelDataEditorWindow : EditorWindow
         cols = Mathf.Clamp(cols, MinGridSize, MaxGridSize);
         rows = Mathf.Clamp(rows, MinGridSize, MaxGridSize+30);
 
-        //if (cols % 2 != 0) cols++;
-        //if (rows % 2 != 0) rows++;
+        if (cols % 2 != 0) cols++;
+        if (rows % 2 != 0) rows++;
 
         // ✅ Compare directly with current level, not _prev
         bool sizeChanged = (cols != _level.Columns || rows != _level.Rows);
@@ -699,7 +700,7 @@ public class LevelDataEditorWindow : EditorWindow
             {
                 menu.AddSeparator("Spawnable/");
 
-                string[] pickupVariants = { "Timer", "SlowDown", "DIAMOND" };
+                string[] pickupVariants = { "Timer", "SlowDown", "DIAMOND", "Heart" };
                 menu.AddSeparator("Spawnable/Pickups/");
                 foreach (var variant in pickupVariants)
                 {
@@ -734,6 +735,7 @@ public class LevelDataEditorWindow : EditorWindow
                             );
                         }
                     );
+
                 }
 
                 foreach (SpawnablesType t in System.Enum.GetValues(typeof(SpawnablesType)))
@@ -765,7 +767,7 @@ public class LevelDataEditorWindow : EditorWindow
                             var cfg = new SpawnableConfig
                             {
                                 enemyType = t,
-                                prefab = (t == SpawnablesType.CubeEater) ? prefab : GetRandomPrefabVariant(prefab), // <── FIX: no random for CubeEater
+                                prefab = (t == SpawnablesType.CubeEater) ? prefab : GetRandomPrefabVariant(prefab),
                                 row = row,
                                 col = col,
                                 spawnCount = 1,
@@ -785,6 +787,41 @@ public class LevelDataEditorWindow : EditorWindow
                             );
                         }
                     );
+                    menu.AddItem(
+    new GUIContent("Spawnable/NewSpawnable"),
+    false,
+    () =>
+    {
+        // Load the prefab (ensure the path is correct)
+        GameObject newSpawnablePrefab = AssetDatabase.LoadAssetAtPath<GameObject>("Assets/Prefabs/Spawnables/NewSpawnablePrefab.prefab");
+
+        // Create the SpawnableConfig
+        var cfg = new SpawnableConfig
+        {
+            enemyType = SpawnablesType.RotatingMine,
+            prefab = newSpawnablePrefab,
+            row = row,
+            col = col,
+            spawnCount = 1,
+            progressThreshold = 0.5f,
+            subsequentProgressThresholds = new List<float>(),
+            usePhysicsDrop = true,
+            yOffset = 1.4f
+        };
+
+        _level.SpwanablesConfigurations.Add(cfg);
+
+        RefreshSpawnableMap();
+        EditorUtility.SetDirty(_gameManager);
+
+        SpawnableCellPopup.Open(
+            cfg,
+            _enemyTypeToPrefabsMap,
+            new Rect(screenMouse.x, screenMouse.y, 1, 1)
+        );
+    }
+);
+
                 }
             }
         }

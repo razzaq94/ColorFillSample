@@ -178,8 +178,8 @@ public class GameManager : MonoBehaviour
         print(Player.lastSafeFilledPosition + " before revive");
         Player.ClearUnfilledTrail();
 
-        Player.gameObject.SetActive(true);
         Player.enabled = true;
+        Player.gameObject.SetActive(true);
 
         Player.IsMoving = false; 
         Player.SpawnCubes = false; 

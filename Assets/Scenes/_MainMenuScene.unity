@@ -1347,14 +1347,15 @@ MonoBehaviour:
   BGAudioSource: {fileID: 1957129065}
   UIAudioSource: {fileID: 921319884}
   SFXAudioSource: {fileID: 1908303628}
-  BGMusic: []
+  BGMusic:
+  - {fileID: 8300000, guid: 89b1aa527fc66db4eb09a1c9a2f76be0, type: 3}
   UISounds:
   - {fileID: 8300000, guid: 57c937d92ff261c4e9eee30d2f9f1c34, type: 3}
   SFXSounds:
-  - {fileID: 8300000, guid: 3ae725e0179c95b499a1a2546669576b, type: 3}
-  - {fileID: 8300000, guid: c7f0871e87eda5448aa6df0b3c2f9b07, type: 3}
-  - {fileID: 8300000, guid: 0396928fa145bbb48b43760de3684a1a, type: 3}
-  - {fileID: 8300000, guid: 3401e5dbeefc131449777741087f51f6, type: 3}
+  - {fileID: 8300000, guid: b4fb297bd16f50a4c93c5fc56d022a20, type: 3}
+  - {fileID: 8300000, guid: ac0c75866b2d7c7458c6bd000a7a93ca, type: 3}
+  - {fileID: 8300000, guid: c231fbda1b799ff4a8ebdff6bc29bdc0, type: 3}
+  - {fileID: 8300000, guid: ad8fc94c3d9117d4dacc56650b348f8d, type: 3}
 --- !u!4 &1073900544
 Transform:
   m_ObjectHideFlags: 0
@@ -1680,7 +1681,7 @@ MonoBehaviour:
   _isMoving: 0
   _useKeyboard: 1
   moveSpeed: 8
-  lastSafePosition: {x: 0, y: 0, z: 0}
+  lastSafeFilledPosition: {x: 0, y: 0, z: 0}
   spawnedCubes: []
   playerColor: {r: 0.22254802, g: 0.8396226, b: 0.16237983, a: 1}
   material: {fileID: 2100000, guid: 38a5ea855e8c2a949b24cf1254b22dbc, type: 2}
@@ -2053,6 +2054,7 @@ MonoBehaviour:
   CurrentLevel: 0
   firstLevelBuildIndex: 1
   Diamonds: 0
+  Life: 0
   SpeedForFallingObjects: 0.3
   Level:
     LevelObject: {fileID: 344930045539134287}
@@ -2115,6 +2117,7 @@ MonoBehaviour:
     cameraFOVMax: 70
     useAutoCameraPositioning: 1
   enemyVariantGroups: []
+  loosed: 0
   playerParticlePrefab: {fileID: 1350945476068147629, guid: 76a2627f85dd0384ba9bccc3960c663d, type: 3}
 --- !u!4 &1425309783
 Transform:
@@ -2918,6 +2921,10 @@ MonoBehaviour:
   confetti: {fileID: 0}
   confettiHolder: {fileID: 0}
   RandomTextSpawner: {fileID: 0}
+  lifeIcons: []
+  currentLives: 3
+  countDown: {fileID: 0}
+  isReviving: 0
 --- !u!114 &1805188881
 MonoBehaviour:
   m_ObjectHideFlags: 0

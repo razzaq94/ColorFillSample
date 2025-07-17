@@ -839,6 +839,7 @@ GameObject:
   serializedVersion: 6
   m_Component:
   - component: {fileID: 1839833872459072514}
+  - component: {fileID: 2144415942947449498}
   m_Layer: 0
   m_Name: Blades
   m_TagString: Untagged
@@ -863,6 +864,19 @@ Transform:
   - {fileID: 3259243998105970127}
   m_Father: {fileID: 6861590016576691877}
   m_LocalEulerAnglesHint: {x: 0, y: 0, z: 0}
+--- !u!114 &2144415942947449498
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 7805802502130422324}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 4325a91df2f80d949bdd4b88e0f66571, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: 
+  rotationSpeed: 250
 --- !u!1 &8290453053130065188
 GameObject:
   m_ObjectHideFlags: 0
@@ -1078,7 +1092,7 @@ Animator:
   m_PrefabInstance: {fileID: 0}
   m_PrefabAsset: {fileID: 0}
   m_GameObject: {fileID: 8416554238452613260}
-  m_Enabled: 1
+  m_Enabled: 0
   m_Avatar: {fileID: 0}
   m_Controller: {fileID: 9100000, guid: 502ca68c91c60934ea9b1e1b08d89cb9, type: 2}
   m_CullingMode: 0

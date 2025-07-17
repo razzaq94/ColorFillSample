@@ -98,7 +98,7 @@ public class AudioManager : MonoBehaviour
     public void PlayBGMusic(int n)
     {
         BGAudioSource.Stop();
-        //BGAudioSource.clip = BGMusic[n];
+        BGAudioSource.clip = BGMusic[n];
         BGAudioSource.Play();
     }
 
@@ -107,9 +107,10 @@ public class AudioManager : MonoBehaviour
         UIAudioSource.PlayOneShot(UISounds[n]);
     }
 
+
     public void PlaySFXSound(int n)
     {
         print("SFXStart");
-        //SFXAudioSource.PlayOneShot(SFXSounds[n]);
+        SFXAudioSource.PlayOneShot(SFXSounds[n]);
     }
 }

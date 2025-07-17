@@ -102,7 +102,6 @@ public class CubeEater : MonoBehaviour
 
                 if (hit.CompareTag("Player"))
                 {
-                    AudioManager.instance.PlaySFXSound(3);
                     Haptics.Generate(HapticTypes.HeavyImpact);
                     var renderer = hit.gameObject.GetComponent<Renderer>();
                     GameManager.Instance.SpawnDeathParticles(hit.transform.gameObject, renderer.material.color);

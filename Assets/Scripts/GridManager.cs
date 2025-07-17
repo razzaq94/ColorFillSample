@@ -151,6 +151,7 @@ public class GridManager : MonoBehaviour
                 var renderer = enemy.GetComponent<EnemyCube>()?._renderer;
                 if(renderer != null)
                 {
+                    AudioManager.instance.PlaySFXSound(2);
                     GameManager.Instance.SpawnDeathParticles(enemy.transform.gameObject, renderer.material.color);
                 }
                 Destroy(enemy.gameObject);

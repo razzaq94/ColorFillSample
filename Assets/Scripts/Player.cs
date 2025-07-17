@@ -140,6 +140,7 @@ public class Player : MonoBehaviour
         if (collision.gameObject.CompareTag("Boundary") || collision.gameObject.CompareTag("Obstacle"))
         {
             IsMoving = false;
+            AudioManager.instance.PlaySFXSound(3);
             transform.DOMove(RoundPos(), 0.1f);
             if (_spawnCubes)
             {
@@ -153,7 +154,7 @@ public class Player : MonoBehaviour
         {
             IsMoving = false;
             transform.position = RoundPos();
-            AudioManager.instance.PlaySFXSound(3);
+            //AudioManager.instance.PlaySFXSound(1);
             Haptics.Generate(HapticTypes.HeavyImpact);
             GameManager.Instance.SpawnDeathParticles(transform.gameObject, material.color);
             GameManager.Instance.CameraShake(0.35f, 0.15f);

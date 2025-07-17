@@ -77,18 +77,11 @@ public class UIManager : MonoBehaviour
     public void LevelLoseTimeOut()
     {
         AudioManager.instance?.PlaySFXSound(1);
-        Time.timeScale = 0f; 
         //GameObject line = Instantiate(LinePrefab, GameObject.FindGameObjectWithTag("MainCanvas").transform.position, LinePrefab.transform.rotation);
         //line.transform.SetParent(GameObject.FindGameObjectWithTag("MainCanvas").transform, false);
-        if (currentLives > 1) // means lives will remain after LoseLife()
-        {
-            LoseLife(); 
-        }
-        else
-        {
-            LoseLife(); 
-            Invoke(nameof(ShowGameLoseUITimeOut), 0.1f);
-        }
+
+        Invoke(nameof(ShowGameLoseUITimeOut), 0.1f);
+
         //Destroy(line, 1.6f);
     }
     public void LevelLoseCrash()

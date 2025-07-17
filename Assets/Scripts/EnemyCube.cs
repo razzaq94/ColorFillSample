@@ -27,6 +27,7 @@ public class EnemyCube : MonoBehaviour
             if (cube.IsFilled)
             {
                 gameObject.SetActive(false);
+                AudioManager.instance.PlaySFXSound(2);
                 GameManager.Instance.SpawnDeathParticles(transform.gameObject, _renderer.material.color);
                 Destroy(gameObject, 1f);
             }

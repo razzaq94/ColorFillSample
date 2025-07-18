@@ -159,6 +159,7 @@ public class EnemyBehaviors : MonoBehaviour
             if (enemyType == SpawnablesType.MultiColoredBall && cube.IsFilled && Time.frameCount != _lastDestroyFrame)
             {
                 gridManager.RemoveCubeAt(cube);
+                gridManager.RemoveCubeAt(cube);
 
                 BounceOffNormal(collision.contacts[0].normal);
 
@@ -197,15 +198,25 @@ public class EnemyBehaviors : MonoBehaviour
 
     private void BounceOffNormal(Vector3 normal)
     {
-        rb.linearVelocity = Vector3.zero;
-        dir = Vector3.Reflect(dir, normal).normalized;
+        if (normal == Vector3.zero)
+        {
+            dir = PickRandomXZDirection(0.4f);
+        }
+        else
+        {
+            dir = Vector3.Reflect(dir, normal).normalized;
+        }
 
         float jitter = Random.Range(-bounceAngle, bounceAngle);
         dir = Quaternion.Euler(0f, jitter, 0f) * dir;
-        dir.Normalize();
+        dir = dir.normalized;
+
+        if (dir.magnitude < 0.1f)
+            dir = PickRandomXZDirection(0.4f);
 
         rb.linearVelocity = dir * speed;
     }
+
 
 }
 

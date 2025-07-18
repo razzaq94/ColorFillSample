@@ -43,7 +43,9 @@ public class GameLoseScreen : MonoBehaviour
         }
 
         countdownText.text = "00";
-        RestartButton();    
+        if(!UIManager.Instance.isReviving)
+            RestartButton();
+
         Destroy(gameObject);
     }
 
@@ -92,13 +94,13 @@ public class GameLoseScreen : MonoBehaviour
     }
     public void OnClick_Revive()
     {
-        UIManager.Instance.currentLives++;
+        ClosePanael();
         AdManager_Admob.instance.ShowRewardedVideoAd(() =>
         {
-            GameManager.Instance.ReviveFromCollision();
+            GameManager.Instance.ReviveFromLife();
+            UIManager.Instance.GainLife();
         });
-        GameManager.Instance.Player.gameObject.SetActive(true);
-        GameManager.Instance.Player.enabled = true;
+       
     }
 
     public void OnClick_CrashRestart()

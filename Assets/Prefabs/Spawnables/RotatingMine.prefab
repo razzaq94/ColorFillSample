@@ -322,7 +322,7 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: a9974a74025a1404389ba9ad5c63948a, type: 3}
   m_Name: 
   m_EditorClassIdentifier: 
-  SpawnablesType: 0
+  SpawnablesType: 6
 --- !u!65 &7732484000252207201
 BoxCollider:
   m_ObjectHideFlags: 0

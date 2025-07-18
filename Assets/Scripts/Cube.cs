@@ -14,7 +14,13 @@ public class Cube : MonoBehaviour
     {
         _renderer = GetComponent<Renderer>();
     }
-
+    private void Update()
+    {
+        if (IsFilled)
+        {
+            transform.DOMoveY(0.5f, 0.15f);
+        }
+    }
     public void ResetCube()
     {
         IsFilled = false;

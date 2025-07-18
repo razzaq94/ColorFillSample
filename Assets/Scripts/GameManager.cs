@@ -75,7 +75,7 @@ public class GameManager : MonoBehaviour
             if (wall.TryGetComponent<Renderer>(out var renderer))
                 renderer.sharedMaterial.color = WallColor;
         }
-
+        UIManager.Instance.Diamonds.text = GameManager.Instance.Diamonds.ToString();
         Haptics.Generate(HapticTypes.LightImpact);
         AudioManager.instance?.PlayBGMusic(0);
     }
@@ -156,23 +156,7 @@ public class GameManager : MonoBehaviour
         Level.levelTime += time;
     }
 
-    public void ReviveFromCollision()
-    {
-        Player.ClearUnfilledTrail();
-        Player.ResetMovement();
-        Player.transform.position = Player.lastSafeFilledPosition;
-        GameLoseScreen.instance?.ClosePanael();
-        Player.ForceInitialCube();
-        AdManager_Admob.instance.ShowRewardedVideoAd(() =>
-        {
-            Player.gameObject.SetActive(true);
-            Player.enabled = true;
-            isGameOver = false;
-            Player.IsMoving = true;
-            loosed = false; 
-        });
-
-    }
+   
     public void ReviveFromLife()
     {
         print(Player.lastSafeFilledPosition + " before revive");

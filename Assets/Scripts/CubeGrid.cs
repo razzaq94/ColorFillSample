@@ -46,6 +46,17 @@ public class CubeGrid : MonoBehaviour
         TakenCubes.Add(_cubeQueue.Dequeue());
         return TakenCubes[TakenCubes.Count - 1];
     }
+    public Cube GetCubeAtPosition(Vector3 position)
+    {
+        foreach (Cube cube in AllCubes)
+        {
+            if (cube.gameObject.activeInHierarchy && cube.transform.position == position)
+            {
+                return cube; // Return the cube if it's active
+            }
+        }
+        return null; // No active cube found
+    }
 
     public void PutBackInQueue(Cube cube)
     {

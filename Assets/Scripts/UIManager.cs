@@ -166,7 +166,7 @@ public class UIManager : MonoBehaviour
         {
             GameManager.Instance.loosed = false;
             Time.timeScale = 1f; 
-            GameManager.Instance.LevelLose(); // Final loss
+            //GameManager.Instance.LevelLose(); // Final loss
         }
         else
         {
@@ -215,6 +215,7 @@ public class UIManager : MonoBehaviour
         //GameManager.Instance.Player.enabled = true;
 
         Time.timeScale = 1f;
+        AudioManager.instance?.PlayBGMusic(0);  
         isReviving = false;
     }
 }

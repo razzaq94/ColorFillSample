@@ -149,12 +149,59 @@ public class GridManager : MonoBehaviour
             if (!oldGrid[col, row] && newGrid[col, row])
             {
                 var renderer = enemy.GetComponent<EnemyCube>()?._renderer;
-                if(renderer != null)
+                if (renderer != null)
                 {
                     AudioManager.instance.PlaySFXSound(2);
                     GameManager.Instance.SpawnDeathParticles(enemy.transform.gameObject, renderer.material.color);
                 }
                 Destroy(enemy.gameObject);
+            }
+        }
+        var diamonds = GameObject.FindGameObjectsWithTag("Diamond");
+        foreach (var diamond in diamonds)
+        {
+            Vector3 pos = diamond.transform.position;
+            int col = Mathf.RoundToInt(pos.x + cols / 2f);
+            int row = Mathf.Abs(Mathf.RoundToInt(pos.z - rows / 2f));
+            if (col < 0 || col >= cols || row < 0 || row >= rows)
+                continue;
+            if (!oldGrid[col, row] && newGrid[col, row])
+            {
+                AudioManager.instance.PlaySFXSound(1);
+                Destroy(diamond.gameObject);
+                GameManager.Instance.Diamonds++;
+                UIManager.Instance.Diamonds.text = GameManager.Instance.Diamonds.ToString();
+            }
+        }
+
+        var heart = GameObject.FindGameObjectWithTag("Heart");
+        if (heart != null)
+        {
+            Vector3 pos = heart.transform.position;
+            int col = Mathf.RoundToInt(pos.x + cols / 2f);
+            int row = Mathf.Abs(Mathf.RoundToInt(pos.z - rows / 2f));
+            if (col < 0 || col >= cols || row < 0 || row >= rows)
+                return;
+            if (!oldGrid[col, row] && newGrid[col, row])
+            {
+                AudioManager.instance.PlaySFXSound(1);
+                Destroy(heart.gameObject);
+                UIManager.Instance.GainLife();
+            }
+        }
+        var timer = GameObject.FindGameObjectWithTag("Timer");
+        if(timer != null)
+        {
+            Vector3 pos = timer.transform.position;
+            int col = Mathf.RoundToInt(pos.x + cols / 2f);
+            int row = Mathf.Abs(Mathf.RoundToInt(pos.z - rows / 2f));
+            if (col < 0 || col >= cols || row < 0 || row >= rows)
+                return;
+            if (!oldGrid[col, row] && newGrid[col, row])
+            {
+                AudioManager.instance.PlaySFXSound(1);
+                Destroy(timer.gameObject);
+                GameManager.Instance.AddTime(15); 
             }
         }
     }

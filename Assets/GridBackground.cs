@@ -59,4 +59,7 @@ public class GridBackground : MonoBehaviour
         var mat = bgRenderer.sharedMaterial;
         mat.mainTextureScale = new Vector2(cols / 2f, rows / 2f);
     }
+
+    
+
 }

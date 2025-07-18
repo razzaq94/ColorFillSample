@@ -28,7 +28,5 @@ public class RotatingMine : MonoBehaviour
     public void HandelLose()
     {
         UIManager.Instance.LevelLoseCrash();
-        Destroy(gameObject);
-
     }
 }

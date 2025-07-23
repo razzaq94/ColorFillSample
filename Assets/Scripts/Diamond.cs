@@ -12,8 +12,7 @@ public class Diamond : MonoBehaviour
         {
             //AudioManager.instance?.PlaySound(0);
             Destroy(gameObject);
-            GameManager.Instance.Diamonds++;
-            UIManager.Instance.Diamonds.text = GameManager.Instance.Diamonds.ToString();
+            UIManager.Instance.AnimateDiamondGainFromWorld(transform.position);
         }
         
     }

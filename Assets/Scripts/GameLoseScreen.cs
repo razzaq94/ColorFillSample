@@ -63,7 +63,7 @@ public class GameLoseScreen : MonoBehaviour
 
     public void RestartButton()
     {
-        AudioManager.instance.PlayUISound(0);
+        AudioManager.instance?.PlayUISound(0);
 
         SceneManager.LoadScene(SceneManager.GetActiveScene().buildIndex);
         if (Time.timeScale == 0)

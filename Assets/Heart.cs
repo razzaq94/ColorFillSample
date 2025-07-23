@@ -10,7 +10,8 @@ public class Heart : MonoBehaviour
         {
             //AudioManager.instance?.PlaySound(0);
             Destroy(gameObject);
-            UIManager.Instance.GainLife();
+            UIManager.Instance.AnimateLifeGainFromWorld(transform.position);
+
         }
     }
 }

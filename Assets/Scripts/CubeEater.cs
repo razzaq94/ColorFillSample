@@ -92,7 +92,7 @@ public class CubeEater : MonoBehaviour
                         gridManager.RemoveCubeAt(cube);
                     else if (cube.CanHarm)
                     {
-                        AudioManager.instance.PlaySFXSound(3);
+                        AudioManager.instance?.PlaySFXSound(3);
                         Haptics.Generate(HapticTypes.HeavyImpact);
                         GameManager.Instance.CameraShake(0.35f, 0.15f);
                         GameManager.Instance.SpawnDeathParticles(GameManager.Instance.Player.transform.gameObject, GameManager.Instance.Player.material.color);
@@ -151,7 +151,7 @@ public class CubeEater : MonoBehaviour
     {
         if (collision.gameObject.CompareTag("Player"))
         {
-            AudioManager.instance.PlaySFXSound(3);
+            AudioManager.instance?.PlaySFXSound(3);
             Haptics.Generate(HapticTypes.HeavyImpact);
             collision.gameObject.SetActive(false);
             GameManager.Instance.LevelLose();

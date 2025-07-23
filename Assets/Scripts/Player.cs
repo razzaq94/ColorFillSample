@@ -140,7 +140,7 @@ public class Player : MonoBehaviour
         if (collision.gameObject.CompareTag("Boundary") || collision.gameObject.CompareTag("Obstacle"))
         {
             IsMoving = false;
-            AudioManager.instance.PlaySFXSound(3);
+            AudioManager.instance?.PlaySFXSound(3);
             transform.DOMove(RoundPos(), 0.1f);
             if (_spawnCubes)
             {
@@ -184,7 +184,7 @@ public class Player : MonoBehaviour
                 if (cube.CanHarm)
                 {
                     Haptics.Generate(HapticTypes.HeavyImpact);
-                    AudioManager.instance.PlaySFXSound(3);
+                    AudioManager.instance?.PlaySFXSound(3);
                     GameManager.Instance.LevelLose();
                 }
             }

@@ -25,7 +25,7 @@ public class LevelButton : MonoBehaviour
 
     public void OnClick_LoadLevel()
     {
-        AudioManager.instance.PlayUISound(0);
+        AudioManager.instance?.PlayUISound(0);
 
         if (!button.interactable) return;
         SceneManager.LoadScene(buildIndex);

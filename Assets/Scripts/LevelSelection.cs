@@ -52,7 +52,8 @@ public class LevelSelection : MonoBehaviour
 
     public void CloseButton()
     {
-        AudioManager.instance.PlayUISound(0);
+        AudioManager.instance?.PlayUISound(0);
+        Menu.ShowUI();
         Destroy(gameObject);
     }
 }

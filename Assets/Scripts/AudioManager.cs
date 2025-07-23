@@ -97,7 +97,7 @@ public class AudioManager : MonoBehaviour
 
     public void PlayBGMusic(int n)
     {
-        BGAudioSource.Stop();
+        BGAudioSource?.Stop();
         BGAudioSource.clip = BGMusic[n];
         BGAudioSource.Play();
     }

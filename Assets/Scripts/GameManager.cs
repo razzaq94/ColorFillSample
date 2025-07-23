@@ -75,6 +75,11 @@ public class GameManager : MonoBehaviour
             if (wall.TryGetComponent<Renderer>(out var renderer))
                 renderer.sharedMaterial.color = WallColor;
         }
+        if (!isGameOver && !Level.isTimeless && Level.levelTime > 0)
+        {
+            UIManager.Instance.ShowClockAndTime(Level.levelTime, UIManager.Instance.iconTransform);
+
+        }
         UIManager.Instance.Diamonds.text = GameManager.Instance.Diamonds.ToString();
         Haptics.Generate(HapticTypes.LightImpact);
         AudioManager.instance?.PlayBGMusic(0);
@@ -86,6 +91,8 @@ public class GameManager : MonoBehaviour
             Level.levelTime -= Time.deltaTime;
             Level.levelTime = Mathf.Clamp(Level.levelTime, 0, 9999);
             UpdateTimerDisplay();
+
+            CheckForHaptics(Level.levelTime);
         }
 
         if (!isGameOver && Level.levelTime <= 0)
@@ -93,6 +100,7 @@ public class GameManager : MonoBehaviour
             isGameOver = true;
             ShowTimeOutAdOptions();
         }
+
         void UpdateTimerDisplay()
         {
             UIManager.Instance.timerText.text = Mathf.CeilToInt(Level.levelTime).ToString();
@@ -102,10 +110,65 @@ public class GameManager : MonoBehaviour
             StartGame();
     }
 
+    private bool isRedActive = false;   
+    private bool isAnimating = false;   
+
+    private void CheckForHaptics(float currentTime)
+    {
+        if (currentTime > 10)
+        {
+            if (isRedActive)
+            {
+                UIManager.Instance.timerText.color = Color.white; 
+                UIManager.Instance.timerText.transform.DOKill();  
+                isRedActive = false;  
+                isAnimating = false;  
+            }
+
+            return;  
+        }
+
+        if (Mathf.CeilToInt(currentTime) == 15)
+        {
+            Haptics.Generate(HapticTypes.LightImpact);
+            print("Haptic at 15 seconds");
+        }
+        else if (Mathf.CeilToInt(currentTime) == 10)
+        {
+            Haptics.Generate(HapticTypes.MediumImpact);
+            print("Haptic at 10 seconds");
+
+            if (!isRedActive)  
+            {
+                UIManager.Instance.timerText.color = Color.red;
+                isRedActive = true; 
+            }
+
+            if (!isAnimating)
+            {
+                AnimateTimerText();
+            }
+        }
+        else if (Mathf.CeilToInt(currentTime) == 5)
+        {
+            Haptics.Generate(HapticTypes.HeavyImpact);
+            print("Haptic at 5 seconds");
+        }
+    }
+
+    private void AnimateTimerText()
+    {
+        UIManager.Instance.timerText.transform.DOScale(Vector3.one * 0.5f, 0.3f) 
+            .SetEase(Ease.InOutSine)  
+            .SetLoops(-1, LoopType.Yoyo);  
+        isAnimating = true; 
+    }
+
+
     private void StartGame()
     {
         _gameStarted = true;
-        AudioManager.instance.PlayUISound(0);
+        AudioManager.instance?.PlayUISound(0);
         //UIManager.Instance.StartGame();
         _gameRunning = true;
         ScheduleEnemySpawns();
@@ -126,7 +189,7 @@ public class GameManager : MonoBehaviour
     {
         Player.enabled = _gameRunning = false;
         UIManager.Instance?.LevelLoseTimeOut();
-        AudioManager.instance.BGAudioSource.Stop();
+        AudioManager.instance?.BGAudioSource.Stop();
     }
 
     public void ShowRewardedForExtraTime()
@@ -210,7 +273,7 @@ public class GameManager : MonoBehaviour
         print("Lose called");   
         Player.enabled = _gameRunning = false;
         Invoke(nameof(HandleLevelLoseCrash), 0.5f);
-        AudioManager.instance.BGAudioSource.Stop();
+        AudioManager.instance?.BGAudioSource.Stop();
     }
 
     public void  HandleLevelLoseCrash()
@@ -296,7 +359,12 @@ public class GameManager : MonoBehaviour
             Vector3 spawnBasePos;
 
 
-            if (cfg.enemyType == SpawnablesType.SpikeBall)
+            bool isSmartPickup = cfg.prefab.name.Contains("Timer") ||
+                     cfg.prefab.name.Contains("SlowDown") ||
+                     cfg.prefab.name.Contains("Heart");
+
+            if (cfg.enemyType == SpawnablesType.SpikeBall || isSmartPickup)
+
             {
                 int idx = Random.Range(0, available.Count);
                 var cell = available[idx];

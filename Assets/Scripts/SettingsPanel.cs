@@ -84,7 +84,7 @@ public class SettingsPanel : MonoBehaviour
     public void ToggleAllSoundsMute()
     {
         bool isMuted = PlayerPrefs.GetInt("AllSoundsMute", 0) == 1;
-        AudioManager.instance.PlayUISound(0);
+        AudioManager.instance?.PlayUISound(0);
         MuteAllSounds(!isMuted);
     }
 
@@ -92,7 +92,7 @@ public class SettingsPanel : MonoBehaviour
     {
         Destroy(gameObject);
         if (Time.timeScale == 0) Time.timeScale = 1;
-        AudioManager.instance.PlayUISound(0);
+        AudioManager.instance?.PlayUISound(0);
     }
 
 

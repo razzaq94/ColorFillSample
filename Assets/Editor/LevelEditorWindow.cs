@@ -754,7 +754,7 @@ public class LevelDataEditorWindow : EditorWindow
                         case SpawnablesType.FlyingHoop:
                             yOffset = 2.4f; useFall = true; break;
                         case SpawnablesType.SpikeBall:
-                            yOffset = 0.7f; useFall = true; break;
+                            yOffset = 1.7f; useFall = true; break;
                         default:
                             yOffset = 0f; useFall = false; break;
                     }
@@ -788,7 +788,7 @@ public class LevelDataEditorWindow : EditorWindow
                         }
                     );
                     menu.AddItem(
-    new GUIContent("Spawnable/NewSpawnable"),
+    new GUIContent($"Spawnable/{name}"),
     false,
     () =>
     {

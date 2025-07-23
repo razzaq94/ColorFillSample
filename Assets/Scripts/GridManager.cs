@@ -151,7 +151,7 @@ public class GridManager : MonoBehaviour
                 var renderer = enemy.GetComponent<EnemyCube>()?._renderer;
                 if (renderer != null)
                 {
-                    AudioManager.instance.PlaySFXSound(2);
+                    AudioManager.instance?.PlaySFXSound(2);
                     GameManager.Instance.SpawnDeathParticles(enemy.transform.gameObject, renderer.material.color);
                 }
                 Destroy(enemy.gameObject);
@@ -167,10 +167,9 @@ public class GridManager : MonoBehaviour
                 continue;
             if (!oldGrid[col, row] && newGrid[col, row])
             {
-                AudioManager.instance.PlaySFXSound(1);
+                AudioManager.instance?.PlaySFXSound(1);
                 Destroy(diamond.gameObject);
-                GameManager.Instance.Diamonds++;
-                UIManager.Instance.Diamonds.text = GameManager.Instance.Diamonds.ToString();
+                UIManager.Instance.AnimateDiamondGainFromWorld(diamond.transform.position);
             }
         }
 
@@ -184,9 +183,10 @@ public class GridManager : MonoBehaviour
                 return;
             if (!oldGrid[col, row] && newGrid[col, row])
             {
-                AudioManager.instance.PlaySFXSound(1);
+                AudioManager.instance?.PlaySFXSound(1);
                 Destroy(heart.gameObject);
-                UIManager.Instance.GainLife();
+                UIManager.Instance.AnimateLifeGainFromWorld(heart.transform.position);
+
             }
         }
         var timer = GameObject.FindGameObjectWithTag("Timer");
@@ -199,7 +199,7 @@ public class GridManager : MonoBehaviour
                 return;
             if (!oldGrid[col, row] && newGrid[col, row])
             {
-                AudioManager.instance.PlaySFXSound(1);
+                AudioManager.instance?.PlaySFXSound(1);
                 Destroy(timer.gameObject);
                 GameManager.Instance.AddTime(15); 
             }
@@ -480,6 +480,29 @@ public class GridManager : MonoBehaviour
                 .Where(p => p != outerEdgePocket)
                 .OrderByDescending(p => p.Count)
                 .ToList();
+        }
+        List<GameObject> enemiesToDestroy = new();
+
+        foreach (var pocket in allPockets)
+        {
+            foreach (var p in pocket)
+            {
+                Vector3 worldPos = GridToWorld(new Vector2Int(p.X, p.Y)) + Vector3.up * 0.1f;
+                var hits = Physics.OverlapBox(worldPos, new Vector3(0.4f, 0.5f, 0.4f), Quaternion.identity);
+
+                foreach (var hit in hits)
+                {
+                    if (hit.CompareTag("Enemy") && !enemiesToDestroy.Contains(hit.gameObject))
+                        enemiesToDestroy.Add(hit.gameObject);
+                }
+            }
+        }
+        foreach (var enemy in enemiesToDestroy)
+        {
+            var renderer = enemy.GetComponent<Renderer>();
+            if (renderer != null)
+                GameManager.Instance.SpawnDeathParticles(enemy, renderer.material.color);
+            Destroy(enemy);
         }
 
         foreach (var pocket in allPockets)

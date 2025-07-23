@@ -29,6 +29,6 @@ public class Menu : MonoBehaviour
 
         animator.Play("PanelsAnim");
         LevelSelection.ShowUI();
-        Destroy(gameObject, 0.3f);
+        //gameObject.SetActive(false);
     }   
 }

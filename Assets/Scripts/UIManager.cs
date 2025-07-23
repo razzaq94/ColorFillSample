@@ -28,12 +28,20 @@ public class UIManager : MonoBehaviour
     public RandomTextSpawner RandomTextSpawner;
 
     [Header("Lives UI")]
-    public GameObject[] lifeIcons; // Assign 3 GameObjects in Inspector representing life icons
+    public GameObject[] lifeIcons;
     public int currentLives = 3;
     public TextMeshProUGUI countDown;
     public bool isReviving = false;
 
+    [Header("Life Animation")]
+    public GameObject lifeFlyerPrefab;
+    public GameObject diamondFlyerPrefab;
+    public Transform lifeFlyerParent;
 
+    public Image clockImage;
+    public TextMeshProUGUI levelTimeText;
+
+    public Transform iconTransform;
     private void Awake()
     {
         Instance = this;
@@ -63,17 +71,41 @@ public class UIManager : MonoBehaviour
 
     public void LevelComplete()
     {
-        AudioManager.instance.PlaySFXSound(0);
+        AudioManager.instance?.PlaySFXSound(0);
+        deleteenemies();
         GameObject line = Instantiate(LinePrefab, GameObject.FindGameObjectWithTag("MainCanvas").transform.position, LinePrefab.transform.rotation);
         GameObject Confetti = Instantiate(confetti, confettiHolder.position, Quaternion.identity);
         RandomTextSpawner.SpawnRandomText();
         line.transform.SetParent(GameObject.FindGameObjectWithTag("MainCanvas").transform, false);
         Confetti.transform.SetParent(confettiHolder);
+       
         Invoke(nameof(ShowGamWinUI), 1f);
         Destroy(line, 1.6f);
         Destroy(Confetti, 1.6f);
     }
-
+    public void deleteenemies()
+    {
+        var enemyBehaviors = FindObjectsByType<EnemyBehaviors>(FindObjectsSortMode.None);
+        var cubeEaters = FindObjectsByType<CubeEater>(FindObjectsSortMode.None);
+        var enemyCubes = FindObjectsByType<EnemyCube>(FindObjectsSortMode.None);
+        var mine = FindObjectsByType<RotatingMine>(FindObjectsSortMode.None);
+        foreach (var enemy in enemyBehaviors)
+        {
+            Destroy(enemy.gameObject);
+        }
+        foreach (var enemy in cubeEaters)
+        {
+            Destroy(enemy.gameObject);
+        }
+        foreach (var enemy in enemyCubes)
+        {
+            Destroy(enemy.gameObject);
+        }
+        foreach (var enemy in mine)
+        {
+            Destroy(enemy.gameObject);
+        }
+    }
     public void LevelLoseTimeOut()
     {
         AudioManager.instance?.PlaySFXSound(1);
@@ -91,7 +123,7 @@ public class UIManager : MonoBehaviour
 
         if (currentLives > 1)
         {
-            LoseLife(); 
+            LoseLife();
         }
         else
         {
@@ -102,7 +134,7 @@ public class UIManager : MonoBehaviour
 
     private void ShowGameLoseUITimeOut()
     {
-        
+
         GameLoseScreen.ShowUI();
         GameLoseScreen.instance.ShowTimeOutOptions();
     }
@@ -115,7 +147,7 @@ public class UIManager : MonoBehaviour
     {
         GameWinScreen.ShowUI();
     }
-   
+
 
     public void ShowDeathAdOptions()
     {
@@ -160,12 +192,11 @@ public class UIManager : MonoBehaviour
             return;
 
         currentLives--;
-        UpdateLifeIcons();
 
         if (currentLives <= 0)
         {
             GameManager.Instance.loosed = false;
-            Time.timeScale = 1f; 
+            Time.timeScale = 1f;
             //GameManager.Instance.LevelLose(); // Final loss
         }
         else
@@ -205,17 +236,152 @@ public class UIManager : MonoBehaviour
         for (int i = 3; i > 0; i--)
         {
             countDown.text = i.ToString("00");
-            yield return new WaitForSecondsRealtime(1f); // Countdown waits in real time, not affected by Time.timeScale
+            yield return new WaitForSecondsRealtime(1f);
         }
 
-        countDown.text = "00";  // Optional: set to "00" after countdown
+        countDown.text = "00";
         countDown.gameObject.SetActive(false);
+        AnimateLifeFromUIToPlayer(GameManager.Instance.Player.transform.position);
 
         //GameManager.Instance.Player.gameObject.SetActive(true);
         //GameManager.Instance.Player.enabled = true;
 
         Time.timeScale = 1f;
-        AudioManager.instance?.PlayBGMusic(0);  
+        AudioManager.instance?.PlayBGMusic(0);
         isReviving = false;
     }
+
+
+    public void AnimateLifeGainFromWorld(Vector3 worldPosition)
+    {
+        int nextLifeIndex = Mathf.Clamp(currentLives, 0, lifeIcons.Length - 1);
+        if (lifeIcons[nextLifeIndex].activeSelf)
+        {
+            Debug.LogWarning("All lives are already full. Animation skipped.");
+            return;
+        }
+
+        Vector3 screenPos = Camera.main.WorldToScreenPoint(worldPosition);
+
+        GameObject flyer = Instantiate(lifeFlyerPrefab, screenPos, Quaternion.identity, lifeFlyerParent);
+        RectTransform flyerRect = flyer.GetComponent<RectTransform>();
+
+        flyerRect.SetParent(lifeFlyerParent);
+        flyerRect.localScale = Vector3.one;
+
+        Vector3 targetPos = lifeIcons[nextLifeIndex].GetComponent<RectTransform>().position;
+
+        flyerRect.DOMove(targetPos, 0.65f)
+            .SetEase(Ease.InOutSine)
+            .OnComplete(() =>
+            {
+                Destroy(flyer);
+                GainLife();
+            });
+    }
+
+    public void AnimateLifeFromUIToPlayer(Vector3 playerPosition)
+    {
+        int nextLifeIndex = Mathf.Clamp(currentLives - 1, 0, lifeIcons.Length - 1);
+        if (!lifeIcons[nextLifeIndex].activeSelf)
+        {
+            Debug.LogWarning("Life icon is not active, animation skipped.");
+            return;
+        }
+
+        Vector3 uiPosition = lifeIcons[nextLifeIndex + 1].GetComponent<RectTransform>().position;
+
+        Vector3 playerUIPosition = Camera.main.WorldToScreenPoint(playerPosition);
+
+        GameObject flyer = Instantiate(lifeFlyerPrefab, uiPosition, Quaternion.identity, lifeFlyerParent);
+        RectTransform flyerRect = flyer.GetComponent<RectTransform>();
+
+        flyerRect.SetParent(lifeFlyerParent);
+        flyerRect.localScale = Vector3.one;
+        UpdateLifeIcons();
+        flyerRect.DOMove(playerUIPosition, 0.65f)
+            .SetEase(Ease.InOutSine)
+            .OnComplete(() =>
+            {
+                Destroy(flyer);
+
+                //LoseLife();      
+            });
+    }
+
+    public Transform diamondPos;
+    public void AnimateDiamondGainFromWorld(Vector3 worldPosition)
+    {
+
+        Vector3 screenPos = Camera.main.WorldToScreenPoint(worldPosition);
+
+        GameObject flyer = Instantiate(diamondFlyerPrefab, screenPos, Quaternion.identity, lifeFlyerParent);
+        RectTransform flyerRect = flyer.GetComponent<RectTransform>();
+
+        flyerRect.SetParent(lifeFlyerParent);
+        flyerRect.localScale = Vector3.one;
+
+        Vector3 targetPos = diamondPos.transform.position;
+
+        flyerRect.DOMove(targetPos, 0.65f)
+            .SetEase(Ease.InOutSine)
+            .OnComplete(() =>
+            {
+                Destroy(flyer);
+                GameManager.Instance.Diamonds++;
+                Diamonds.text = GameManager.Instance.Diamonds.ToString();
+            });
+    }
+
+
+
+    public void ShowClockAndTime(float levelTime, Transform iconTransform)
+    {
+
+        levelTimeText.gameObject.transform.parent.gameObject.SetActive(true);
+        levelTimeText.text = levelTime.ToString("F2");
+
+        GameObject clock = Instantiate(clockImage.gameObject, lifeFlyerParent);
+        clock.SetActive(true);
+        clock.transform.position = lifeFlyerParent.position;
+
+        VibrateClock(clock.transform);
+
+        StartCoroutine(AnimateClockToIcon(clock.transform, iconTransform));
+    }
+
+    private void VibrateClock(Transform clockTransform)
+    {
+        clockTransform.DOShakeScale(1f, 0.1f, 10, 90f, false, DG.Tweening.ShakeRandomnessMode.Harmonic)
+            .SetEase(Ease.Linear);
+    }
+
+    private IEnumerator AnimateClockToIcon(Transform clockTransform, Transform iconTransform)
+    {
+        yield return new WaitForSecondsRealtime(1f);
+
+        GameManager.Instance._gameRunning = true;
+
+
+        levelTimeText.gameObject.transform.parent.gameObject.SetActive(false);
+
+        Vector3 targetPos = iconTransform.position;
+        Vector3 targetScale = new Vector3(0.18f, 0.18f, 0.18f);
+
+        clockTransform.DOMove(targetPos, 1f) 
+            .SetEase(Ease.InOutQuad)  
+            .OnStart(() =>
+            {
+                clockTransform.DOScale(targetScale, 1f)  
+                    .SetEase(Ease.InOutQuad); 
+            })
+            .OnComplete(() =>
+            {
+                clockTransform.localScale = targetScale;
+            });
+    }
+
+
+
+
 }

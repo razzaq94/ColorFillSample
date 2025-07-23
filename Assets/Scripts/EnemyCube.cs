@@ -27,13 +27,13 @@ public class EnemyCube : MonoBehaviour
             if (cube.IsFilled)
             {
                 gameObject.SetActive(false);
-                AudioManager.instance.PlaySFXSound(2);
+                AudioManager.instance?.PlaySFXSound(2);
                 GameManager.Instance.SpawnDeathParticles(transform.gameObject, _renderer.material.color);
                 Destroy(gameObject, 1f);
             }
             else
             {
-                AudioManager.instance.PlaySFXSound(3);
+                AudioManager.instance?.PlaySFXSound(3);
                 Haptics.Generate(HapticTypes.HeavyImpact);
                 GameManager.Instance.CameraShake(0.35f, 0.15f);
                 GameManager.Instance.SpawnDeathParticles(GameManager.Instance.Player.transform.gameObject, GameManager.Instance.Player.material.color);
@@ -44,7 +44,7 @@ public class EnemyCube : MonoBehaviour
         else if (collision.gameObject.CompareTag("Player") && !collided)
         {
             collided = true;
-            AudioManager.instance.PlaySFXSound(3);
+            AudioManager.instance?.PlaySFXSound(3);
             Invoke(nameof(HandleLevelLoseCrash), 0.5f);
         }
     }

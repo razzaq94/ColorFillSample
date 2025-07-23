@@ -26,7 +26,7 @@ public class GameWinScreen : MonoBehaviour
 
     public void NextButton() 
     {
-        AudioManager.instance.PlayUISound(0);
+        AudioManager.instance?.PlayUISound(0);
         int current = SceneManager.GetActiveScene().buildIndex;
         int first = GameManager.Instance.firstLevelBuildIndex;
         int total = GameManager.Instance.TotalLevels;
@@ -43,7 +43,7 @@ public class GameWinScreen : MonoBehaviour
     }
     public void RestartButton() 
     {
-        AudioManager.instance.PlayUISound(0);
+        AudioManager.instance?.PlayUISound(0);
 
         SceneManager.LoadScene(SceneManager.GetActiveScene().buildIndex);
         if (Time.timeScale == 0)
@@ -51,7 +51,7 @@ public class GameWinScreen : MonoBehaviour
     }
     public void MenuButton()
     {
-        AudioManager.instance.PlayUISound(0);
+        AudioManager.instance?.PlayUISound(0);
 
         SceneManager.LoadScene(0);
     }

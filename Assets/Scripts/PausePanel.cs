@@ -24,20 +24,20 @@ public class PausePanel : MonoBehaviour
     }
     public void ResumeGame()
     {
-        AudioManager.instance.PlayUISound(0);
+        AudioManager.instance?.PlayUISound(0);
         Time.timeScale = 1.0f;
         Destroy(gameObject);
     }
     public void ReturnToMainMenu()
     {
-        AudioManager.instance.PlayUISound(0);
+        AudioManager.instance?.PlayUISound(0);
         SceneManager.LoadScene(0);
         SplashScreen.Destroy(gameObject);
         Menu.Destroy(gameObject);
     }
     public void RestartButton()
     {
-        AudioManager.instance.PlayUISound(0);
+        AudioManager.instance?.PlayUISound(0);
 
         SceneManager.LoadScene(SceneManager.GetActiveScene().buildIndex);
         if(Time.timeScale == 0)
@@ -46,12 +46,12 @@ public class PausePanel : MonoBehaviour
     }
     public void QuitGame()
     {
-        AudioManager.instance.PlayUISound(0);
+        AudioManager.instance?.PlayUISound(0);
         Application.Quit();
     }
     public void CloseButton()
     {
-        AudioManager.instance.PlayUISound(0);
+        AudioManager.instance?.PlayUISound(0);
         Destroy(gameObject);
     }
 }

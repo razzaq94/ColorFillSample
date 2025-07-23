@@ -9,10 +9,10 @@ public class EnemyBehaviors : MonoBehaviour
     [Title("ENEMY-BEHAVIORS", null, titleAlignment: TitleAlignments.Centered)]
 
     [DisplayAsString]
-    public  float speed = 5f;
+    public float speed = 5f;
     [SerializeField, DisplayAsString] SpawnablesType enemyType;
     [SerializeField, DisplayAsString] float bounceAngle = 3f;
-    [SerializeField, DisplayAsString] float minInitial = 0.3f;  
+    [SerializeField, DisplayAsString] float minInitial = 0.3f;
 
     private GridManager gridManager;
     private Rigidbody rb;
@@ -29,16 +29,18 @@ public class EnemyBehaviors : MonoBehaviour
         rb.angularDamping = 0f;
         rb.linearDamping = 0f;
 
+        // Ensure a smooth initial direction
         dir = PickRandomXZDirection(minInitial);
-        rb.linearVelocity = dir * speed;
+        rb.linearVelocity = dir * speed;  // Set the initial velocity to get the ball moving
     }
 
     void FixedUpdate()
     {
+        // Ensure that all ball types follow the updated movement behavior
         if (enemyType == SpawnablesType.SpikeBall)
             SpikedBallMovement();
         else
-            rb.linearVelocity = dir * speed;
+            rb.linearVelocity = dir * speed;  // Apply velocity directly for smooth continuous movement
     }
 
     private void SpikedBallMovement()
@@ -57,7 +59,7 @@ public class EnemyBehaviors : MonoBehaviour
         if (!currValid || !nextValid)
         {
             Vector3 newDir = PickRandomFilledNeighbor(curr, filled);
-            dir = (newDir != Vector3.zero) ? newDir : -dir;
+            dir = (newDir != Vector3.zero) ? newDir : -dir;  
             dir = ApplyJitter(dir).normalized;
         }
 
@@ -78,58 +80,9 @@ public class EnemyBehaviors : MonoBehaviour
 
         var chosen = candidates[Random.Range(0, candidates.Count)];
         Vector3 d = (chosen.transform.position - transform.position).normalized;
-        d.y = 0;
+        d.y = 0;  
         return d;
     }
-    //private bool IsCubeFilledAt(Vector3 worldPos)
-    //{
-    //    float r = gridManager.cellSize * 0.45f;  
-    //    Collider[] hits = Physics.OverlapBox(worldPos + Vector3.up * 0.1f,
-    //                                        new Vector3(r, 0.1f, r),
-    //                                        Quaternion.identity);
-    //    foreach (var hit in hits)
-    //    {
-    //        if (hit.TryGetComponent<Cube>(out Cube c)
-    //            && c.IsFilled
-    //            && c.gameObject.activeInHierarchy)  
-    //        {
-    //            return true;
-    //        }
-    //    }
-    //    return false;
-    //}
-
-    //private Vector3 PickRandomFilledNeighbor(Vector2Int cell)
-    //{
-    //    Vector2Int[] offsets = {
-    //        new Vector2Int( 1,  0), 
-    //        new Vector2Int(-1,  0), 
-    //        new Vector2Int( 0,  1), 
-    //        new Vector2Int( 0, -1)  
-    //    };
-    //    Vector3[] worldDirs = {
-    //        Vector3.right,
-    //        Vector3.left,
-    //        Vector3.forward,
-    //        Vector3.back
-    //    };
-
-    //    var choices = new List<Vector3>();
-    //    for (int i = 0; i < offsets.Length; i++)
-    //    {
-    //        var n = cell + offsets[i];
-    //        if (n.x < 0 || n.x >= gridManager._gridColumns ||
-    //            n.y < 0 || n.y >= gridManager._gridRows)
-    //            continue;
-
-    //        if (gridManager._grid[n.x, n.y])
-    //            choices.Add(worldDirs[i]);
-    //    }
-
-    //    if (choices.Count > 0)
-    //        return choices[Random.Range(0, choices.Count)];
-    //    return Vector3.zero;
-    //}
 
     private Vector3 ApplyJitter(Vector3 d)
     {
@@ -158,43 +111,31 @@ public class EnemyBehaviors : MonoBehaviour
             }
             if (enemyType == SpawnablesType.MultiColoredBall && cube.IsFilled && Time.frameCount != _lastDestroyFrame)
             {
-                gridManager.RemoveCubeAt(cube);
-                gridManager.RemoveCubeAt(cube);
-
+                gridManager.RemoveCubeAt(cube);  
                 BounceOffNormal(collision.contacts[0].normal);
-
                 _lastDestroyFrame = Time.frameCount;
             }
             else if (!cube.IsFilled && cube.CanHarm)
             {
-                AudioManager.instance.PlaySFXSound(3);
-                Haptics.Generate(HapticTypes.HeavyImpact);
-                GameManager.Instance.CameraShake(0.35f, 0.15f);
-                GameManager.Instance.SpawnDeathParticles(GameManager.Instance.Player.transform.gameObject, GameManager.Instance.Player.material.color);
-                GameManager.Instance.LevelLose();
+                HandleHarmfulCollision();
             }
         }
         else if (collision.transform.CompareTag("Player"))
         {
-            AudioManager.instance.PlaySFXSound(3);
-            collision.gameObject.SetActive(false);
-            var renderer = collision.gameObject.GetComponent<Renderer>();
-            GameManager.Instance.SpawnDeathParticles(collision.transform.gameObject, renderer.material.color);
-            GameManager.Instance.CameraShake(0.35f, 0.15f);
-            GameManager.Instance.LevelLose();
+            HandlePlayerCollision();
         }
         else if (collision.transform.CompareTag("Boundary")
             || collision.transform.CompareTag("Obstacle")
             || collision.transform.CompareTag("EnemyGroup")
             || collision.transform.CompareTag("Enemy")
+            || collision.transform.CompareTag("Heart")
+            || collision.transform.CompareTag("Diamond")
             && Time.frameCount != _lastDestroyFrame)
         {
             BounceOffNormal(collision.contacts[0].normal);
             _lastDestroyFrame = Time.frameCount;
-
         }
     }
-
 
     private void BounceOffNormal(Vector3 normal)
     {
@@ -204,7 +145,7 @@ public class EnemyBehaviors : MonoBehaviour
         }
         else
         {
-            dir = Vector3.Reflect(dir, normal).normalized;
+            dir = Vector3.Reflect(dir, normal).normalized;  
         }
 
         float jitter = Random.Range(-bounceAngle, bounceAngle);
@@ -214,10 +155,25 @@ public class EnemyBehaviors : MonoBehaviour
         if (dir.magnitude < 0.1f)
             dir = PickRandomXZDirection(0.4f);
 
-        rb.linearVelocity = dir * speed;
+        rb.linearVelocity = dir * speed;  
     }
 
+    private void HandleHarmfulCollision()
+    {
+        AudioManager.instance?.PlaySFXSound(3);
+        Haptics.Generate(HapticTypes.HeavyImpact);
+        GameManager.Instance.CameraShake(0.35f, 0.15f);
+        GameManager.Instance.SpawnDeathParticles(GameManager.Instance.Player.transform.gameObject, GameManager.Instance.Player.material.color);
+        GameManager.Instance.LevelLose();
+    }
 
+    private void HandlePlayerCollision()
+    {
+        AudioManager.instance?.PlaySFXSound(3);
+        GameManager.Instance.SpawnDeathParticles(GameManager.Instance.Player.transform.gameObject, GameManager.Instance.Player.material.color);
+        GameManager.Instance.CameraShake(0.35f, 0.15f);
+        GameManager.Instance.LevelLose();
+    }
 }
 
 public enum SpawnablesType

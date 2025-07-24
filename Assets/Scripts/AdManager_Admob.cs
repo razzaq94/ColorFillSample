@@ -72,7 +72,7 @@ public class AdManager_Admob : MonoBehaviour
 
         IsInit = true;
 
-        //LoadBannerAd();
+        LoadBannerAd();
         LoadInterstitialAd();
         LoadRewardedVideoAd();
     }
@@ -143,7 +143,7 @@ public class AdManager_Admob : MonoBehaviour
         ShowBannerAd();
     }
 
-    void ShowBannerAd()
+    public void ShowBannerAd()
     {
         if (!IsInit)
             return;

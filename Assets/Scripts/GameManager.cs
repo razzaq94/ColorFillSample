@@ -75,6 +75,11 @@ public class GameManager : MonoBehaviour
             if (wall.TryGetComponent<Renderer>(out var renderer))
                 renderer.sharedMaterial.color = WallColor;
         }
+        foreach (var wall in GameObject.FindGameObjectsWithTag("Obstacle"))
+        {
+            if (wall.TryGetComponent<Renderer>(out var renderer))
+                renderer.sharedMaterial.color = WallColor;
+        }
         if (!isGameOver && !Level.isTimeless && Level.levelTime > 0)
         {
             UIManager.Instance.ShowClockAndTime(Level.levelTime, UIManager.Instance.iconTransform);
@@ -107,7 +112,11 @@ public class GameManager : MonoBehaviour
         }
 
         if (Input.GetMouseButtonDown(0) && !_gameStarted)
+        {
             StartGame();
+            AdManager_Admob.instance?.ShowBannerAd();
+        }
+
     }
 
     private bool isRedActive = false;   

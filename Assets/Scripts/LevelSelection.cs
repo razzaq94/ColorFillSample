@@ -54,6 +54,8 @@ public class LevelSelection : MonoBehaviour
     {
         AudioManager.instance?.PlayUISound(0);
         Menu.ShowUI();
+        Menu.instance.animator.Play("Return");
         Destroy(gameObject);
+
     }
 }

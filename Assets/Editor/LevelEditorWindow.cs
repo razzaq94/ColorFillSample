@@ -412,7 +412,7 @@ public class LevelDataEditorWindow : EditorWindow
 
                     Vector3 camPos = cam.transform.position;
                     camPos.y = orthoData.y;
-                    camPos.z = orthoData.z;
+                    camPos.z = orthoData.z ;
                     cam.transform.position = camPos;
 
                     _level.cameraYPosition = orthoData.y;
@@ -1397,6 +1397,10 @@ public class LevelDataEditorWindow : EditorWindow
             if (wall.TryGetComponent<Renderer>(out var r))
                 SetColor(r, _gameManager.WallColor);
 
+
+        foreach (var wall in GameObject.FindGameObjectsWithTag("Obstacle"))
+            if (wall.TryGetComponent<Renderer>(out var r))
+                SetColor(r, _gameManager.WallColor);
         var player = GameObject.FindWithTag("Player");
         if (player && player.TryGetComponent<Renderer>(out var pr))
             SetColor(pr, _gameManager.PlayerColor);
@@ -1432,28 +1436,28 @@ public class LevelDataEditorWindow : EditorWindow
 
     private static readonly Dictionary<int, Vector3> ColumnToCamOrtho = new()
 {
-    { 8,  new Vector3(7f, 10f, -0.5f) },
-    { 10, new Vector3(9.36f, 10f, -0.5f) },
-    { 12, new Vector3(11.67f, 10f, 0f) },
-    { 14, new Vector3(14.04f, 10f, 0.5f) },
-    { 16, new Vector3(16.4f, 10f, 1f) },
-    { 18, new Vector3(18.78f, 10f, 2f) },
-    { 20, new Vector3(21.2f, 10f, 2f) },
-    { 22, new Vector3(23.5f, 10f, 2f) },
-    { 24, new Vector3(25.8f, 10f, 2.5f) },
-    { 26, new Vector3(28.3f, 10f, 3f) },
-    { 28, new Vector3(30.6f, 10f, 3.5f) },
-    { 30, new Vector3(33f, 10f, 3.5f) },
-    { 32, new Vector3(35.4f, 10f, 3.5f) },
-    { 34, new Vector3(37.8f, 15f, 4f) },
-    { 36, new Vector3(40f, 15f, 4f) },
-    { 38, new Vector3(42.5f, 15f, 4f) },
-    { 40, new Vector3(44.8f, 15f, 4f) },
-    { 42, new Vector3(47f, 20f, 4f) },
-    { 44, new Vector3(49.5f, 20f, 4.5f) },
-    { 46, new Vector3(51.7f, 20f, 5f) },
-    { 48, new Vector3(54f, 20f, 5f) },
-    { 50, new Vector3(56.5f, 20f, 5f) },
+    { 8,  new Vector3(7f, 10f, -1.5f) },
+    { 10, new Vector3(9.36f, 10f, -1.5f) },
+    { 12, new Vector3(11.67f, 10f, -1f) },
+    { 14, new Vector3(14.04f, 10f, -0.5f) },
+    { 16, new Vector3(16.4f, 10f, -0.5f) },
+    { 18, new Vector3(18.78f, 10f, 0f) },
+    { 20, new Vector3(21.2f, 10f, .5f) },
+    { 22, new Vector3(23.5f, 10f, .5f) },
+    { 24, new Vector3(25.8f, 10f, .5f) },
+    { 26, new Vector3(28.3f, 10f, 1f) },
+    { 28, new Vector3(30.6f, 10f, 1f) },
+    { 30, new Vector3(33f, 10f, 1f) },
+    { 32, new Vector3(35.4f, 10f, 1f) },
+    { 34, new Vector3(37.8f, 15f, 1f) },
+    { 36, new Vector3(40f, 15f, 1f) },
+    { 38, new Vector3(42.5f, 15f, 1f) },
+    { 40, new Vector3(44.8f, 15f, 1f) },
+    { 42, new Vector3(47f, 20f, 1f) },
+    { 44, new Vector3(49.5f, 20f, 1f) },
+    { 46, new Vector3(51.7f, 20f, 1f) },
+    { 48, new Vector3(54f, 20f, 1f) },
+    { 50, new Vector3(56.5f, 20f, 1f) },
 };
 
 }

@@ -14061,7 +14061,7 @@ MonoBehaviour:
     obstacle: {fileID: 9124676069688718951, guid: d8e0db48fad1b404bbe644673252868b, type: 3}
     enemyCubePrefab: {fileID: 5193491921899429329, guid: 616fc72c7e093c24497f8d1bd02b1154, type: 3}
     EnemyGroups: []
-    cameraZPosition: 0.5
+    cameraZPosition: -0.5
     cameraYPosition: 10
     zoomSize: 14.04
     cameraFOVMin: 30
@@ -16672,7 +16672,7 @@ Transform:
   m_GameObject: {fileID: 1664822608}
   serializedVersion: 2
   m_LocalRotation: {x: 0.60876137, y: 0, z: 0, w: 0.7933534}
-  m_LocalPosition: {x: -0.5, y: 10, z: 0.5}
+  m_LocalPosition: {x: -0.5, y: 10, z: -0.5}
   m_LocalScale: {x: 1, y: 1, z: 1}
   m_ConstrainProportionsScale: 0
   m_Children:

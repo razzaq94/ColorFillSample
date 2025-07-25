@@ -34,6 +34,8 @@ public class GridManager : MonoBehaviour
 
     private bool lastPocketFilled = false;
 
+    private Dictionary<int, List<Vector2Int>> _areas;
+    private int _regionCounter = 0;
 
     private void Awake()
     {
@@ -81,51 +83,60 @@ public class GridManager : MonoBehaviour
         Haptics.Generate(HapticTypes.LightImpact);
 
         bool[,] oldGrid = (bool[,])_grid.Clone();
-        _obstacleMap = new bool[_gridColumns, _gridRows];
 
+        _obstacleMap = new bool[_gridColumns, _gridRows];
         float half = cellSize * 0.45f;
         for (int x = 0; x < _gridColumns; x++)
+        {
             for (int y = 0; y < _gridRows; y++)
             {
                 Vector3 ctr = GridToWorld(new Vector2Int(x, y)) + Vector3.up * 0.1f;
                 var hits = Physics.OverlapBox(ctr, new Vector3(half, 0.1f, half), Quaternion.identity);
                 foreach (var h in hits)
+                {
                     if (h.CompareTag("Obstacle") || h.CompareTag("Boundary"))
                     {
                         _obstacleMap[x, y] = true;
                         break;
                     }
+                }
             }
+        }
 
         bool[,] cubeSnapshot = (bool[,])_grid.Clone();
-
         bool[,] boundary = new bool[_gridColumns, _gridRows];
         for (int x = 0; x < _gridColumns; x++)
             for (int y = 0; y < _gridRows; y++)
                 boundary[x, y] = cubeSnapshot[x, y] || _obstacleMap[x, y];
 
-        bool[,] afterFill = FloodFillAlgo(boundary, cubeSnapshot);
 
-        DestroyEnemiesInNewlyFilledCells(oldGrid, afterFill);
+        // REMOVE THIS LINE:
+        // DestroyEnemiesInNewlyFilledCells(oldGrid, afterFill);
 
-        bool[,] finalGrid = (bool[,])afterFill.Clone();
-        _grid = finalGrid;
+        FillHoles();
+        float percent = GetCurrentFillPercentage();
+        SetProgressBar(_grid);
 
-        FillFullyEnclosedPockets();
+        if (percent >= 0.9f)
+        {
+            StartCoroutine(FinalFullVisualFillThenWin());
+
+        }
 
         SetProgressBar(_grid);
+
         ForceFillRemainingVisuals();
 
         if (_progress >= 1f)
             StartCoroutine(DelayedLevelWin());
-
-
     }
+
 
     private IEnumerator DelayedLevelWin()
     {
         yield return new WaitForEndOfFrame(); // let cube visuals render
         yield return new WaitForSeconds(0.1f); // optional buffer
+        ForceFillEveryUnfilledCell();
         GameManager.Instance.LevelComplete();
     }
 
@@ -227,7 +238,250 @@ public class GridManager : MonoBehaviour
 
     }
 
+    #region new method
 
+    private int FloodFillRegion(Vector2Int start, int[,] tempGrid, int marker, int gridCols, int gridRows)
+    {
+        if (tempGrid[start.x, start.y] != 0)
+            return 0;
+
+        Queue<Vector2Int> queue = new();
+        queue.Enqueue(start);
+        tempGrid[start.x, start.y] = marker;
+        _areas[marker].Add(start);
+        int count = 1;
+
+        Vector2Int[] directions = {
+        new(1, 0), new(-1, 0),
+        new(0, 1), new(0, -1)
+    };
+
+        while (queue.Count > 0)
+        {
+            var current = queue.Dequeue();
+
+            foreach (var dir in directions)
+            {
+                int nx = current.x + dir.x;
+                int ny = current.y + dir.y;
+
+                if (nx < 0 || ny < 0 || nx >= gridCols || ny >= gridRows)
+                    continue;
+
+                if (tempGrid[nx, ny] == 0)
+                {
+                    tempGrid[nx, ny] = marker;
+                    queue.Enqueue(new Vector2Int(nx, ny));
+                    _areas[marker].Add(new Vector2Int(nx, ny));
+                    count++;
+                }
+            }
+        }
+
+        return count;
+    }
+    public void FillHoles()
+    {
+        _areas = new Dictionary<int, List<Vector2Int>>();
+        int[,] regionMap = new int[_gridColumns, _gridRows];
+
+        // Step 1: Translate _grid to 0 (empty) and 1 (filled/obstacle)
+        for (int x = 0; x < _gridColumns; x++)
+        {
+            for (int y = 0; y < _gridRows; y++)
+            {
+                regionMap[x, y] = (_grid[x, y] || _obstacleMap[x, y]) ? 1 : 0;
+            }
+        }
+
+        // Step 2: Find regions (connected 0s)
+        _regionCounter = 2; // Start at 2 to differentiate from 0 and 1
+        for (int x = 0; x < _gridColumns; x++)
+        {
+            for (int y = 0; y < _gridRows; y++)
+            {
+                if (regionMap[x, y] == 0)
+                {
+                    _areas[_regionCounter] = new List<Vector2Int>();
+                    FloodFillRegion(new Vector2Int(x, y), regionMap, _regionCounter, _gridColumns, _gridRows);
+                    _regionCounter++;
+                }
+            }
+        }
+
+        // Step 3: Find largest area (we'll consider this the "outside")
+        var largestArea = _areas.OrderByDescending(a => a.Value.Count).FirstOrDefault();
+
+        // Step 4: Fill all other enclosed regions
+        foreach (var region in _areas)
+        {
+            if (region.Key == largestArea.Key)
+                continue;
+
+            foreach (var pos in region.Value)
+            {
+                if (!_grid[pos.x, pos.y])
+                {
+                    // ✅ Kill enemies BEFORE filling
+                    Vector3 worldPos = GridToWorld(pos) + Vector3.up * 0.1f;
+                    var hits = Physics.OverlapBox(worldPos, new Vector3(0.4f, 0.5f, 0.4f), Quaternion.identity);
+
+                    foreach (var hit in hits)
+                    {
+                        if (hit.CompareTag("Enemy"))
+                        {
+                            var renderer = hit.GetComponent<Renderer>();
+                            AudioManager.instance?.PlaySFXSound(2);
+                            if (renderer)
+                                GameManager.Instance.SpawnDeathParticles(hit.gameObject, renderer.material.color);
+                            Destroy(hit.gameObject);
+                        }
+                        if (hit.CompareTag("Diamond"))
+                        {
+                            var renderer = hit.GetComponent<Renderer>();
+                            AudioManager.instance?.PlaySFXSound(1);
+                            if (renderer)
+                                GameManager.Instance.SpawnDeathParticles(hit.gameObject, renderer.material.color);
+                            UIManager.Instance.AnimateDiamondGainFromWorld(hit.transform.position);
+                            Destroy(hit.gameObject);
+                        }
+
+                    }
+
+                    // ✅ Fill the cube
+                    if (GetCubeAtPosition(pos) == null)
+                    {
+                        Cube cube = CubeGrid.Instance.GetCube();
+                        cube.Initalize(GridToWorld(pos), true);
+                        cube.FillCube(); // grid mark + visuals
+                    }
+
+                    _grid[pos.x, pos.y] = true; // update logical grid
+                }
+            }
+        }
+
+        ForceFillRemainingVisuals();
+        SyncVisualsForExposedFilledCells();
+    }
+
+    
+    private float GetCurrentFillPercentage()
+    {
+        int total = 0;
+        int filled = 0;
+
+        for (int x = 0; x < _gridColumns; x++)
+        {
+            for (int y = 0; y < _gridRows; y++)
+            {
+                if (_obstacleMap[x, y])
+                    continue;
+
+                total++;
+                if (_grid[x, y])
+                    filled++;
+            }
+        }
+
+        return (float)filled / total;
+    }
+    private IEnumerator StartFillingAllMap()
+    {
+        GameManager.Instance.Player.IsMoving = false;
+
+        for (int x = 0; x < _gridColumns; x++)
+        {
+            for (int y = 0; y < _gridRows; y++)
+            {
+                if (!_grid[x, y] && !_obstacleMap[x, y])
+                {
+                    if (GetCubeAtPosition(new Vector2Int(x, y)) == null)
+                    {
+                        Cube cube = CubeGrid.Instance.GetCube();
+                        cube.Initalize(GridToWorld(new Vector2Int(x, y)), true);
+                        cube.FillCube();
+                    }
+                    _grid[x, y] = true;
+                    yield return null;
+                }
+            }
+        }
+        RestoreAnyEatenFilledCells();
+        ForceFillRemainingVisuals();
+        StartCoroutine(DelayedLevelWin());
+    }
+    private void RestoreAnyEatenFilledCells()
+    {
+        for (int x = 0; x < _gridColumns; x++)
+        {
+            for (int y = 0; y < _gridRows; y++)
+            {
+                if (_obstacleMap[x, y]) continue;
+
+                Vector2Int pos = new(x, y);
+                if (GetCubeAtPosition(pos) == null)
+                {
+                    Cube cube = CubeGrid.Instance.GetCube();
+                    cube.Initalize(GridToWorld(pos), true);
+                    cube.FillCube();
+                    _grid[x, y] = true;
+                }
+            }
+        }
+    }
+
+    private IEnumerator FinalFullVisualFillThenWin()
+    {
+        // ⏳ Give enemies time to finish any destruction
+        //yield return new WaitForSeconds(0.3f);
+
+        for (int x = 0; x < _gridColumns; x++)
+        {
+            for (int y = 0; y < _gridRows; y++)
+            {
+                if (_obstacleMap[x, y]) continue;
+
+                Vector2Int pos = new(x, y);
+                bool hasVisual = GetCubeAtPosition(pos) != null;
+
+                if (!hasVisual)
+                {
+                    Cube cube = CubeGrid.Instance.GetCube();
+                    cube.Initalize(GridToWorld(pos), true);
+                    cube.FillCube();
+                }
+
+                _grid[x, y] = true;
+            }
+        }
+        yield return new WaitForSeconds(0.2f);
+        ForceFillRemainingVisuals();
+        StartCoroutine(DelayedLevelWin());
+    }
+    private void ForceFillEveryUnfilledCell()
+    {
+        for (int x = 0; x < _gridColumns; x++)
+        {
+            for (int y = 0; y < _gridRows; y++)
+            {
+                if (_obstacleMap[x, y])
+                    continue;
+
+                Vector2Int pos = new(x, y);
+                if (GetCubeAtPosition(pos) == null)
+                {
+                    Cube cube = CubeGrid.Instance.GetCube();
+                    cube.Initalize(GridToWorld(pos), true);
+                    cube.FillCube();
+                    _grid[x, y] = true;
+                }
+            }
+        }
+    }
+
+
+    #endregion
     private int GetTrueGridCount(bool[,] _grid)
     {
         int trueCount = 0;
@@ -400,20 +654,25 @@ public class GridManager : MonoBehaviour
         if (regions.Count <= 1)
             return originalGrid;
 
-        var largestRegion = regions.OrderByDescending(r => r.Count).First();
+        List<Point> outerRegion = regions.FirstOrDefault(r =>
+            r.Any(p => p.X == 0 || p.X == cols - 1 || p.Y == 0 || p.Y == rows - 1)
+        );
+
+        if (outerRegion == null)
+            outerRegion = regions.OrderByDescending(r => r.Count).First();  // fallback
+
 
         foreach (var region in regions)
         {
-            if (region == largestRegion)
+            if (region == outerRegion)
                 continue;
 
             foreach (var p in region)
                 originalGrid[p.X, p.Y] = true;
 
             MakeCubes(region);
-            
-
         }
+
 
         return originalGrid;
     }

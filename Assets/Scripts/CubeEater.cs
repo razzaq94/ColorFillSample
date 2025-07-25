@@ -60,7 +60,6 @@ public class CubeEater : MonoBehaviour
             Vector3 start = transform.position;
             Vector3 target = start + currentDir * gridSize;
 
-            // Round target position to nearest grid point
             target.x = Mathf.Round(target.x / gridSize) * gridSize;
             target.z = Mathf.Round(target.z / gridSize) * gridSize;
 
@@ -107,6 +106,7 @@ public class CubeEater : MonoBehaviour
                     GameManager.Instance.SpawnDeathParticles(hit.transform.gameObject, renderer.material.color);
                     GameManager.Instance.CameraShake(0.35f, 0.15f);
                     hit.gameObject.SetActive(false);
+                    currentDir = PickRandomDirection(excludeOpposite: true);
                     GameManager.Instance.LevelLose();
                 }
             }

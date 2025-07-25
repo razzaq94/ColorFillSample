@@ -29,19 +29,27 @@ public class EnemyBehaviors : MonoBehaviour
         rb.angularDamping = 0f;
         rb.linearDamping = 0f;
 
-        // Ensure a smooth initial direction
         dir = PickRandomXZDirection(minInitial);
-        rb.linearVelocity = dir * speed;  // Set the initial velocity to get the ball moving
+        rb.linearVelocity = dir * speed;  
     }
 
     void FixedUpdate()
     {
-        // Ensure that all ball types follow the updated movement behavior
         if (enemyType == SpawnablesType.SpikeBall)
+        {
             SpikedBallMovement();
+        }
         else
-            rb.linearVelocity = dir * speed;  // Apply velocity directly for smooth continuous movement
+        {
+            if (rb.linearVelocity.magnitude < 0.1f)
+            {
+                dir = PickRandomXZDirection(minInitial);
+            }
+
+            rb.linearVelocity = dir.normalized * speed;
+        }
     }
+
 
     private void SpikedBallMovement()
     {
@@ -122,6 +130,8 @@ public class EnemyBehaviors : MonoBehaviour
         }
         else if (collision.transform.CompareTag("Player"))
         {
+            BounceOffNormal(collision.contacts[0].normal);
+            rb.MovePosition(transform.position + dir * 0.1f);
             HandlePlayerCollision();
         }
         else if (collision.transform.CompareTag("Boundary")
@@ -133,19 +143,21 @@ public class EnemyBehaviors : MonoBehaviour
             && Time.frameCount != _lastDestroyFrame)
         {
             BounceOffNormal(collision.contacts[0].normal);
+            rb.MovePosition(transform.position + dir * 0.1f);
             _lastDestroyFrame = Time.frameCount;
         }
     }
-
+   
     private void BounceOffNormal(Vector3 normal)
     {
-        if (normal == Vector3.zero)
+        if (normal == Vector3.zero || dir.magnitude < 0.1f)
         {
             dir = PickRandomXZDirection(0.4f);
         }
         else
         {
-            dir = Vector3.Reflect(dir, normal).normalized;  
+            dir = Vector3.Reflect(dir, normal).normalized;
+            dir = Quaternion.Euler(0f, Random.Range(-bounceAngle, bounceAngle), 0f) * dir;
         }
 
         float jitter = Random.Range(-bounceAngle, bounceAngle);

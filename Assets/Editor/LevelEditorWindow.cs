@@ -1393,17 +1393,17 @@ public class LevelDataEditorWindow : EditorWindow
     }
     private void ApplyEditorColors()
     {
+        var player = GameObject.FindWithTag("Player");
+        if (player && player.TryGetComponent<Renderer>(out var pr))
+            SetColor(pr, _gameManager.PlayerColor);
+        
         foreach (var wall in GameObject.FindGameObjectsWithTag("Boundary"))
             if (wall.TryGetComponent<Renderer>(out var r))
                 SetColor(r, _gameManager.WallColor);
 
-
         foreach (var wall in GameObject.FindGameObjectsWithTag("Obstacle"))
             if (wall.TryGetComponent<Renderer>(out var r))
                 SetColor(r, _gameManager.WallColor);
-        var player = GameObject.FindWithTag("Player");
-        if (player && player.TryGetComponent<Renderer>(out var pr))
-            SetColor(pr, _gameManager.PlayerColor);
 
         foreach (var cube in Object.FindObjectsOfType<Cube>())
             if (cube.IsFilled && cube.TryGetComponent<Renderer>(out var r))
@@ -1439,7 +1439,7 @@ public class LevelDataEditorWindow : EditorWindow
     { 8,  new Vector3(7f, 10f, -1.5f) },
     { 10, new Vector3(9.36f, 10f, -1.5f) },
     { 12, new Vector3(11.67f, 10f, -1f) },
-    { 14, new Vector3(14.04f, 10f, -0.5f) },
+    { 14, new Vector3(14.04f, 10f, -0.8f) },
     { 16, new Vector3(16.4f, 10f, -0.5f) },
     { 18, new Vector3(18.78f, 10f, 0f) },
     { 20, new Vector3(21.2f, 10f, .5f) },

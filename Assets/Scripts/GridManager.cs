@@ -115,6 +115,7 @@ public class GridManager : MonoBehaviour
 
         FillHoles();
         float percent = GetCurrentFillPercentage();
+
         SetProgressBar(_grid);
 
         if (percent >= 0.9f)
@@ -122,7 +123,7 @@ public class GridManager : MonoBehaviour
             StartCoroutine(FinalFullVisualFillThenWin());
 
         }
-
+        TryForceFillLastPocket();
         SetProgressBar(_grid);
 
         ForceFillRemainingVisuals();
@@ -386,51 +387,8 @@ public class GridManager : MonoBehaviour
 
         return (float)filled / total;
     }
-    private IEnumerator StartFillingAllMap()
-    {
-        GameManager.Instance.Player.IsMoving = false;
-
-        for (int x = 0; x < _gridColumns; x++)
-        {
-            for (int y = 0; y < _gridRows; y++)
-            {
-                if (!_grid[x, y] && !_obstacleMap[x, y])
-                {
-                    if (GetCubeAtPosition(new Vector2Int(x, y)) == null)
-                    {
-                        Cube cube = CubeGrid.Instance.GetCube();
-                        cube.Initalize(GridToWorld(new Vector2Int(x, y)), true);
-                        cube.FillCube();
-                    }
-                    _grid[x, y] = true;
-                    yield return null;
-                }
-            }
-        }
-        RestoreAnyEatenFilledCells();
-        ForceFillRemainingVisuals();
-        StartCoroutine(DelayedLevelWin());
-    }
-    private void RestoreAnyEatenFilledCells()
-    {
-        for (int x = 0; x < _gridColumns; x++)
-        {
-            for (int y = 0; y < _gridRows; y++)
-            {
-                if (_obstacleMap[x, y]) continue;
-
-                Vector2Int pos = new(x, y);
-                if (GetCubeAtPosition(pos) == null)
-                {
-                    Cube cube = CubeGrid.Instance.GetCube();
-                    cube.Initalize(GridToWorld(pos), true);
-                    cube.FillCube();
-                    _grid[x, y] = true;
-                }
-            }
-        }
-    }
-
+   
+ 
     private IEnumerator FinalFullVisualFillThenWin()
     {
         // ⏳ Give enemies time to finish any destruction
@@ -457,7 +415,7 @@ public class GridManager : MonoBehaviour
         }
         yield return new WaitForSeconds(0.2f);
         ForceFillRemainingVisuals();
-        StartCoroutine(DelayedLevelWin());
+        //StartCoroutine(DelayedLevelWin());
     }
     private void ForceFillEveryUnfilledCell()
     {
@@ -476,6 +434,68 @@ public class GridManager : MonoBehaviour
                     cube.FillCube();
                     _grid[x, y] = true;
                 }
+            }
+        }
+    }
+    private void TryForceFillLastPocket()
+    {
+        bool[,] visited = new bool[_gridColumns, _gridRows];
+        List<List<Vector2Int>> pockets = new List<List<Vector2Int>>();
+
+        for (int x = 0; x < _gridColumns; x++)
+        {
+            for (int y = 0; y < _gridRows; y++)
+            {
+                if (!visited[x, y] && !_grid[x, y] && !_obstacleMap[x, y])
+                {
+                    List<Vector2Int> pocket = new List<Vector2Int>();
+                    bool isSurrounded = true;
+
+                    Queue<Vector2Int> queue = new Queue<Vector2Int>();
+                    queue.Enqueue(new Vector2Int(x, y));
+                    visited[x, y] = true;
+
+                    while (queue.Count > 0)
+                    {
+                        var current = queue.Dequeue();
+                        pocket.Add(current);
+
+                        Vector2Int[] dirs = { Vector2Int.up, Vector2Int.down, Vector2Int.left, Vector2Int.right };
+                        foreach (var dir in dirs)
+                        {
+                            int nx = current.x + dir.x;
+                            int ny = current.y + dir.y;
+
+                            if (nx < 0 || ny < 0 || nx >= _gridColumns || ny >= _gridRows)
+                            {
+                                isSurrounded = false; // not fully enclosed
+                                continue;
+                            }
+
+                            if (!visited[nx, ny] && !_grid[nx, ny] && !_obstacleMap[nx, ny])
+                            {
+                                visited[nx, ny] = true;
+                                queue.Enqueue(new Vector2Int(nx, ny));
+                            }
+                        }
+                    }
+
+                    if (isSurrounded && pocket.Count <= 30)
+                    {
+                        pockets.Add(pocket);
+                    }
+                }
+            }
+        }
+
+        foreach (var pocket in pockets)
+        {
+            foreach (var cell in pocket)
+            {
+                var cube = CubeGrid.Instance.GetCube();
+                cube.Initalize(GridToWorld(cell), true);
+                cube.FillCube();
+                _grid[cell.x, cell.y] = true;
             }
         }
     }

@@ -303,6 +303,9 @@ public class Player : MonoBehaviour
         }
         SetTargetPos();
     }
+
+    private Tween moveTween;
+
     private void SetTargetPos()
     {
         if (_isMoving)

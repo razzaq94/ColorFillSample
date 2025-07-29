@@ -39,6 +39,19 @@ public class Player : MonoBehaviour
     private Rigidbody _rigidbody = null;
     public Color GetPlayerColor() => playerColor;
     [SerializeField] Direction _direction = Direction.None;
+
+
+
+    private Coroutine invincibilityRoutine;
+    private BoxCollider triggerCollider;
+    private BoxCollider collisionCollider;
+    private Material _flashMaterial; // clone of material
+
+
+
+
+
+
     public bool IsMoving
     {
         get => _isMoving;
@@ -62,8 +75,22 @@ public class Player : MonoBehaviour
 
         if (material != null)
             material.color = GameManager.Instance.PlayerColor;
+        if (material != null)
+        {
+            _flashMaterial = new Material(material); 
+            GetComponent<Renderer>().material = _flashMaterial;
+            _flashMaterial.color = GameManager.Instance.PlayerColor;
+        }
         spawnedCubes = new List<Cube>();
         MakeCube();
+        var colliders = GetComponents<BoxCollider>();
+        foreach (var col in colliders)
+        {
+            if (col.isTrigger)
+                triggerCollider = col;
+            else
+                collisionCollider = col;
+        }
     }
     private void Update()
     {
@@ -358,6 +385,62 @@ public class Player : MonoBehaviour
         cube.Initalize(spawnPos, false);
         spawnedCubes.Add(cube);
     }
+    public void InvincibleForSeconds(float seconds = 5f)
+    {
+        if (invincibilityRoutine != null)
+            StopCoroutine(invincibilityRoutine);
+
+        invincibilityRoutine = StartCoroutine(InvincibilityRoutine(seconds));
+    }
+
+    private IEnumerator InvincibilityRoutine(float duration)
+    {
+        if (triggerCollider != null) triggerCollider.enabled = false;
+        if (collisionCollider != null) collisionCollider.enabled = false;
+        this.enabled = false;
+
+        Color originalColor = _flashMaterial.color;
+        Color lightColor = originalColor + new Color(0.3f, 0.3f, 0.3f); 
+
+        float elapsed = 0f;
+        float pulseSpeed = 1f;
+
+        UIManager.Instance.countDown.gameObject.SetActive(true);
+
+        for (int i = 3; i > 0; i--)
+        {
+            UIManager.Instance.countDown.text = i.ToString("00");
+
+            float t = Mathf.PingPong(Time.time * pulseSpeed, 1f); 
+            Color pulsingColor = Color.Lerp(originalColor, lightColor, t);
+            _flashMaterial.color = pulsingColor;
+
+            yield return new WaitForSecondsRealtime(1f);
+        }
+
+        UIManager.Instance.countDown.text = "00";
+        UIManager.Instance.countDown.gameObject.SetActive(false);
+
+        while (elapsed < duration - 3f) 
+        {
+            float t = Mathf.PingPong(Time.time * pulseSpeed, 1f);
+            Color pulsingColor = Color.Lerp(originalColor, lightColor, t);
+            _flashMaterial.color = pulsingColor;
+
+            elapsed += Time.deltaTime;
+            yield return null;
+        }
+
+        _flashMaterial.color = originalColor;
+
+        if (triggerCollider != null) triggerCollider.enabled = true;
+        if (collisionCollider != null) collisionCollider.enabled = true;
+        enabled = true;
+
+        invincibilityRoutine = null;
+    }
+
+
 
 
 }

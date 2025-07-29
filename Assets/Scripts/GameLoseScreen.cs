@@ -3,6 +3,7 @@ using DG.Tweening;
 using TMPro;
 using UnityEngine;
 using UnityEngine.SceneManagement;
+using UnityEngine.UI;
 
 public class GameLoseScreen : MonoBehaviour
 {
@@ -10,7 +11,7 @@ public class GameLoseScreen : MonoBehaviour
     [SerializeField] private TextMeshProUGUI countdownText;
     public GameObject TimeOutOptions;
     public GameObject CrashOptions;
-
+    public Button reviveBTN;
 
     private void Awake()
     {
@@ -18,9 +19,13 @@ public class GameLoseScreen : MonoBehaviour
     }
     private void Start()
     {
-
-        StartCoroutine(CountdownRoutine());
-    }
+        Time.timeScale = 0;
+        if (GameManager.Instance.reviveUsed)
+        {
+            reviveBTN.interactable = false;
+        }
+            //StartCoroutine(CountdownRoutine());
+        }
     public static GameLoseScreen ShowUI()
     {
         if (instance == null)
@@ -74,9 +79,11 @@ public class GameLoseScreen : MonoBehaviour
     {
         AdManager_Admob.instance.ShowRewardedVideoAd(() =>
         {
-            GameManager.Instance.AddTime(60); 
+            GameManager.Instance.AddTime(60);
             GameManager.Instance.ResumeAfterAd();
         });
+        if (Time.timeScale == 0)
+            Time.timeScale = 1.0f;
     }
 
     public void OnClick_ReplayLevel()
@@ -89,18 +96,23 @@ public class GameLoseScreen : MonoBehaviour
     {
         AdManager_Admob.instance.ShowRewardedVideoAd(() =>
         {
-            GameManager.Instance.LevelComplete();
+            GameManager.Instance.MarkLevelCompleted(SceneManager.GetActiveScene().buildIndex);
+            //GameManager.Instance.LevelComplete();
         });
     }
     public void OnClick_Revive()
     {
+        GameManager.Instance.reviveUsed = true;
+        
+        reviveBTN.interactable = false;
         ClosePanael();
         AdManager_Admob.instance.ShowRewardedVideoAd(() =>
         {
+            print("AdLoaded ");
             GameManager.Instance.ReviveFromLife();
             UIManager.Instance.GainLife();
         });
-       
+        
     }
 
     public void OnClick_CrashRestart()
@@ -113,7 +125,8 @@ public class GameLoseScreen : MonoBehaviour
     {
         AdManager_Admob.instance.ShowRewardedVideoAd(() =>
         {
-            GameManager.Instance.LevelComplete();
+            GameManager.Instance.MarkLevelCompleted(SceneManager.GetActiveScene().buildIndex);
+            //GameManager.Instance.LevelComplete();
         });
     }
 

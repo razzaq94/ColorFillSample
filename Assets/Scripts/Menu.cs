@@ -26,7 +26,10 @@ public class Menu : MonoBehaviour
     public void StartGame()
     {
         //AudioManager.instance.PlayUISound(0);
-
+        if (Time.timeScale == 0f)
+        {
+            Time.timeScale = 1f;
+        }
         animator.Play("PanelsAnim");
         LevelSelection.ShowUI();
         //gameObject.SetActive(false);

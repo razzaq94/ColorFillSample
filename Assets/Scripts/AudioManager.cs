@@ -110,7 +110,6 @@ public class AudioManager : MonoBehaviour
 
     public void PlaySFXSound(int n)
     {
-        print("SFXStart");
         SFXAudioSource.PlayOneShot(SFXSounds[n]);
     }
 }

@@ -71,6 +71,8 @@ public class UIManager : MonoBehaviour
 
     public void LevelComplete()
     {
+        if (Time.timeScale == 0)
+            Time.timeScale = 1.0f;
         AudioManager.instance?.PlaySFXSound(0);
         deleteenemies();
         GameObject line = Instantiate(LinePrefab, GameObject.FindGameObjectWithTag("MainCanvas").transform.position, LinePrefab.transform.rotation);
@@ -232,6 +234,7 @@ public class UIManager : MonoBehaviour
         Time.timeScale = 0f;
 
         GameManager.Instance.ReviveFromLife();
+
         // Countdown loop
         for (int i = 3; i > 0; i--)
         {
@@ -241,6 +244,10 @@ public class UIManager : MonoBehaviour
 
         countDown.text = "00";
         countDown.gameObject.SetActive(false);
+        if (!GameManager.Instance.Player.gameObject.activeInHierarchy) 
+        {
+            GameManager.Instance.Player.gameObject.SetActive(true);
+        }
         AnimateLifeFromUIToPlayer(GameManager.Instance.Player.transform.position);
 
         //GameManager.Instance.Player.gameObject.SetActive(true);

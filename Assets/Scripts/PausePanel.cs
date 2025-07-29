@@ -9,6 +9,10 @@ public class PausePanel : MonoBehaviour
     {
         instance = this;
     }
+    private void Start()
+    {
+        Time.timeScale = 0f;  
+    }
     public static PausePanel ShowUI()
     {
         if (instance == null)
@@ -39,9 +43,9 @@ public class PausePanel : MonoBehaviour
     {
         AudioManager.instance?.PlayUISound(0);
 
-        SceneManager.LoadScene(SceneManager.GetActiveScene().buildIndex);
         if(Time.timeScale == 0)
             Time.timeScale = 1.0f; 
+        SceneManager.LoadScene(SceneManager.GetActiveScene().buildIndex);
 
     }
     public void QuitGame()
@@ -52,6 +56,8 @@ public class PausePanel : MonoBehaviour
     public void CloseButton()
     {
         AudioManager.instance?.PlayUISound(0);
+        if (Time.timeScale == 0)
+            Time.timeScale = 1.0f;
         Destroy(gameObject);
     }
 }

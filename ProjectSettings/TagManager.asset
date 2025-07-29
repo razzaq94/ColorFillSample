@@ -22,6 +22,7 @@ TagManager:
   - EnemyCube
   - GridBackground
   - Heart
+  - SelectionParent
   layers:
   - Default
   - TransparentFX

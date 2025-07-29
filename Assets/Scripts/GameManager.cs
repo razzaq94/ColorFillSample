@@ -5,6 +5,7 @@ using System.Linq;
 using System.Collections;
 using Sirenix.OdinInspector;
 using UnityEngine.SceneManagement;
+using UnityEngine.UI;
 [HideMonoScript]
 public class GameManager : MonoBehaviour
 {
@@ -53,6 +54,7 @@ public class GameManager : MonoBehaviour
 
     private bool isGameOver = false;
     public bool loosed = false;
+    public bool reviveUsed = false;
 
     private void Awake()
     {
@@ -69,7 +71,7 @@ public class GameManager : MonoBehaviour
         GridManager.Instance.InitGrid(Level.Columns, Level.Rows);
         Player.Init();
         GetCells();
-
+        Player.gameObject?.SetActive(true);
         foreach (var wall in GameObject.FindGameObjectsWithTag("Boundary"))
         {
             if (wall.TryGetComponent<Renderer>(out var renderer))
@@ -231,11 +233,11 @@ public class GameManager : MonoBehaviour
    
     public void ReviveFromLife()
     {
-        print(Player.lastSafeFilledPosition + " before revive");
+        //print(Player.lastSafeFilledPosition + " before revive");
         Player.ClearUnfilledTrail();
-
-        Player.enabled = true;
         Player.gameObject.SetActive(true);
+        Player.enabled = true;
+
 
         Player.IsMoving = false; 
         Player.SpawnCubes = false; 
@@ -248,8 +250,11 @@ public class GameManager : MonoBehaviour
         isGameOver = false;
         loosed = false;
         Player.ForceInitialCube();
-
-        print(Player.lastSafeFilledPosition + " after revive");
+        if (reviveUsed)
+        {
+            Player.InvincibleForSeconds(3);
+        }
+        //print(Player.lastSafeFilledPosition + " after revive");
     }
 
 
@@ -279,7 +284,7 @@ public class GameManager : MonoBehaviour
             return;
         }
         loosed = true;
-        print("Lose called");   
+        //print("Lose called");   
         Player.enabled = _gameRunning = false;
         Invoke(nameof(HandleLevelLoseCrash), 0.5f);
         AudioManager.instance?.BGAudioSource.Stop();
@@ -505,8 +510,10 @@ public class GameManager : MonoBehaviour
     {
 
         GameLoseScreen.instance?.ClosePanael();
-        yield return new WaitForSeconds(0.2f); 
+        yield return new WaitForSeconds(0.2f);
         SceneManager.LoadScene(SceneManager.GetActiveScene().buildIndex);
+        if (Time.timeScale == 0)
+            Time.timeScale = 1.0f;
     }
 
 
@@ -567,7 +574,6 @@ public class GameManager : MonoBehaviour
 
     public void SpawnDeathParticles(GameObject sourceObject, Color color)
     {
-        print("funcCalled");
 
         Vector3 position = sourceObject.transform.position + new Vector3(0, 1.5f, 0);
         GameObject prefabToUse = sourceObject.CompareTag("Player") ? playerParticlePrefab : deathParticlePrefab;
@@ -581,7 +587,7 @@ public class GameManager : MonoBehaviour
             main.startColor = color;
         }
 
-        print(fx.name + " spawned at " + position);
+        //print(fx.name + " spawned at " + position);
         Destroy(fx, 2f);
     }
 

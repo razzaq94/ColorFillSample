@@ -915,7 +915,7 @@ public class GridManager : MonoBehaviour
             _trueCount = Mathf.Max(0, _trueCount - 1);
         }
 
-        print(cube.gameObject.name);
+        //print(cube.gameObject.name);
         cube.IsFilled = false; // always reset
         cube.CanHarm = false;
         cube.gameObject.SetActive(false);

@@ -16,7 +16,7 @@ public class LevelSelection : MonoBehaviour
         {
             GameObject obj = Instantiate(Resources.Load("LevelSelection")) as GameObject;
 
-            obj.gameObject.transform.SetParent(GameObject.FindGameObjectWithTag("MainCanvas").transform, false);
+            obj.gameObject.transform.SetParent(GameObject.FindGameObjectWithTag("SelectionParent").transform, false);
 
             instance = obj.GetComponent<LevelSelection>();
         }
@@ -53,6 +53,10 @@ public class LevelSelection : MonoBehaviour
     public void CloseButton()
     {
         AudioManager.instance?.PlayUISound(0);
+        if(Time.timeScale == 0f)
+        {
+            Time.timeScale = 1f;
+        }
         Menu.ShowUI();
         Menu.instance.animator.Play("Return");
         Destroy(gameObject);

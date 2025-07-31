@@ -44,7 +44,7 @@ public class Player : MonoBehaviour
 
     private Coroutine invincibilityRoutine;
     private BoxCollider triggerCollider;
-    private BoxCollider collisionCollider;
+    public  BoxCollider collisionCollider;
     private Material _flashMaterial; // clone of material
 
 
@@ -116,7 +116,7 @@ public class Player : MonoBehaviour
     }
 
 
-    private Vector3 RoundPos() => new Vector3((float)Mathf.Round(transform.position.x), transform.position.y, (float)Mathf.Round(transform.position.z));
+    public  Vector3 RoundPos() => new Vector3((float)Mathf.Round(transform.position.x), transform.position.y, (float)Mathf.Round(transform.position.z));
 
     public void SpawnCube()
     {
@@ -149,6 +149,7 @@ public class Player : MonoBehaviour
             if (spawnedCubes[i] != null)
             {
                 CubeGrid.Instance.PutBackInQueue(spawnedCubes[i]);
+                spawnedCubes[i].CanHarm = false;
             }
         }
         spawnedCubes.Clear();
@@ -179,17 +180,21 @@ public class Player : MonoBehaviour
         }
         if (collision.gameObject.TryGetComponent<EnemyCube>(out EnemyCube enemyCube))
         {
-            IsMoving = false;
-            transform.position = RoundPos();
-            //AudioManager.instance.PlaySFXSound(1);
-            Haptics.Generate(HapticTypes.HeavyImpact);
-            GameManager.Instance.SpawnDeathParticles(transform.gameObject, material.color);
-            GameManager.Instance.CameraShake(0.35f, 0.15f);
-            gameObject.SetActive(false);
-            //Invoke(nameof(HandleLevelLose), 2f); 
+            //IsMoving = false;
+            //transform.position = RoundPos();
+            //Haptics.Generate(HapticTypes.HeavyImpact);
+            //GameManager.Instance.SpawnDeathParticles(transform.gameObject, material.color);
+            //GameManager.Instance.CameraShake(0.35f, 0.15f);
+            //gameObject.SetActive(false);
+            //collisionCollider.enabled = false;
+            //this.enabled = false; // Disable player movement script
+            //ClearUnfilledTrail();
+            //enemyCube.collided = true;
+            //AudioManager.instance?.PlaySFXSound(3);
+            //Invoke(nameof(enemyCube.HandleLevelLoseCrash), 0.3f);
         }
     }
-
+    
     private void HandleLevelLose()
     {
         GameManager.Instance.LevelLose();

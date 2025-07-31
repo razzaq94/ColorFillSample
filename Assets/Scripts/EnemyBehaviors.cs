@@ -139,6 +139,8 @@ public class EnemyBehaviors : MonoBehaviour
             || collision.transform.CompareTag("EnemyGroup")
             || collision.transform.CompareTag("Enemy")
             || collision.transform.CompareTag("Heart")
+            || collision.transform.CompareTag("SlowDown")
+            || collision.transform.CompareTag("Timer")
             || collision.transform.CompareTag("Diamond")
             && Time.frameCount != _lastDestroyFrame)
         {
@@ -184,6 +186,7 @@ public class EnemyBehaviors : MonoBehaviour
         AudioManager.instance?.PlaySFXSound(3);
         GameManager.Instance.SpawnDeathParticles(GameManager.Instance.Player.transform.gameObject, GameManager.Instance.Player.material.color);
         GameManager.Instance.CameraShake(0.35f, 0.15f);
+        GameManager.Instance.Player.ClearUnfilledTrail();
         GameManager.Instance.LevelLose();
     }
 }

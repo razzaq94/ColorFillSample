@@ -588,6 +588,17 @@ CanvasRenderer:
   m_PrefabAsset: {fileID: 0}
   m_GameObject: {fileID: 239373717}
   m_CullTransparentMesh: 1
+--- !u!114 &341289421 stripped
+MonoBehaviour:
+  m_CorrespondingSourceObject: {fileID: 3297627236340354399, guid: e26cd22498949454dae36fb73481599f, type: 3}
+  m_PrefabInstance: {fileID: 1460309989}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 0}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: f4688fdb7df04437aeb418b961361dc5, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: 
 --- !u!1 &349519484
 GameObject:
   m_ObjectHideFlags: 0
@@ -1721,6 +1732,7 @@ MonoBehaviour:
   playerColor: {r: 0.22254802, g: 0.8396226, b: 0.16237983, a: 1}
   material: {fileID: 2100000, guid: 38a5ea855e8c2a949b24cf1254b22dbc, type: 2}
   _direction: 0
+  collisionCollider: {fileID: 0}
 --- !u!1 &1269584715
 GameObject:
   m_ObjectHideFlags: 0
@@ -2090,12 +2102,13 @@ MonoBehaviour:
   firstLevelBuildIndex: 1
   Diamonds: 0
   Life: 0
+  LevelToUse: 1
   SpeedForFallingObjects: 0.3
   Level:
     LevelObject: {fileID: 344930045539134287}
     PlayerStartRow: -1
     PlayerStartCol: -1
-    isTimeless: 0
+    isTimeless: 1
     levelTime: 60
     gridPositions: []
     SpwanablesConfigurations: []
@@ -2950,7 +2963,7 @@ MonoBehaviour:
   m_EditorClassIdentifier: 
   Fill: {fileID: 1196983181}
   CurrentLevelText: {fileID: 1634645243}
-  Diamonds: {fileID: 194613036}
+  Diamonds: {fileID: 341289421}
   timerText: {fileID: 1658306758}
   NextLevelText: {fileID: 2135559739}
   LinePrefab: {fileID: 83615906684991354, guid: 7b10c63539932f04985493c4abdd6eaf, type: 3}
@@ -2968,6 +2981,8 @@ MonoBehaviour:
   clockImage: {fileID: 4690553465367025219, guid: 69b46a95ca971684b9b86cd4c37675b5, type: 3}
   levelTimeText: {fileID: 1658306758}
   iconTransform: {fileID: 349519485}
+  settings: {fileID: 0}
+  pause: {fileID: 0}
   diamondPos: {fileID: 349519485}
 --- !u!114 &1805188881
 MonoBehaviour:

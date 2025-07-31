@@ -1309,6 +1309,8 @@ MonoBehaviour:
   clockImage: {fileID: 4690553465367025219, guid: 69b46a95ca971684b9b86cd4c37675b5, type: 3}
   levelTimeText: {fileID: 5757835552045601938}
   iconTransform: {fileID: 665309099813586948}
+  settings: {fileID: 6333722807580925123}
+  pause: {fileID: 5279423431831974620}
   diamondPos: {fileID: 8889230282655661176}
 --- !u!114 &2295607767832133763
 MonoBehaviour:

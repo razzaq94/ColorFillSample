@@ -24,8 +24,12 @@ public class GameLoseScreen : MonoBehaviour
         {
             reviveBTN.interactable = false;
         }
-            //StartCoroutine(CountdownRoutine());
+        if (!AdManager_Admob.instance.IsRewardedAdLoaded())
+        {
+            reviveBTN.gameObject.SetActive(false);
         }
+        //StartCoroutine(CountdownRoutine());
+    }
     public static GameLoseScreen ShowUI()
     {
         if (instance == null)
@@ -96,37 +100,38 @@ public class GameLoseScreen : MonoBehaviour
     {
         AdManager_Admob.instance.ShowRewardedVideoAd(() =>
         {
-            GameManager.Instance.MarkLevelCompleted(SceneManager.GetActiveScene().buildIndex);
-            //GameManager.Instance.LevelComplete();
+            GameManager.Instance.LevelComplete();
         });
     }
     public void OnClick_Revive()
     {
-        GameManager.Instance.reviveUsed = true;
-        
-        reviveBTN.interactable = false;
-        ClosePanael();
         AdManager_Admob.instance.ShowRewardedVideoAd(() =>
         {
+            GameManager.Instance.reviveUsed = true;
+
+            reviveBTN.interactable = false;
+            ClosePanael();
             print("AdLoaded ");
             GameManager.Instance.ReviveFromLife();
             UIManager.Instance.GainLife();
         });
-        
+        if(Time.timeScale == 0)
+            Time.timeScale = 1.0f;  
     }
 
     public void OnClick_CrashRestart()
     {
         AdManager_Admob.instance.ShowInterstitialAd();
         GameManager.Instance.Replay();
+        if (Time.timeScale == 0)
+            Time.timeScale = 1.0f;
     }
 
     public void OnClick_CrashSkip()
     {
         AdManager_Admob.instance.ShowRewardedVideoAd(() =>
         {
-            GameManager.Instance.MarkLevelCompleted(SceneManager.GetActiveScene().buildIndex);
-            //GameManager.Instance.LevelComplete();
+            GameManager.Instance.LevelComplete();
         });
     }
 

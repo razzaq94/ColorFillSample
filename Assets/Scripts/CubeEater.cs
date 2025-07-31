@@ -106,6 +106,7 @@ public class CubeEater : MonoBehaviour
                     GameManager.Instance.SpawnDeathParticles(hit.transform.gameObject, renderer.material.color);
                     GameManager.Instance.CameraShake(0.35f, 0.15f);
                     hit.gameObject.SetActive(false);
+                    GameManager.Instance.Player.ClearUnfilledTrail();
                     currentDir = PickRandomDirection(excludeOpposite: true);
                     GameManager.Instance.LevelLose();
                 }

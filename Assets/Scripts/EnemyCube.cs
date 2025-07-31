@@ -17,13 +17,16 @@ public class EnemyCube : MonoBehaviour
         if (_renderer)
             _renderer.material.color = GameManager.Instance.EnemyCubeColor;
     }
-    bool collided = false;
+    public bool collided = false;
 
     private void OnCollisionEnter(Collision collision)
     {
-        if (collision.gameObject.TryGetComponent<Cube>(out Cube cube) && !collided)
+        if (collided) return; // ☂️ central guard
+
+        if (collision.gameObject.TryGetComponent<Cube>(out Cube cube))
         {
             collided = true;
+
             if (cube.IsFilled)
             {
                 gameObject.SetActive(false);
@@ -31,21 +34,39 @@ public class EnemyCube : MonoBehaviour
                 GameManager.Instance.SpawnDeathParticles(transform.gameObject, _renderer.material.color);
                 Destroy(gameObject, 1f);
             }
-            else
+            else if (cube.CanHarm)
             {
-                AudioManager.instance?.PlaySFXSound(3);
-                Haptics.Generate(HapticTypes.HeavyImpact);
-                GameManager.Instance.CameraShake(0.35f, 0.15f);
-                GameManager.Instance.SpawnDeathParticles(GameManager.Instance.Player.transform.gameObject, GameManager.Instance.Player.material.color);
-                GameManager.Instance.LevelLose();
+                if (!GameManager.Instance.loosed)
+                {
+                    AudioManager.instance?.PlaySFXSound(3);
+                    Haptics.Generate(HapticTypes.HeavyImpact);
+                    GameManager.Instance.CameraShake(0.35f, 0.15f);
+                    GameManager.Instance.SpawnDeathParticles(GameManager.Instance.Player.transform.gameObject, GameManager.Instance.Player.material.color);
+                    GameManager.Instance.LevelLose();
+                }
             }
+
             Invoke(nameof(enableAgain), 0.6f);
         }
-        else if (collision.gameObject.CompareTag("Player") && !collided)
+        else if (collision.gameObject.CompareTag("Player"))
         {
             collided = true;
-            AudioManager.instance?.PlaySFXSound(3);
-            Invoke(nameof(HandleLevelLoseCrash), 0.5f);
+
+            if (!GameManager.Instance.loosed)
+            {
+                GameManager.Instance.Player.IsMoving = false;
+                GameManager.Instance.Player.transform.position = GameManager.Instance.Player.RoundPos();
+                Haptics.Generate(HapticTypes.HeavyImpact);
+                GameManager.Instance.SpawnDeathParticles(GameManager.Instance.Player.transform.gameObject, GameManager.Instance.Player.material.color);
+                GameManager.Instance.CameraShake(0.35f, 0.15f);
+                GameManager.Instance.Player.gameObject.SetActive(false);
+                GameManager.Instance.Player.collisionCollider.enabled = false;
+                GameManager.Instance.Player.enabled = false;
+                GameManager.Instance.Player.ClearUnfilledTrail();
+                AudioManager.instance?.PlaySFXSound(3);
+
+                Invoke(nameof(HandleLevelLoseCrash), 0.3f);
+            }
         }
     }
 

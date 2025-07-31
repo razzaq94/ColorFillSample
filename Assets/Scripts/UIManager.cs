@@ -42,6 +42,9 @@ public class UIManager : MonoBehaviour
     public TextMeshProUGUI levelTimeText;
 
     public Transform iconTransform;
+
+    public Button settings;
+    public Button pause;
     private void Awake()
     {
         Instance = this;
@@ -120,7 +123,9 @@ public class UIManager : MonoBehaviour
     }
     public void LevelLoseCrash()
     {
-        Player.Instance.gameObject.SetActive(false);
+        Player.Instance.collisionCollider.enabled = false;
+
+
         AudioManager.instance?.PlaySFXSound(1);
 
         if (currentLives > 1)
@@ -130,7 +135,18 @@ public class UIManager : MonoBehaviour
         else
         {
             LoseLife();
-            Invoke(nameof(ShowGameLoseUICrash), 0.1f);
+
+            StartCoroutine(ShowGameLoseUICrashAfterDelay());
+        }
+    }
+
+    private IEnumerator ShowGameLoseUICrashAfterDelay()
+    {
+        yield return new WaitForSecondsRealtime(0.1f);
+
+        if (currentLives <= 0 && !isReviving)
+        {
+            ShowGameLoseUICrash();
         }
     }
 
@@ -188,23 +204,42 @@ public class UIManager : MonoBehaviour
         UpdateLifeIcons();
     }
 
+    private float lastLifeLostTime = -5f;
+    private bool isLosingLife = false;
+
     public void LoseLife()
     {
-        if (currentLives <= 0 || isReviving)
+        if (currentLives <= 0 || isReviving || isLosingLife)
             return;
 
+        if (Time.unscaledTime - lastLifeLostTime < 1f)
+            return;
+
+        lastLifeLostTime = Time.unscaledTime;
+        isLosingLife = true;
+        Player.Instance.gameObject.SetActive(false);
         currentLives--;
 
         if (currentLives <= 0)
         {
             GameManager.Instance.loosed = false;
             Time.timeScale = 1f;
-            //GameManager.Instance.LevelLose(); // Final loss
+            GameManager.Instance.Player.ClearUnfilledTrail();
+            Invoke(nameof(ShowGameLoseUICrash), 0.1f);
         }
         else
         {
             StartCoroutine(ReviveCountdownRoutine());
         }
+
+
+        StartCoroutine(ResetLifeLossLock());
+    }
+
+    private IEnumerator ResetLifeLossLock()
+    {
+        yield return new WaitForSecondsRealtime(1f); // same as cooldown
+        isLosingLife = false;
     }
 
     public void GainLife()
@@ -230,7 +265,11 @@ public class UIManager : MonoBehaviour
     private IEnumerator ReviveCountdownRoutine()
     {
         isReviving = true;
+        settings.interactable = false;
+        pause.interactable = false;
         countDown.gameObject.SetActive(true);
+        GameManager.Instance.Player.ClearUnfilledTrail();
+
         Time.timeScale = 0f;
 
         GameManager.Instance.ReviveFromLife();
@@ -250,11 +289,16 @@ public class UIManager : MonoBehaviour
         }
         AnimateLifeFromUIToPlayer(GameManager.Instance.Player.transform.position);
 
-        //GameManager.Instance.Player.gameObject.SetActive(true);
         //GameManager.Instance.Player.enabled = true;
 
         Time.timeScale = 1f;
+        if(!GameManager.Instance.Player.gameObject.activeInHierarchy)
+            GameManager.Instance.Player.gameObject.SetActive(true);
         AudioManager.instance?.PlayBGMusic(0);
+        settings.interactable = true;
+        pause.interactable = true;
+        Player.Instance.collisionCollider.enabled = true;
+        
         isReviving = false;
     }
 

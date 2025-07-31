@@ -31,7 +31,7 @@ public class LevelDataEditorWindow : EditorWindow
 
     private Dictionary<Vector2Int, EnemyCube> _placedEnemyCubeMap = new Dictionary<Vector2Int, EnemyCube>();
 
-
+    [MenuItem("Window/Level Editor Window")]
     public static void OpenWindow()
     {
         var wnd = GetWindow<LevelDataEditorWindow>();

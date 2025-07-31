@@ -118,7 +118,6 @@ public class EnemyCubeGroup : MonoBehaviour
             if (hit) return;
             hit = true;
             Invoke(nameof(HitReset), HitResetTime);
-            Debug.Log("Obstacle hit: " + other.name);
             ReverseDirection();
             SetNextTarget();
         }

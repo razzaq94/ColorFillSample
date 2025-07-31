@@ -38,7 +38,7 @@ public class GameManager : MonoBehaviour
     public int TotalLevels => SceneManager.sceneCountInBuildSettings - firstLevelBuildIndex;
     public int Diamonds;
     public int Life;
-    private int LevelToUse = 1;
+    public int LevelToUse = 1;
     public int GetCurrentLevel => CurrentLevel;
 
     [Header("Fall Speed")]
@@ -203,27 +203,8 @@ public class GameManager : MonoBehaviour
         AudioManager.instance?.BGAudioSource.Stop();
     }
 
-    public void ShowRewardedForExtraTime()
-    {
-        AdManager_Admob.instance.ShowRewardedVideoAd(() =>
-        {
-            AddTime(60); 
-            isGameOver = false;
-        });
-    }
-    public void ShowInterstitialAndReplay()
-    {
-        AdManager_Admob.instance.ShowInterstitialAd();
-        Replay();
-    }
-
-    public void ShowRewardedAndSkipLevel()
-    {
-        AdManager_Admob.instance.ShowRewardedVideoAd(() =>
-        {
-            LevelComplete();
-        });
-    }
+    
+    
 
     public void AddTime(int time)
     {
@@ -233,7 +214,7 @@ public class GameManager : MonoBehaviour
    
     public void ReviveFromLife()
     {
-        //print(Player.lastSafeFilledPosition + " before revive");
+        hasTriggeredLose = false;
         Player.ClearUnfilledTrail();
         Player.gameObject.SetActive(true);
         Player.enabled = true;
@@ -262,7 +243,7 @@ public class GameManager : MonoBehaviour
 
     public void LevelComplete()
     {
-        if (isGameOver) return; 
+        //if (isGameOver) return; 
 
         Player.enabled = _gameRunning = false;
         CurrentLevel++;
@@ -277,14 +258,15 @@ public class GameManager : MonoBehaviour
         GameLoseScreen.instance.ClosePanael();
         AudioManager.instance?.PlayBGMusic(0);
     }
+
+    private bool hasTriggeredLose = false;
     public void LevelLose()
     {
-        if(loosed)
-        {
+        if (loosed || hasTriggeredLose)
             return;
-        }
+
+        hasTriggeredLose = true; 
         loosed = true;
-        //print("Lose called");   
         Player.enabled = _gameRunning = false;
         Invoke(nameof(HandleLevelLoseCrash), 0.5f);
         AudioManager.instance?.BGAudioSource.Stop();

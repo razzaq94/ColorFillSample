@@ -86,8 +86,8 @@ public class GameLoseScreen : MonoBehaviour
             GameManager.Instance.AddTime(60);
             GameManager.Instance.ResumeAfterAd();
         });
-        if (Time.timeScale == 0)
-            Time.timeScale = 1.0f;
+        //if (Time.timeScale == 0)
+        //    Time.timeScale = 1.0f;
     }
 
     public void OnClick_ReplayLevel()
@@ -115,8 +115,8 @@ public class GameLoseScreen : MonoBehaviour
             GameManager.Instance.ReviveFromLife();
             UIManager.Instance.GainLife();
         });
-        if(Time.timeScale == 0)
-            Time.timeScale = 1.0f;  
+        //if(Time.timeScale == 0)
+        //    Time.timeScale = 1.0f;  
     }
 
     public void OnClick_CrashRestart()

@@ -10,6 +10,8 @@ public class EnemyCube : MonoBehaviour
 
     public Renderer _renderer;
 
+
+    public int collidedWith = -1;
     private void Start()
     {
         enemyCubeGroup = GetComponentInParent<EnemyCubeGroup>();
@@ -25,10 +27,11 @@ public class EnemyCube : MonoBehaviour
 
         if (collision.gameObject.TryGetComponent<Cube>(out Cube cube))
         {
-            collided = true;
 
             if (cube.IsFilled)
             {
+                collidedWith = 0;
+                collided = true;
                 gameObject.SetActive(false);
                 AudioManager.instance?.PlaySFXSound(2);
                 GameManager.Instance.SpawnDeathParticles(transform.gameObject, _renderer.material.color);
@@ -38,6 +41,8 @@ public class EnemyCube : MonoBehaviour
             {
                 if (!GameManager.Instance.loosed)
                 {
+                    collidedWith = 1;
+                    collided = true;
                     AudioManager.instance?.PlaySFXSound(3);
                     Haptics.Generate(HapticTypes.HeavyImpact);
                     GameManager.Instance.CameraShake(0.35f, 0.15f);
@@ -50,10 +55,10 @@ public class EnemyCube : MonoBehaviour
         }
         else if (collision.gameObject.CompareTag("Player"))
         {
-            collided = true;
-
             if (!GameManager.Instance.loosed)
             {
+                collidedWith = 2;
+                collided = true;
                 GameManager.Instance.Player.IsMoving = false;
                 GameManager.Instance.Player.transform.position = GameManager.Instance.Player.RoundPos();
                 Haptics.Generate(HapticTypes.HeavyImpact);

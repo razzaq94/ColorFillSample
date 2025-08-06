@@ -129,6 +129,8 @@ public class Player : MonoBehaviour
     {
         spawnedCubes.Add(CubeGrid.Instance.GetCube());
         spawnedCubes[spawnedCubes.Count - 1].Initalize(new Vector3((float)Mathf.Round(transform.position.x), transform.position.y - 0.7f, (float)Mathf.Round(transform.position.z)));
+        spawnedCubes[spawnedCubes.Count - 1].ApplyTrailColorFromLevel();
+
     }
 
     private void FillCubes()
@@ -136,7 +138,7 @@ public class Player : MonoBehaviour
         for (int i = 0; i < spawnedCubes.Count; i++)
         {
             spawnedCubes[i].FillCube();
-            spawnedCubes[i].Illuminate(0.5f); // 🔥 Add this line
+            spawnedCubes[i].Illuminate(0.5f); 
             GridManager.Instance.ChangeValue(spawnedCubes[i].transform.position.x, spawnedCubes[i].transform.position.z);
         }
         spawnedCubes.Clear();

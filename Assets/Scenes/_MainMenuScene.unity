@@ -2251,10 +2251,11 @@ MonoBehaviour:
   StartLevel: 1
   CurrentLevel: 0
   firstLevelBuildIndex: 1
-  Diamonds: 0
-  Life: 0
   LevelToUse: 1
-  SpeedForFallingObjects: 0.3
+  FallStraight: 1
+  ObjectFallingTime: 1
+  YFallOffset: 3
+  ZFallOffset: 0
   Level:
     LevelObject: {fileID: 344930045539134287}
     PlayerStartRow: -1
@@ -2663,6 +2664,52 @@ Transform:
   m_PrefabInstance: {fileID: 0}
   m_PrefabAsset: {fileID: 0}
   m_GameObject: {fileID: 1478688971}
+  serializedVersion: 2
+  m_LocalRotation: {x: 0, y: 0, z: 0, w: 1}
+  m_LocalPosition: {x: 0, y: 0, z: 0}
+  m_LocalScale: {x: 1, y: 1, z: 1}
+  m_ConstrainProportionsScale: 0
+  m_Children: []
+  m_Father: {fileID: 0}
+  m_LocalEulerAnglesHint: {x: 0, y: 0, z: 0}
+--- !u!1 &1567790137
+GameObject:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  serializedVersion: 6
+  m_Component:
+  - component: {fileID: 1567790139}
+  - component: {fileID: 1567790138}
+  m_Layer: 0
+  m_Name: GameHandler
+  m_TagString: Untagged
+  m_Icon: {fileID: 0}
+  m_NavMeshLayer: 0
+  m_StaticEditorFlags: 0
+  m_IsActive: 1
+--- !u!114 &1567790138
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 1567790137}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 1f0dec5d066347d429de6e993d0a9dcc, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: 
+  TotalDiamonds: 0
+  CurrentLives: 3
+--- !u!4 &1567790139
+Transform:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 1567790137}
   serializedVersion: 2
   m_LocalRotation: {x: 0, y: 0, z: 0, w: 1}
   m_LocalPosition: {x: 0, y: 0, z: 0}
@@ -3123,7 +3170,7 @@ MonoBehaviour:
   RandomTextSpawner: {fileID: 0}
   lifeIcons:
   - {fileID: 196650374}
-  currentLives: 1
+  currentLives: 3
   countDown: {fileID: 1658306758}
   isReviving: 0
   lifeFlyerPrefab: {fileID: 6589931422439937374, guid: e1a51e461437120418763cf79b42fd5f, type: 3}
@@ -4783,3 +4830,4 @@ SceneRoots:
   - {fileID: 1073900544}
   - {fileID: 5847913463156758516}
   - {fileID: 1828669376}
+  - {fileID: 1567790139}

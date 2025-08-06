@@ -308,6 +308,7 @@ MonoBehaviour:
   m_EditorClassIdentifier: 
   enemyCubeGroup: {fileID: 0}
   _renderer: {fileID: 0}
+  collidedWith: -1
   collided: 0
 --- !u!54 &19493449
 Rigidbody:
@@ -461,6 +462,7 @@ MonoBehaviour:
   m_EditorClassIdentifier: 
   enemyCubeGroup: {fileID: 0}
   _renderer: {fileID: 0}
+  collidedWith: -1
   collided: 0
 --- !u!54 &36115181
 Rigidbody:
@@ -1470,6 +1472,7 @@ MonoBehaviour:
   m_EditorClassIdentifier: 
   enemyCubeGroup: {fileID: 0}
   _renderer: {fileID: 0}
+  collidedWith: -1
   collided: 0
 --- !u!54 &93921135
 Rigidbody:
@@ -2067,6 +2070,7 @@ MonoBehaviour:
   m_EditorClassIdentifier: 
   enemyCubeGroup: {fileID: 0}
   _renderer: {fileID: 0}
+  collidedWith: -1
   collided: 0
 --- !u!54 &110908751
 Rigidbody:
@@ -3036,6 +3040,7 @@ MonoBehaviour:
   m_EditorClassIdentifier: 
   enemyCubeGroup: {fileID: 0}
   _renderer: {fileID: 0}
+  collidedWith: -1
   collided: 0
 --- !u!54 &151006424
 Rigidbody:
@@ -3429,6 +3434,7 @@ MonoBehaviour:
   m_EditorClassIdentifier: 
   enemyCubeGroup: {fileID: 0}
   _renderer: {fileID: 0}
+  collidedWith: -1
   collided: 0
 --- !u!54 &169245634
 Rigidbody:
@@ -3790,6 +3796,7 @@ MonoBehaviour:
   m_EditorClassIdentifier: 
   enemyCubeGroup: {fileID: 0}
   _renderer: {fileID: 0}
+  collidedWith: -1
   collided: 0
 --- !u!54 &182814384
 Rigidbody:
@@ -5252,6 +5259,7 @@ MonoBehaviour:
   m_EditorClassIdentifier: 
   enemyCubeGroup: {fileID: 0}
   _renderer: {fileID: 0}
+  collidedWith: -1
   collided: 0
 --- !u!54 &237446042
 Rigidbody:
@@ -6003,6 +6011,7 @@ MonoBehaviour:
   m_EditorClassIdentifier: 
   enemyCubeGroup: {fileID: 0}
   _renderer: {fileID: 0}
+  collidedWith: -1
   collided: 0
 --- !u!54 &265003959
 Rigidbody:
@@ -7004,6 +7013,7 @@ MonoBehaviour:
   m_EditorClassIdentifier: 
   enemyCubeGroup: {fileID: 0}
   _renderer: {fileID: 0}
+  collidedWith: -1
   collided: 0
 --- !u!54 &299741850
 Rigidbody:
@@ -7393,6 +7403,7 @@ MonoBehaviour:
   m_EditorClassIdentifier: 
   enemyCubeGroup: {fileID: 0}
   _renderer: {fileID: 0}
+  collidedWith: -1
   collided: 0
 --- !u!54 &328179124
 Rigidbody:
@@ -8144,6 +8155,7 @@ MonoBehaviour:
   m_EditorClassIdentifier: 
   enemyCubeGroup: {fileID: 0}
   _renderer: {fileID: 0}
+  collidedWith: -1
   collided: 0
 --- !u!54 &364288966
 Rigidbody:
@@ -8959,6 +8971,7 @@ MonoBehaviour:
   m_EditorClassIdentifier: 
   enemyCubeGroup: {fileID: 0}
   _renderer: {fileID: 0}
+  collidedWith: -1
   collided: 0
 --- !u!54 &389105863
 Rigidbody:
@@ -12218,6 +12231,7 @@ MonoBehaviour:
   m_EditorClassIdentifier: 
   enemyCubeGroup: {fileID: 0}
   _renderer: {fileID: 0}
+  collidedWith: -1
   collided: 0
 --- !u!54 &523499129
 Rigidbody:
@@ -13881,6 +13895,7 @@ MonoBehaviour:
   m_EditorClassIdentifier: 
   enemyCubeGroup: {fileID: 0}
   _renderer: {fileID: 0}
+  collidedWith: -1
   collided: 0
 --- !u!54 &632053263
 Rigidbody:
@@ -14492,6 +14507,7 @@ MonoBehaviour:
   m_EditorClassIdentifier: 
   enemyCubeGroup: {fileID: 0}
   _renderer: {fileID: 0}
+  collidedWith: -1
   collided: 0
 --- !u!54 &662901376
 Rigidbody:
@@ -15257,6 +15273,7 @@ MonoBehaviour:
   m_EditorClassIdentifier: 
   enemyCubeGroup: {fileID: 0}
   _renderer: {fileID: 0}
+  collidedWith: -1
   collided: 0
 --- !u!54 &696146063
 Rigidbody:
@@ -16805,6 +16822,7 @@ MonoBehaviour:
   m_EditorClassIdentifier: 
   enemyCubeGroup: {fileID: 0}
   _renderer: {fileID: 0}
+  collidedWith: -1
   collided: 0
 --- !u!54 &778624132
 Rigidbody:
@@ -16958,6 +16976,7 @@ MonoBehaviour:
   m_EditorClassIdentifier: 
   enemyCubeGroup: {fileID: 0}
   _renderer: {fileID: 0}
+  collidedWith: -1
   collided: 0
 --- !u!54 &784286546
 Rigidbody:
@@ -18297,6 +18316,7 @@ MonoBehaviour:
   m_EditorClassIdentifier: 
   enemyCubeGroup: {fileID: 0}
   _renderer: {fileID: 0}
+  collidedWith: -1
   collided: 0
 --- !u!54 &873387730
 Rigidbody:
@@ -18572,6 +18592,7 @@ MonoBehaviour:
   m_EditorClassIdentifier: 
   enemyCubeGroup: {fileID: 0}
   _renderer: {fileID: 0}
+  collidedWith: -1
   collided: 0
 --- !u!54 &884804245
 Rigidbody:
@@ -19019,6 +19040,7 @@ MonoBehaviour:
   m_EditorClassIdentifier: 
   enemyCubeGroup: {fileID: 0}
   _renderer: {fileID: 0}
+  collidedWith: -1
   collided: 0
 --- !u!54 &914214053
 Rigidbody:
@@ -22029,6 +22051,7 @@ MonoBehaviour:
   m_EditorClassIdentifier: 
   enemyCubeGroup: {fileID: 0}
   _renderer: {fileID: 0}
+  collidedWith: -1
   collided: 0
 --- !u!54 &1041477628
 Rigidbody:
@@ -22644,6 +22667,7 @@ MonoBehaviour:
   m_EditorClassIdentifier: 
   enemyCubeGroup: {fileID: 0}
   _renderer: {fileID: 0}
+  collidedWith: -1
   collided: 0
 --- !u!54 &1050579649
 Rigidbody:
@@ -24229,6 +24253,7 @@ MonoBehaviour:
   m_EditorClassIdentifier: 
   enemyCubeGroup: {fileID: 0}
   _renderer: {fileID: 0}
+  collidedWith: -1
   collided: 0
 --- !u!54 &1160708775
 Rigidbody:
@@ -25088,6 +25113,7 @@ MonoBehaviour:
   m_EditorClassIdentifier: 
   enemyCubeGroup: {fileID: 0}
   _renderer: {fileID: 0}
+  collidedWith: -1
   collided: 0
 --- !u!54 &1196347915
 Rigidbody:
@@ -25507,6 +25533,7 @@ MonoBehaviour:
   m_EditorClassIdentifier: 
   enemyCubeGroup: {fileID: 0}
   _renderer: {fileID: 0}
+  collidedWith: -1
   collided: 0
 --- !u!54 &1212076728
 Rigidbody:
@@ -26920,6 +26947,7 @@ MonoBehaviour:
   m_EditorClassIdentifier: 
   enemyCubeGroup: {fileID: 0}
   _renderer: {fileID: 0}
+  collidedWith: -1
   collided: 0
 --- !u!54 &1276491654
 Rigidbody:
@@ -27259,6 +27287,7 @@ MonoBehaviour:
   m_EditorClassIdentifier: 
   enemyCubeGroup: {fileID: 0}
   _renderer: {fileID: 0}
+  collidedWith: -1
   collided: 0
 --- !u!54 &1296212571
 Rigidbody:
@@ -28949,6 +28978,7 @@ MonoBehaviour:
   m_EditorClassIdentifier: 
   enemyCubeGroup: {fileID: 0}
   _renderer: {fileID: 0}
+  collidedWith: -1
   collided: 0
 --- !u!54 &1366796643
 Rigidbody:
@@ -29732,6 +29762,7 @@ MonoBehaviour:
   m_EditorClassIdentifier: 
   enemyCubeGroup: {fileID: 0}
   _renderer: {fileID: 0}
+  collidedWith: -1
   collided: 0
 --- !u!54 &1398535401
 Rigidbody:
@@ -30035,6 +30066,7 @@ MonoBehaviour:
   m_EditorClassIdentifier: 
   enemyCubeGroup: {fileID: 0}
   _renderer: {fileID: 0}
+  collidedWith: -1
   collided: 0
 --- !u!54 &1414930930
 Rigidbody:
@@ -30276,10 +30308,11 @@ MonoBehaviour:
   StartLevel: 1
   CurrentLevel: 0
   firstLevelBuildIndex: 1
-  Diamonds: 0
-  Life: 0
   LevelToUse: 1
-  SpeedForFallingObjects: 0.8
+  FallStraight: 1
+  ObjectFallingTime: 1
+  YFallOffset: 3
+  ZFallOffset: 0
   Level:
     LevelObject: {fileID: 344930045539134287}
     PlayerStartRow: 24
@@ -31185,6 +31218,7 @@ MonoBehaviour:
   m_EditorClassIdentifier: 
   enemyCubeGroup: {fileID: 0}
   _renderer: {fileID: 0}
+  collidedWith: -1
   collided: 0
 --- !u!54 &1426185120
 Rigidbody:
@@ -32063,6 +32097,7 @@ MonoBehaviour:
   m_EditorClassIdentifier: 
   enemyCubeGroup: {fileID: 0}
   _renderer: {fileID: 0}
+  collidedWith: -1
   collided: 0
 --- !u!54 &1473285045
 Rigidbody:
@@ -32657,6 +32692,7 @@ MonoBehaviour:
   m_EditorClassIdentifier: 
   enemyCubeGroup: {fileID: 0}
   _renderer: {fileID: 0}
+  collidedWith: -1
   collided: 0
 --- !u!54 &1491897645
 Rigidbody:
@@ -33100,6 +33136,7 @@ MonoBehaviour:
   m_EditorClassIdentifier: 
   enemyCubeGroup: {fileID: 0}
   _renderer: {fileID: 0}
+  collidedWith: -1
   collided: 0
 --- !u!54 &1515618052
 Rigidbody:
@@ -33746,6 +33783,7 @@ MonoBehaviour:
   m_EditorClassIdentifier: 
   enemyCubeGroup: {fileID: 0}
   _renderer: {fileID: 0}
+  collidedWith: -1
   collided: 0
 --- !u!54 &1550264083
 Rigidbody:
@@ -36009,6 +36047,7 @@ MonoBehaviour:
   m_EditorClassIdentifier: 
   enemyCubeGroup: {fileID: 0}
   _renderer: {fileID: 0}
+  collidedWith: -1
   collided: 0
 --- !u!54 &1700421037
 Rigidbody:
@@ -36316,6 +36355,7 @@ MonoBehaviour:
   m_EditorClassIdentifier: 
   enemyCubeGroup: {fileID: 0}
   _renderer: {fileID: 0}
+  collidedWith: -1
   collided: 0
 --- !u!54 &1714210363
 Rigidbody:
@@ -36859,6 +36899,7 @@ MonoBehaviour:
   m_EditorClassIdentifier: 
   enemyCubeGroup: {fileID: 0}
   _renderer: {fileID: 0}
+  collidedWith: -1
   collided: 0
 --- !u!54 &1753915593
 Rigidbody:
@@ -37333,6 +37374,7 @@ MonoBehaviour:
   m_EditorClassIdentifier: 
   enemyCubeGroup: {fileID: 0}
   _renderer: {fileID: 0}
+  collidedWith: -1
   collided: 0
 --- !u!54 &1779863924
 Rigidbody:
@@ -37880,6 +37922,7 @@ MonoBehaviour:
   m_EditorClassIdentifier: 
   enemyCubeGroup: {fileID: 0}
   _renderer: {fileID: 0}
+  collidedWith: -1
   collided: 0
 --- !u!54 &1797601782
 Rigidbody:
@@ -38743,6 +38786,7 @@ MonoBehaviour:
   m_EditorClassIdentifier: 
   enemyCubeGroup: {fileID: 0}
   _renderer: {fileID: 0}
+  collidedWith: -1
   collided: 0
 --- !u!54 &1834545536
 Rigidbody:
@@ -39047,6 +39091,7 @@ MonoBehaviour:
   m_EditorClassIdentifier: 
   enemyCubeGroup: {fileID: 0}
   _renderer: {fileID: 0}
+  collidedWith: -1
   collided: 0
 --- !u!54 &1849985323
 Rigidbody:
@@ -40447,6 +40492,7 @@ MonoBehaviour:
   m_EditorClassIdentifier: 
   enemyCubeGroup: {fileID: 0}
   _renderer: {fileID: 0}
+  collidedWith: -1
   collided: 0
 --- !u!54 &1927773993
 Rigidbody:
@@ -41884,6 +41930,7 @@ MonoBehaviour:
   m_EditorClassIdentifier: 
   enemyCubeGroup: {fileID: 0}
   _renderer: {fileID: 0}
+  collidedWith: -1
   collided: 0
 --- !u!54 &2027429698
 Rigidbody:
@@ -43032,6 +43079,7 @@ MonoBehaviour:
   m_EditorClassIdentifier: 
   enemyCubeGroup: {fileID: 0}
   _renderer: {fileID: 0}
+  collidedWith: -1
   collided: 0
 --- !u!54 &2069326306
 Rigidbody:
@@ -43217,6 +43265,7 @@ MonoBehaviour:
   m_EditorClassIdentifier: 
   enemyCubeGroup: {fileID: 0}
   _renderer: {fileID: 0}
+  collidedWith: -1
   collided: 0
 --- !u!54 &2085033571
 Rigidbody:

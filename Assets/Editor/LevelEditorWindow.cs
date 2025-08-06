@@ -1,9 +1,10 @@
 ﻿
-using UnityEngine;
-using UnityEditor;
-using UnityEditor.SceneManagement;
 using System.Collections.Generic;
 using System.Linq;
+using UnityEditor;
+using UnityEditor.SceneManagement;
+using UnityEngine;
+using UnityEngine.SceneManagement;
 
 public class LevelDataEditorWindow : EditorWindow
 {
@@ -90,9 +91,9 @@ public class LevelDataEditorWindow : EditorWindow
             {
                 Debug.Log("Grid already populated. Skipping boundary wall placement.");
             }
-
             RefreshEnemyCubeMap();
             RefreshSpawnableMap();
+            _drawMode = DrawMode.Empty;
             RefreshPreplacedEnemyMap();
 
             // ✅ Set previous size after everything is loaded
@@ -431,6 +432,7 @@ public class LevelDataEditorWindow : EditorWindow
 
         SyncSceneGridAndBackground();
     }
+    
 
 
     private void UpdateCubeMaterialTiling(int cols, int rows)
@@ -632,11 +634,16 @@ public class LevelDataEditorWindow : EditorWindow
 
         if (_cellSpawnMap != null && _cellSpawnMap.TryGetValue(key, out var cfg))
         {
-            var overlay = cfg.enemyType == SpawnablesType.SpikeBall
-                ? new Color(1f, 1f, 0f, 0.3f)
-                : new Color(0f, 1f, 1f, 0.5f);
-            EditorGUI.DrawRect(r, overlay);
+            if (cfg.sceneName == UnityEngine.SceneManagement.SceneManager.GetActiveScene().name)
+            {
+                var overlay = cfg.enemyType == SpawnablesType.SpikeBall
+                    ? new Color(1f, 1f, 0f, 0.3f)
+                    : new Color(0f, 1f, 1f, 0.5f);
+
+                EditorGUI.DrawRect(r, overlay);
+            }
         }
+
     }
 
     private void DrawMovementArrow(Rect r, Vector2Int key)
@@ -722,7 +729,8 @@ public class LevelDataEditorWindow : EditorWindow
                                 progressThreshold = 0.5f,
                                 subsequentProgressThresholds = new List<float>(),
                                 usePhysicsDrop = true,
-                                yOffset = 1.4f
+                                yOffset = 1.4f,
+                                sceneName = UnityEngine.SceneManagement.SceneManager.GetActiveScene().name
                             };
                             _level.SpwanablesConfigurations.Add(cfg);
                             RefreshSpawnableMap();
@@ -774,7 +782,8 @@ public class LevelDataEditorWindow : EditorWindow
                                 progressThreshold = 0.5f,
                                 subsequentProgressThresholds = new List<float>(),
                                 usePhysicsDrop = useFall,
-                                yOffset = yOffset
+                                yOffset = yOffset,
+                                sceneName = UnityEngine.SceneManagement.SceneManager.GetActiveScene().name
                             };
                             _level.SpwanablesConfigurations.Add(cfg);
                             RefreshSpawnableMap();
@@ -806,7 +815,8 @@ public class LevelDataEditorWindow : EditorWindow
             progressThreshold = 0.5f,
             subsequentProgressThresholds = new List<float>(),
             usePhysicsDrop = true,
-            yOffset = 1.4f
+            yOffset = 1.4f,
+            sceneName = UnityEngine.SceneManagement.SceneManager.GetActiveScene().name
         };
 
         _level.SpwanablesConfigurations.Add(cfg);
@@ -1384,6 +1394,7 @@ public class LevelDataEditorWindow : EditorWindow
 
     private void RefreshSpawnableMap()
     {
+        string currentScene = SceneManager.GetActiveScene().name;
         _cellSpawnMap = _level.SpwanablesConfigurations
             .Where(cfg => cfg != null)
             .ToDictionary(
@@ -1550,7 +1561,19 @@ internal class SpawnableCellPopup : EditorWindow
         cfg.progressThreshold = initialPct * 0.01f;
 
         EditorGUILayout.Space();
-        cfg.moveSpeed = EditorGUILayout.FloatField("Move Speed", cfg.moveSpeed);
+
+        float newSpeed = EditorGUILayout.FloatField("Move Speed", cfg.moveSpeed);
+        cfg.moveSpeed = newSpeed;
+
+        if (cfg.prefab != null && cfg.enemyType == SpawnablesType.CubeEater)
+        {
+            var cubeEater = cfg.prefab.GetComponent<CubeEater>();
+            if (cubeEater != null)
+            {
+                cubeEater.speed = newSpeed; 
+            }
+        }
+
         EditorGUILayout.Space();
 
         // ── Spawn Count ─────────────────────────────────────────────────

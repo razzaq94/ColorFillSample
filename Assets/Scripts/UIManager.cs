@@ -179,6 +179,8 @@ public class UIManager : MonoBehaviour
     }
     public void ResetartLevel()
     {
+        GameHandler.Instance.CurrentLives++;
+        currentLives = GameHandler.Instance.CurrentLives;
         GameManager.Instance.Replay();
     }
 
@@ -200,9 +202,10 @@ public class UIManager : MonoBehaviour
     }
     public void ResetLives()
     {
-        currentLives = 3;
+        currentLives = GameHandler.Instance.CurrentLives;
         UpdateLifeIcons();
     }
+
 
     private float lastLifeLostTime = -5f;
     private bool isLosingLife = false;
@@ -219,7 +222,7 @@ public class UIManager : MonoBehaviour
         isLosingLife = true;
         Player.Instance.gameObject.SetActive(false);
         currentLives--;
-
+        GameHandler.Instance.LoseLife();
         if (currentLives <= 0)
         {
             GameManager.Instance.loosed = false;
@@ -248,6 +251,7 @@ public class UIManager : MonoBehaviour
             return;
 
         currentLives++;
+        GameHandler.Instance.GainLife();
         UpdateLifeIcons();
     }
 
@@ -379,8 +383,8 @@ public class UIManager : MonoBehaviour
             .OnComplete(() =>
             {
                 Destroy(flyer);
-                GameManager.Instance.Diamonds++;
-                Diamonds.text = GameManager.Instance.Diamonds.ToString();
+                GameHandler.Instance.TotalDiamonds++;
+                Diamonds.text = GameHandler.Instance.TotalDiamonds.ToString();
             });
     }
 

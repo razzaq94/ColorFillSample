@@ -23,7 +23,7 @@ public class EnemyCube : MonoBehaviour
 
     private void OnCollisionEnter(Collision collision)
     {
-        if (collided) return; // ☂️ central guard
+        if (collided) return;
 
         if (collision.gameObject.TryGetComponent<Cube>(out Cube cube))
         {

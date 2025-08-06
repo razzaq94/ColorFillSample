@@ -12,7 +12,7 @@ public class GameLoseScreen : MonoBehaviour
     public GameObject TimeOutOptions;
     public GameObject CrashOptions;
     public Button reviveBTN;
-
+    Coroutine countdownCoroutine;
     private void Awake()
     {
         instance = this;
@@ -28,7 +28,8 @@ public class GameLoseScreen : MonoBehaviour
         {
             reviveBTN.gameObject.SetActive(false);
         }
-        //StartCoroutine(CountdownRoutine());
+        countdownCoroutine = StartCoroutine(CountdownRoutine());
+
     }
     public static GameLoseScreen ShowUI()
     {
@@ -52,8 +53,11 @@ public class GameLoseScreen : MonoBehaviour
         }
 
         countdownText.text = "00";
-        if(!UIManager.Instance.isReviving)
-            RestartButton();
+        if (!UIManager.Instance.isReviving)
+        {
+            AdManager_Admob.instance.ShowInterstitialAd();
+            GameManager.Instance.Replay();
+        }
 
         Destroy(gameObject);
     }
@@ -72,6 +76,10 @@ public class GameLoseScreen : MonoBehaviour
 
     public void RestartButton()
     {
+        if (countdownCoroutine != null)
+        {
+            StopCoroutine(countdownCoroutine);
+        }
         AudioManager.instance?.PlayUISound(0);
 
         SceneManager.LoadScene(SceneManager.GetActiveScene().buildIndex);
@@ -81,6 +89,10 @@ public class GameLoseScreen : MonoBehaviour
     }
     public void OnClick_AddExtraMinute()
     {
+        if (countdownCoroutine != null)
+        {
+            StopCoroutine(countdownCoroutine);
+        }
         AdManager_Admob.instance.ShowRewardedVideoAd(() =>
         {
             GameManager.Instance.AddTime(60);
@@ -92,12 +104,21 @@ public class GameLoseScreen : MonoBehaviour
 
     public void OnClick_ReplayLevel()
     {
+        if(countdownCoroutine != null)
+        {
+            StopCoroutine(countdownCoroutine);
+        }
         AdManager_Admob.instance.ShowInterstitialAd();
+        GameHandler.Instance.CurrentLives++;
         GameManager.Instance.Replay();
     }
 
     public void OnClick_SkipLevel()
     {
+        if (countdownCoroutine != null)
+        {
+            StopCoroutine(countdownCoroutine);
+        }
         AdManager_Admob.instance.ShowRewardedVideoAd(() =>
         {
             GameManager.Instance.LevelComplete();
@@ -105,6 +126,10 @@ public class GameLoseScreen : MonoBehaviour
     }
     public void OnClick_Revive()
     {
+        if (countdownCoroutine != null)
+        {
+            StopCoroutine(countdownCoroutine);
+        }
         AdManager_Admob.instance.ShowRewardedVideoAd(() =>
         {
             GameManager.Instance.reviveUsed = true;
@@ -121,7 +146,13 @@ public class GameLoseScreen : MonoBehaviour
 
     public void OnClick_CrashRestart()
     {
+        if (countdownCoroutine != null)
+        {
+            StopCoroutine(countdownCoroutine);
+        }
         AdManager_Admob.instance.ShowInterstitialAd();
+        GameHandler.Instance.CurrentLives++;
+
         GameManager.Instance.Replay();
         if (Time.timeScale == 0)
             Time.timeScale = 1.0f;
@@ -129,6 +160,10 @@ public class GameLoseScreen : MonoBehaviour
 
     public void OnClick_CrashSkip()
     {
+        if (countdownCoroutine != null)
+        {
+            StopCoroutine(countdownCoroutine);
+        }
         AdManager_Admob.instance.ShowRewardedVideoAd(() =>
         {
             GameManager.Instance.LevelComplete();

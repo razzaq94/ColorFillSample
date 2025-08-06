@@ -11382,7 +11382,6 @@ MonoBehaviour:
   playerColor: {r: 0.768316, g: 0.9056604, b: 0.44001427, a: 1}
   material: {fileID: 2100000, guid: 38a5ea855e8c2a949b24cf1254b22dbc, type: 2}
   _direction: 0
-  triggerCollider: {fileID: 1251781438}
   collisionCollider: {fileID: 1251781438}
 --- !u!1 &1258559538
 GameObject:
@@ -13190,10 +13189,11 @@ MonoBehaviour:
   StartLevel: 1
   CurrentLevel: 0
   firstLevelBuildIndex: 1
-  Diamonds: 0
-  Life: 0
   LevelToUse: 1
-  SpeedForFallingObjects: 0.8
+  FallStraight: 1
+  ObjectFallingTime: 1
+  YFallOffset: 3
+  ZFallOffset: 0
   Level:
     LevelObject: {fileID: 344930045539134287}
     PlayerStartRow: 20
@@ -13205,7 +13205,8 @@ MonoBehaviour:
     - {fileID: 0}
     - {fileID: 0}
     SpwanablesConfigurations:
-    - enemyType: 1
+    - sceneName: 
+      enemyType: 1
       prefab: {fileID: 5659256095017627701, guid: 782f990439ac48348914309a13bcb2f3, type: 3}
       progressThreshold: 0.39999998
       spawnCount: 1
@@ -13216,7 +13217,8 @@ MonoBehaviour:
       moveSpeed: 2
       row: 6
       col: 6
-    - enemyType: 5
+    - sceneName: 
+      enemyType: 5
       prefab: {fileID: 7101016809528862508, guid: cb7a60b38c01b9c4781338ff872dc19f, type: 3}
       progressThreshold: 0.19999999
       spawnCount: 1
@@ -13227,7 +13229,8 @@ MonoBehaviour:
       moveSpeed: 2
       row: 6
       col: 1
-    - enemyType: 5
+    - sceneName: 
+      enemyType: 5
       prefab: {fileID: 5665365635048418455, guid: e42d5148988d32e41a2eb81aba4dfc1f, type: 3}
       progressThreshold: 0.11
       spawnCount: 1
@@ -13238,7 +13241,8 @@ MonoBehaviour:
       moveSpeed: 2
       row: 4
       col: 12
-    - enemyType: 5
+    - sceneName: 
+      enemyType: 5
       prefab: {fileID: 7322854741125154121, guid: e7273ceb86bdd754abd7b548b4a19997, type: 3}
       progressThreshold: 0.14999999
       spawnCount: 1

@@ -33,8 +33,9 @@ public class CubeEater : MonoBehaviour
         //StartCoroutine(GridMove());
         //InvokeRepeating(nameof(ChangeDirection), 3f, 3f);
     }
-    public void Init()
+    public void Init(float speedFromCfg)
     {
+        this.speed = speedFromCfg; 
         gridManager = GridManager.Instance;
 
         Vector3 p = transform.position;

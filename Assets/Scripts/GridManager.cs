@@ -67,6 +67,8 @@ public class GridManager : MonoBehaviour
             return;
 
         _grid[index.x, index.y] = true;
+        CheckAndFillIfPocketFormed();
+
         //_trueCount++;
     }
 
@@ -110,8 +112,6 @@ public class GridManager : MonoBehaviour
                 boundary[x, y] = cubeSnapshot[x, y] || _obstacleMap[x, y];
 
 
-        // REMOVE THIS LINE:
-        // DestroyEnemiesInNewlyFilledCells(oldGrid, afterFill);
 
         FillHoles();
         float percent = GetCurrentFillPercentage();
@@ -142,81 +142,81 @@ public class GridManager : MonoBehaviour
     }
 
 
-    void DestroyEnemiesInNewlyFilledCells(bool[,] oldGrid, bool[,] newGrid)
-    {
-        int cols = _gridColumns;
-        int rows = _gridRows;
+    //void DestroyEnemiesInNewlyFilledCells(bool[,] oldGrid, bool[,] newGrid)
+    //{
+    //    int cols = _gridColumns;
+    //    int rows = _gridRows;
 
-        // Find all enemies in the scene
-        var enemies = GameObject.FindGameObjectsWithTag("Enemy");
-        foreach (var enemy in enemies)
-        {
-            Vector3 pos = enemy.transform.position;
-            int col = Mathf.RoundToInt(pos.x + cols / 2f);
-            int row = Mathf.Abs(Mathf.RoundToInt(pos.z - rows / 2f));
+    //    // Find all enemies in the scene
+    //    var enemies = GameObject.FindGameObjectsWithTag("Enemy");
+    //    foreach (var enemy in enemies)
+    //    {
+    //        Vector3 pos = enemy.transform.position;
+    //        int col = Mathf.RoundToInt(pos.x + cols / 2f);
+    //        int row = Mathf.Abs(Mathf.RoundToInt(pos.z - rows / 2f));
 
-            if (col < 0 || col >= cols || row < 0 || row >= rows)
-                continue;
+    //        if (col < 0 || col >= cols || row < 0 || row >= rows)
+    //            continue;
 
-            if (!oldGrid[col, row] && newGrid[col, row])
-            {
-                var renderer = enemy.GetComponent<EnemyCube>()?._renderer;
-                if (renderer != null)
-                {
-                    AudioManager.instance?.PlaySFXSound(2);
-                    GameManager.Instance.SpawnDeathParticles(enemy.transform.gameObject, renderer.material.color);
-                }
-                Destroy(enemy.gameObject);
-            }
-        }
-        var diamonds = GameObject.FindGameObjectsWithTag("Diamond");
-        foreach (var diamond in diamonds)
-        {
-            Vector3 pos = diamond.transform.position;
-            int col = Mathf.RoundToInt(pos.x + cols / 2f);
-            int row = Mathf.Abs(Mathf.RoundToInt(pos.z - rows / 2f));
-            if (col < 0 || col >= cols || row < 0 || row >= rows)
-                continue;
-            if (!oldGrid[col, row] && newGrid[col, row])
-            {
-                AudioManager.instance?.PlaySFXSound(1);
-                Destroy(diamond.gameObject);
-                UIManager.Instance.AnimateDiamondGainFromWorld(diamond.transform.position);
-            }
-        }
+    //        if (!oldGrid[col, row] && newGrid[col, row])
+    //        {
+    //            var renderer = enemy.GetComponent<EnemyCube>()?._renderer;
+    //            if (renderer != null)
+    //            {
+    //                AudioManager.instance?.PlaySFXSound(2);
+    //                GameManager.Instance.SpawnDeathParticles(enemy.transform.gameObject, renderer.material.color);
+    //            }
+    //            Destroy(enemy.gameObject);
+    //        }
+    //    }
+    //    var diamonds = GameObject.FindGameObjectsWithTag("Diamond");
+    //    foreach (var diamond in diamonds)
+    //    {
+    //        Vector3 pos = diamond.transform.position;
+    //        int col = Mathf.RoundToInt(pos.x + cols / 2f);
+    //        int row = Mathf.Abs(Mathf.RoundToInt(pos.z - rows / 2f));
+    //        if (col < 0 || col >= cols || row < 0 || row >= rows)
+    //            continue;
+    //        if (!oldGrid[col, row] && newGrid[col, row])
+    //        {
+    //            AudioManager.instance?.PlaySFXSound(1);
+    //            Destroy(diamond.gameObject);
+    //            UIManager.Instance.AnimateDiamondGainFromWorld(diamond.transform.position);
+    //        }
+    //    }
 
-        var heart = GameObject.FindGameObjectWithTag("Heart");
-        if (heart != null)
-        {
-            Vector3 pos = heart.transform.position;
-            int col = Mathf.RoundToInt(pos.x + cols / 2f);
-            int row = Mathf.Abs(Mathf.RoundToInt(pos.z - rows / 2f));
-            if (col < 0 || col >= cols || row < 0 || row >= rows)
-                return;
-            if (!oldGrid[col, row] && newGrid[col, row])
-            {
-                AudioManager.instance?.PlaySFXSound(1);
-                Destroy(heart.gameObject);
-                UIManager.Instance.AnimateLifeGainFromWorld(heart.transform.position);
+    //    var heart = GameObject.FindGameObjectWithTag("Heart");
+    //    if (heart != null)
+    //    {
+    //        Vector3 pos = heart.transform.position;
+    //        int col = Mathf.RoundToInt(pos.x + cols / 2f);
+    //        int row = Mathf.Abs(Mathf.RoundToInt(pos.z - rows / 2f));
+    //        if (col < 0 || col >= cols || row < 0 || row >= rows)
+    //            return;
+    //        if (!oldGrid[col, row] && newGrid[col, row])
+    //        {
+    //            AudioManager.instance?.PlaySFXSound(1);
+    //            Destroy(heart.gameObject);
+    //            UIManager.Instance.AnimateLifeGainFromWorld(heart.transform.position);
 
-            }
-        }
-        var timer = GameObject.FindGameObjectWithTag("Timer");
-        if(timer != null)
-        {
-            Vector3 pos = timer.transform.position;
-            int col = Mathf.RoundToInt(pos.x + cols / 2f);
-            int row = Mathf.Abs(Mathf.RoundToInt(pos.z - rows / 2f));
-            if (col < 0 || col >= cols || row < 0 || row >= rows)
-                return;
-            if (!oldGrid[col, row] && newGrid[col, row])
-            {
-                AudioManager.instance?.PlaySFXSound(1);
-                Destroy(timer.gameObject);
-                GameManager.Instance.AddTime(15); 
-            }
-        }
-    }
+    //        }
+    //    }
+    //    var timer = GameObject.FindGameObjectWithTag("Timer");
+    //    if(timer != null)
+    //    {
+    //        Vector3 pos = timer.transform.position;
+    //        int col = Mathf.RoundToInt(pos.x + cols / 2f);
+    //        int row = Mathf.Abs(Mathf.RoundToInt(pos.z - rows / 2f));
+    //        if (col < 0 || col >= cols || row < 0 || row >= rows)
+    //            return;
+    //        if (!oldGrid[col, row] && newGrid[col, row])
+    //        {
+    //            AudioManager.instance?.PlaySFXSound(1);
+    //            Destroy(timer.gameObject);
+    //            GameManager.Instance.AddTime(15); 
+    //        }
+    //    }
+    //}
 
     private void SetProgressBar(bool[,] _grid)
     {
@@ -439,66 +439,188 @@ public class GridManager : MonoBehaviour
     }
     private void TryForceFillLastPocket()
     {
-        bool[,] visited = new bool[_gridColumns, _gridRows];
-        List<List<Vector2Int>> pockets = new List<List<Vector2Int>>();
+        _areas = new Dictionary<int, List<Vector2Int>>();
+        int[,] regionMap = new int[_gridColumns, _gridRows];
 
+        // 1. Mark filled or obstacle cells as 1, empty as 0
         for (int x = 0; x < _gridColumns; x++)
         {
             for (int y = 0; y < _gridRows; y++)
             {
-                if (!visited[x, y] && !_grid[x, y] && !_obstacleMap[x, y])
-                {
-                    List<Vector2Int> pocket = new List<Vector2Int>();
-                    bool isSurrounded = true;
+                regionMap[x, y] = (_grid[x, y] || _obstacleMap[x, y]) ? 1 : 0;
+            }
+        }
 
-                    Queue<Vector2Int> queue = new Queue<Vector2Int>();
-                    queue.Enqueue(new Vector2Int(x, y));
+        // 2. Find all empty regions (connected 0s)
+        _regionCounter = 2;
+        for (int x = 0; x < _gridColumns; x++)
+        {
+            for (int y = 0; y < _gridRows; y++)
+            {
+                if (regionMap[x, y] == 0)
+                {
+                    _areas[_regionCounter] = new List<Vector2Int>();
+                    FloodFillRegion(new Vector2Int(x, y), regionMap, _regionCounter, _gridColumns, _gridRows);
+                    _regionCounter++;
+                }
+            }
+        }
+
+        // 3. Exclude the largest (main) region — usually connected to the boundary
+        int maxCount = 0;
+        int largestRegionKey = -1;
+        foreach (var region in _areas)
+        {
+            if (region.Value.Count > maxCount)
+            {
+                maxCount = region.Value.Count;
+                largestRegionKey = region.Key;
+            }
+        }
+
+        // 4. Fill the other smaller pockets
+        foreach (var region in _areas)
+        {
+            if (region.Key == largestRegionKey)
+                continue; // skip the main region
+
+            foreach (var pos in region.Value)
+            {
+                if (!_grid[pos.x, pos.y])
+                {
+                    if (GetCubeAtPosition(pos) == null)
+                    {
+                        Cube cube = CubeGrid.Instance.GetCube();
+                        cube.Initalize(GridToWorld(pos), true);
+                        cube.FillCube();
+                    }
+                    _grid[pos.x, pos.y] = true;
+                }
+            }
+        }
+
+        ForceFillRemainingVisuals();
+    }
+    private HashSet<string> _filledPocketHashes = new();
+    private string _lastFilledHash = "";
+    private string GetPocketHash(List<Point> pocket)
+    {
+        pocket.Sort((a, b) =>
+        {
+            int cmp = a.X.CompareTo(b.X);
+            return cmp != 0 ? cmp : a.Y.CompareTo(b.Y);
+        });
+
+        return string.Join("_", pocket.Select(p => $"{p.X}-{p.Y}"));
+    }
+
+    private void CheckAndFillIfPocketFormed()
+    {
+        bool[,] gridBefore = (bool[,])_grid.Clone();
+
+        List<List<Point>> newPockets = DetectNewEnclosedPockets();
+
+        if (newPockets.Count > 0)
+        {
+            Debug.Log($"🟢 Found {newPockets.Count} new enclosed pocket(s).");
+            FillOnlyNewPockets(newPockets);
+        }
+
+        int beforeFilled = GetTrueGridCount(gridBefore);
+        int afterFilled = GetTrueGridCount(_grid);
+
+        if (afterFilled > beforeFilled)
+        {
+            Debug.Log("✅ Pocket formed and filled. Auto-filled " + (afterFilled - beforeFilled) + " cells.");
+            lastPocketFilled = true;
+        }
+        else
+        {
+            Debug.Log("No pocket formed. Skipping auto-fill.");
+            lastPocketFilled = false;
+        }
+    }
+    private List<List<Point>> DetectNewEnclosedPockets()
+    {
+        int cols = _gridColumns;
+        int rows = _gridRows;
+        bool[,] visited = new bool[cols, rows];
+        var dirs = new (int dx, int dy)[] { (1, 0), (-1, 0), (0, 1), (0, -1) };
+
+        List<List<Point>> newPockets = new();
+
+        for (int x = 0; x < cols; x++)
+        {
+            for (int y = 0; y < rows; y++)
+            {
+                if (!_grid[x, y] && !visited[x, y])
+                {
+                    bool touchesEdge = false;
+                    var queue = new Queue<Point>();
+                    var pocket = new List<Point>();
+
+                    queue.Enqueue(new Point(x, y));
                     visited[x, y] = true;
 
                     while (queue.Count > 0)
                     {
-                        var current = queue.Dequeue();
-                        pocket.Add(current);
+                        var p = queue.Dequeue();
+                        pocket.Add(p);
 
-                        Vector2Int[] dirs = { Vector2Int.up, Vector2Int.down, Vector2Int.left, Vector2Int.right };
-                        foreach (var dir in dirs)
+                        if (p.X == 0 || p.X == cols - 1 || p.Y == 0 || p.Y == rows - 1)
+                            touchesEdge = true;
+
+                        foreach (var (dx, dy) in dirs)
                         {
-                            int nx = current.x + dir.x;
-                            int ny = current.y + dir.y;
+                            int nx = p.X + dx;
+                            int ny = p.Y + dy;
 
-                            if (nx < 0 || ny < 0 || nx >= _gridColumns || ny >= _gridRows)
-                            {
-                                isSurrounded = false; // not fully enclosed
-                                continue;
-                            }
-
-                            if (!visited[nx, ny] && !_grid[nx, ny] && !_obstacleMap[nx, ny])
+                            if (nx >= 0 && nx < cols && ny >= 0 && ny < rows &&
+                                !_grid[nx, ny] && !visited[nx, ny])
                             {
                                 visited[nx, ny] = true;
-                                queue.Enqueue(new Vector2Int(nx, ny));
+                                queue.Enqueue(new Point(nx, ny));
                             }
                         }
                     }
 
-                    if (isSurrounded && pocket.Count <= 30)
+                    if (!touchesEdge && pocket.Count > 0)
                     {
-                        pockets.Add(pocket);
+                        string hash = GetPocketHash(pocket);
+                        if (!_filledPocketHashes.Contains(hash))
+                        {
+                            newPockets.Add(pocket);
+                            _filledPocketHashes.Add(hash);
+                        }
                     }
                 }
             }
         }
 
+        return newPockets;
+    }
+    private void FillOnlyNewPockets(List<List<Point>> pockets)
+    {
         foreach (var pocket in pockets)
         {
-            foreach (var cell in pocket)
+            foreach (var p in pocket)
             {
-                var cube = CubeGrid.Instance.GetCube();
-                cube.Initalize(GridToWorld(cell), true);
-                cube.FillCube();
-                _grid[cell.x, cell.y] = true;
+                Vector2Int pos = new(p.X, p.Y);
+                if (GetCubeAtPosition(pos) == null)
+                {
+                    Cube cube = CubeGrid.Instance.GetCube();
+                    cube.Initalize(GridToWorld(pos), true);
+                    cube.FillCube();
+                }
+
+                _grid[p.X, p.Y] = true;
             }
         }
+
     }
+
+
+
 
 
     #endregion
@@ -613,13 +735,12 @@ public class GridManager : MonoBehaviour
             Vector2Int pos = new Vector2Int(point.X, point.Y);
 
             if (GetCubeAtPosition(pos) != null)
-                continue; // ✅ Skip if a cube already exists here
+                continue; 
 
             Vector3 repCubePos = FindTransformFromPoint(point);
             Cube cube = CubeGrid.Instance.GetCube();
             cube.Initalize(repCubePos, true);
-            cube.FillCube(); // ✅ Ensure grid + count is updated
-            cube.Illuminate(0.5f);
+            cube.FillCube(); 
         }
     }
 
@@ -700,6 +821,8 @@ public class GridManager : MonoBehaviour
 
     private void FillFullyEnclosedPockets()
     {
+
+        print("LastFill");
         int cols = _gridColumns;
         int rows = _gridRows;
 
@@ -709,8 +832,7 @@ public class GridManager : MonoBehaviour
         (1, 0), (-1, 0), (0, 1), (0, -1)
         };
 
-        List<List<Point>> allPockets = new();
-        List<Point> outerEdgePocket = null;
+        List<List<Point>> newPockets = new();
 
         for (int x = 0; x < cols; x++)
         {
@@ -736,8 +858,9 @@ public class GridManager : MonoBehaviour
                         foreach (var (dx, dy) in dirs)
                         {
                             int nx = p.X + dx, ny = p.Y + dy;
-                            if (nx >= 0 && nx < cols && ny >= 0 && ny < rows
-                                && !_grid[nx, ny] && !visited[nx, ny])
+
+                            if (nx >= 0 && nx < cols && ny >= 0 && ny < rows &&
+                                !_grid[nx, ny] && !visited[nx, ny])
                             {
                                 visited[nx, ny] = true;
                                 queue.Enqueue(new Point(nx, ny));
@@ -745,24 +868,26 @@ public class GridManager : MonoBehaviour
                         }
                     }
 
-                    if (isTouchingEdge)
-                        outerEdgePocket = pocket;
-                    else
-                        allPockets.Add(pocket);
+                    if (!isTouchingEdge)
+                    {
+                        string hash = GetPocketHash(pocket);
+                        if (!_filledPocketHashes.Contains(hash))
+                        {
+                            newPockets.Add(pocket);
+                            _filledPocketHashes.Add(hash);
+                        }
+                    }
+
                 }
             }
         }
 
-        if (outerEdgePocket != null)
-        {
-            allPockets = allPockets
-                .Where(p => p != outerEdgePocket)
-                .OrderByDescending(p => p.Count)
-                .ToList();
-        }
+        if (newPockets.Count == 0)
+            return;
+
         List<GameObject> enemiesToDestroy = new();
 
-        foreach (var pocket in allPockets)
+        foreach (var pocket in newPockets)
         {
             foreach (var p in pocket)
             {
@@ -773,9 +898,20 @@ public class GridManager : MonoBehaviour
                 {
                     if (hit.CompareTag("Enemy") && !enemiesToDestroy.Contains(hit.gameObject))
                         enemiesToDestroy.Add(hit.gameObject);
+
+                    if (hit.CompareTag("Diamond"))
+                    {
+                        var renderer = hit.GetComponent<Renderer>();
+                        AudioManager.instance?.PlaySFXSound(1);
+                        if (renderer)
+                            GameManager.Instance.SpawnDeathParticles(hit.gameObject, renderer.material.color);
+                        UIManager.Instance.AnimateDiamondGainFromWorld(hit.transform.position);
+                        Destroy(hit.gameObject);
+                    }
                 }
             }
         }
+
         foreach (var enemy in enemiesToDestroy)
         {
             var renderer = enemy.GetComponent<Renderer>();
@@ -784,7 +920,7 @@ public class GridManager : MonoBehaviour
             Destroy(enemy);
         }
 
-        foreach (var pocket in allPockets)
+        foreach (var pocket in newPockets)
         {
             foreach (var p in pocket)
             {
@@ -793,32 +929,19 @@ public class GridManager : MonoBehaviour
                 {
                     Cube cube = CubeGrid.Instance.GetCube();
                     cube.Initalize(GridToWorld(pos), true);
-                    cube.FillCube(); // handles grid mark + count
+                    cube.FillCube(); // grid mark + visuals
                 }
+
+                _grid[p.X, p.Y] = true;
             }
 
             lastPocketFilled = true;
         }
 
-
-        if (lastPocketFilled)
-            FillRemainingUnfilledCells();
-
         SyncVisualsForExposedFilledCells();
-
-        // Final auto-fill safety
-        int exposed = GetExposedGridCells().Count;
-        int filled = GetTrueGridCount(_grid);
-        if (exposed - filled <= 6)
-        {
-            Debug.Log("Auto-filling remaining exposed cells...");
-            FillRemainingUnfilledCells();
-        }
-       
-
-
-
     }
+
+
 
     private void FillRemainingUnfilledCells()
     {

@@ -34,8 +34,9 @@ public class Cube : MonoBehaviour
         transform.position = pos;
         gameObject.SetActive(true);
         var renderer = GetComponent<Renderer>();
-        if (renderer)
-            renderer.material.color = GameManager.Instance.CubeFillColor;
+        ApplyTrailColorFromLevel();
+        //if (renderer)
+        //    renderer.material.color = GameManager.Instance.CubeFillColor;
 
         IsFilled = false; // always start clean
 
@@ -46,7 +47,7 @@ public class Cube : MonoBehaviour
     public void FillCube(bool force = false)
     {
         if (!gameObject.activeSelf)
-            gameObject.SetActive(true); 
+            gameObject.SetActive(true);
 
         Vector2Int index = GridManager.Instance.WorldToGrid(transform.position);
 
@@ -58,6 +59,8 @@ public class Cube : MonoBehaviour
         }
 
         IsFilled = true;
+        _renderer.material.color = GameManager.Instance.CubeFillColor;
+        Illuminate(0.5f);
 
         GridManager.Instance.ChangeValue(transform.position.x, transform.position.z);
         GridManager.Instance._trueCount++;
@@ -77,13 +80,10 @@ public class Cube : MonoBehaviour
     }
 
 
-    public void UnfillCube()
-    {
-        IsFilled = false;
-        ApplyUnfilledColor();
-    }
+   
     public void Illuminate(float duration = 0.5f)
     {
+        print("flash");
         if (!TryGetComponent<Renderer>(out Renderer renderer)) return;
 
         Material mat = renderer.material;
@@ -106,6 +106,21 @@ public class Cube : MonoBehaviour
     }
 
 
+
+    public void ApplyTrailColorFromLevel()
+    {
+        if (_renderer == null)
+            _renderer = GetComponent<Renderer>();
+
+        Color baseColor = GameManager.Instance.CubeFillColor;
+        Color lighterColor = new Color(
+            Mathf.Clamp01(baseColor.r + 0.3f),
+            Mathf.Clamp01(baseColor.g + 0.3f),
+            Mathf.Clamp01(baseColor.b + 0.3f)
+        );
+
+        _renderer.material.color = lighterColor;
+    }
 
 
 

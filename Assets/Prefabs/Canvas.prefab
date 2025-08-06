@@ -1300,7 +1300,7 @@ MonoBehaviour:
   - {fileID: 7416117211090560119}
   - {fileID: 7578353919639132841}
   - {fileID: 4301604672055712274}
-  currentLives: 1
+  currentLives: 3
   countDown: {fileID: 3912810614764457250}
   isReviving: 0
   lifeFlyerPrefab: {fileID: 6589931422439937374, guid: e1a51e461437120418763cf79b42fd5f, type: 3}

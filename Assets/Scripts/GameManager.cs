@@ -36,13 +36,19 @@ public class GameManager : MonoBehaviour
     public int CurrentLevel = 1;
     public int firstLevelBuildIndex = 1;
     public int TotalLevels => SceneManager.sceneCountInBuildSettings - firstLevelBuildIndex;
-    public int Diamonds;
-    public int Life;
     public int LevelToUse = 1;
     public int GetCurrentLevel => CurrentLevel;
 
     [Header("Fall Speed")]
-    [Range(0f, 1f)] public float SpeedForFallingObjects = 2;
+    [Tooltip("If false will spawn from mid camera position")]
+    public bool FallStraight = true;
+
+    [Range(0f, 2f)] public float ObjectFallingTime = 1;
+
+    [ShowIf("FallStraight")]
+    public float YFallOffset = 3;
+    [ShowIf("FallStraight")]
+    public float ZFallOffset = 0;
 
     [FoldoutGroup("Level Data")]
     [ListDrawerSettings(ShowFoldout = true, ShowIndexLabels = true, DraggableItems = true)]
@@ -60,7 +66,6 @@ public class GameManager : MonoBehaviour
     {
         Instance = this;
         DOTween.Init();
-        LoadPlayerPrefs();
         FillEnemyVariants();
     }
 
@@ -87,7 +92,8 @@ public class GameManager : MonoBehaviour
             UIManager.Instance.ShowClockAndTime(Level.levelTime, UIManager.Instance.iconTransform);
 
         }
-        UIManager.Instance.Diamonds.text = GameManager.Instance.Diamonds.ToString();
+        UIManager.Instance.Diamonds.text = GameHandler.Instance.TotalDiamonds.ToString();
+
         Haptics.Generate(HapticTypes.LightImpact);
         AudioManager.instance?.PlayBGMusic(0);
     }
@@ -386,7 +392,8 @@ public class GameManager : MonoBehaviour
             }
 
             var enemy = Instantiate(prefabToUse, skySpawnPos, Quaternion.identity);
-            StartCoroutine(ManualDropWithYFreeze(enemy, finalTargetPos, cfg.yOffset, SpeedForFallingObjects));
+            StartCoroutine(ManualDropWithYFreeze(enemy, finalTargetPos, cfg.yOffset, ObjectFallingTime, cfg.moveSpeed));
+
             if (cfg.enemyType == SpawnablesType.FlyingHoop || cfg.enemyType == SpawnablesType.CubeEater)
             {
                 RandomizeColor(enemy);
@@ -419,25 +426,37 @@ public class GameManager : MonoBehaviour
         pos.position = target;
     }
 
-    private IEnumerator ManualDropWithYFreeze(GameObject enemy, Vector3 targetPos, float finalY, float duration)
+    private IEnumerator ManualDropWithYFreeze(GameObject enemy, Vector3 targetPos, float finalY, float duration, float speedToApply)
     {
-        Vector3 start = enemy.transform.position;
+        Vector3 start = Camera.position;
+
+        if (FallStraight)
+        {
+            start = targetPos;
+            start.y = Camera.position.y + YFallOffset;
+            start.z = Camera.position.z + ZFallOffset;
+        }
+        enemy.transform.position = start;
         Vector3 end = new Vector3(targetPos.x, finalY, targetPos.z);
         float elapsed = 0f;
 
-        // Drop down over time
-        while (elapsed < duration)
+        while (elapsed < duration && enemy != null)
         {
             elapsed += Time.deltaTime;
             enemy.transform.position = Vector3.Lerp(start, end, elapsed / duration);
             yield return null;
         }
 
+        if (enemy == null)
+        {
+            yield break; 
+        }
         enemy.transform.position = end;
 
-        var eater = enemy.GetComponent<CubeEater>();
-        if (eater != null)
-            eater.Init();
+        if (enemy.TryGetComponent<CubeEater>(out var eater))
+        {
+            eater.Init(speedToApply);
+        }
 
         var rb = enemy.GetComponent<Rigidbody>();
         if (rb == null)
@@ -535,23 +554,7 @@ public class GameManager : MonoBehaviour
         }
     }
 
-    public void SavePlayerPrefs()
-    {
-        PlayerPrefs.SetInt("Diamonds", Diamonds);
-        PlayerPrefs.SetInt("CurrentLevel", CurrentLevel);
-        PlayerPrefs.Save();
-    }
-
-    public void LoadPlayerPrefs()
-    {
-        Diamonds = PlayerPrefs.GetInt("Diamonds", 0);
-        CurrentLevel = PlayerPrefs.GetInt("CurrentLevel", 1);
-    }
-
-    private void OnApplicationQuit()
-    {
-        SavePlayerPrefs();
-    }
+    
     public GameObject playerParticlePrefab;
 
     public void SpawnDeathParticles(GameObject sourceObject, Color color)
@@ -613,6 +616,7 @@ public class LevelData
 [System.Serializable]
 public class SpawnableConfig
 {
+    public string sceneName;
     public SpawnablesType enemyType;
     public GameObject prefab;
 

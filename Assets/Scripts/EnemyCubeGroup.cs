@@ -35,7 +35,7 @@ public class EnemyCubeGroup : MonoBehaviour
         if (isStatic || moveDirection == MoveDirection.None)
         {
             enabled = false;
-            Debug.LogWarning("Static group or no movement direction set; disabling mover.");
+            //Debug.LogWarning("Static group or no movement direction set; disabling mover.");
             return;
         }
 

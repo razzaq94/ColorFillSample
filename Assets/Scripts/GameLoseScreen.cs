@@ -109,7 +109,6 @@ public class GameLoseScreen : MonoBehaviour
             StopCoroutine(countdownCoroutine);
         }
         AdManager_Admob.instance.ShowInterstitialAd();
-        GameHandler.Instance.CurrentLives++;
         GameManager.Instance.Replay();
     }
 
@@ -136,7 +135,7 @@ public class GameLoseScreen : MonoBehaviour
 
             reviveBTN.interactable = false;
             ClosePanael();
-            print("AdLoaded ");
+            //print("AdLoaded ");
             GameManager.Instance.ReviveFromLife();
             UIManager.Instance.GainLife();
         });
@@ -151,7 +150,6 @@ public class GameLoseScreen : MonoBehaviour
             StopCoroutine(countdownCoroutine);
         }
         AdManager_Admob.instance.ShowInterstitialAd();
-        GameHandler.Instance.CurrentLives++;
 
         GameManager.Instance.Replay();
         if (Time.timeScale == 0)

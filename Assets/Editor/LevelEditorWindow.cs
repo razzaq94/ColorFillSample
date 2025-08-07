@@ -46,6 +46,10 @@ public class LevelDataEditorWindow : EditorWindow
         if (_gameManager != null)
             _level = _gameManager.Level;
 
+
+        RefreshSpawnableMap();
+
+
         _enemyTypeToPrefabsMap = new Dictionary<SpawnablesType, List<GameObject>>();
 
         string[] guids = AssetDatabase.FindAssets("t:GameObject", new[] { "Assets/Prefabs/Spawnables" });
@@ -63,7 +67,7 @@ public class LevelDataEditorWindow : EditorWindow
                 }
                 else
                 {
-                    Debug.LogWarning($"Prefab name '{prefab.name}' does not match any SpawnablesType enum.");
+                    //Debug.LogWarning($"Prefab name '{prefab.name}' does not match any SpawnablesType enum.");
                 }
             }
         }
@@ -84,15 +88,14 @@ public class LevelDataEditorWindow : EditorWindow
 
             if (_level.gridCellPositions.Count == 0)
             {
-                Debug.Log("Grid was empty. Placing boundary walls.");
+                //Debug.Log("Grid was empty. Placing boundary walls.");
                 PlaceBoundaryWalls();
             }
             else
             {
-                Debug.Log("Grid already populated. Skipping boundary wall placement.");
+                //Debug.Log("Grid already populated. Skipping boundary wall placement.");
             }
             RefreshEnemyCubeMap();
-            RefreshSpawnableMap();
             _drawMode = DrawMode.Empty;
             RefreshPreplacedEnemyMap();
 
@@ -102,7 +105,7 @@ public class LevelDataEditorWindow : EditorWindow
         }
         else
         {
-            Debug.LogWarning("⚠️ GameManager.Level is null. Level editor not initialized.");
+            //Debug.LogWarning("⚠️ GameManager.Level is null. Level editor not initialized.");
         }
 
         EditorApplication.playModeStateChanged += OnPlayModeStateChanged;
@@ -116,7 +119,11 @@ public class LevelDataEditorWindow : EditorWindow
         {
             EditorGUILayout.HelpBox("There is no GameManager in the scene.\nPlease add a GameManager GameObject with a public LevelData Level field.", MessageType.Warning);
             if (GUILayout.Button("Refresh"))
+            {
                 _gameManager = FindFirstObjectByType<GameManager>();
+                RefreshSpawnableMap();
+            }
+
             return;
         }
 
@@ -288,27 +295,49 @@ public class LevelDataEditorWindow : EditorWindow
                 }
                 else
                 {
-                    if (cam != null && ColumnToCamOrtho.TryGetValue(_level.Columns, out Vector3 orthoData))
-                    {
-                        _level.zoomSize = orthoData.x;
-                        _level.cameraYPosition = orthoData.y;
-                        _level.cameraZPosition = orthoData.z;
+//                    var cam1 = Camera.main ? Camera.main : _gameManager.Camera.GetComponent<Camera>();
+//                    if (cam1 == null)
+//                    {
+//                        Debug.LogWarning("No camera found for auto-positioning.");
+//                        return;
+//                    }
 
-                        cam.orthographicSize = orthoData.x;
+                    //                    cam1.orthographic = true;
 
-                        Vector3 pos = _gameManager.Camera.position;
-                        pos.y = orthoData.y;
-                        pos.z = orthoData.z;
-                        _gameManager.Camera.position = pos;
+                    //                    const float cubeSize = 1f;   // default Unity cube
+                    //                    const float sidePaddingCubes = 0.5f; // tweak for more/less gap
 
-                        EditorUtility.SetDirty(cam);
-                        EditorUtility.SetDirty(_gameManager.Camera.gameObject);
-                    }
-                    else
-                    {
-                        Debug.LogWarning($"❌ No orthographic camera settings defined for column count: {_level.Columns}");
-                    }
+                    //                    float aspect = (float)Screen.safeArea.width / Screen.safeArea.height;
+                    //                    float halfWorldWide = (_level.Columns * cubeSize * 0.5f) + (sidePaddingCubes * cubeSize);
+                    //                    float autoSize = halfWorldWide / aspect;
+
+                    //                    _level.zoomSize = autoSize;
+                    //                    cam1.orthographicSize = autoSize;
+                    //                    Debug.Log("a");
+                    //                    // Y / Z offsets (optional)
+                    //                    float yPos =cam1.transform.position.y;
+                    //                    float zPos =cam1.transform.position.z;
+                    //                    if (ColumnToCamOrtho.TryGetValue(_level.Columns, out var p))
+                    //                    {
+                    //                        yPos = p.y;
+                    //                        zPos = p.z;
+                    //                    }
+                    //                    else
+                    //                    {
+                    //                        Debug.LogWarning($"No Y/Z camera offsets defined for column count {_level.Columns}");
+                    //                    }
+
+                    //                    Vector3 camPos = _gameManager.Camera.position;
+                    //                    camPos.y = yPos;
+                    //                    camPos.z = zPos;
+                    //                    _gameManager.Camera.position = camPos;
+
+                    //#if UNITY_EDITOR
+                    //                    EditorUtility.SetDirty(cam);
+                    //                    EditorUtility.SetDirty(_gameManager.Camera.gameObject);
+                    //#endif
                 }
+
             }
 
 
@@ -355,33 +384,83 @@ public class LevelDataEditorWindow : EditorWindow
         DrawEnemyGroupButton();
         DrawSelectionTypePopup();
         DrawGridCells();
+        SetCamera();
+        if (GUI.changed)
+        {
+            ApplyEditorColors();
+        }
+            EditorGUILayout.EndVertical();
+    }
 
-        EditorGUILayout.EndVertical();
+    public void SetCamera()
+    {
+        if (_level.useAutoCameraPositioning)
+        {
+            var cam = Camera.main ? Camera.main : _gameManager.Camera.GetComponent<Camera>();
+            if (cam == null)
+            {
+                //Debug.LogWarning("No camera found for auto-positioning.");
+                return;
+            }
+
+            //Debug.Log("Camera Updated");
+            cam.orthographic = true;
+
+
+            //Debug.Log(Screen.safeArea.width + " X" + Screen.safeArea.height);
+
+            float aspect = Screen.safeArea.width / Screen.safeArea.height;
+            //Debug.Log(aspect);
+            float halfWorldWidth = (_level.Columns * _level.cubeSize * 0.5f)  // half grid width
+                                 + (_level.sidePaddingCubes * _level.cubeSize);
+
+            cam.orthographicSize = halfWorldWidth / aspect;
+
+            //Y / Z offsets remain table - driven(ignore X completely)
+            if (ColumnToCamOrtho.TryGetValue(_level.Columns, out var posData))
+            {
+                Vector3 pos = cam.transform.position;
+                pos.y = posData.y;
+                pos.z = posData.z;
+                cam.transform.position = pos;
+
+                _level.cameraYPosition = pos.y;
+                _level.cameraZPosition = pos.z;
+            }
+            else
+            {
+                //Debug.LogWarning($"No Y/Z camera offsets defined for column count {_level.Columns}");
+            }
+
+#if UNITY_EDITOR
+            UnityEditor.EditorUtility.SetDirty(cam);
+            if (_gameManager.Camera) UnityEditor.EditorUtility.SetDirty(_gameManager.Camera.gameObject);
+#endif
+        }
+        
     }
 
     private void DrawGridSizeControls()
     {
         int cols = EditorGUILayout.IntField("Columns", _level.Columns);
         int rows = EditorGUILayout.IntField("Rows", _level.Rows);
+        _level.cubeSize = EditorGUILayout.FloatField("cubeSize", _level.cubeSize);
+        _level.sidePaddingCubes = EditorGUILayout.FloatField("sidePadding", _level.sidePaddingCubes);
+
+
+        _level.cubeSize = Mathf.Clamp(_level.cubeSize, 0, 10);
+        _level.sidePaddingCubes = Mathf.Clamp(_level.sidePaddingCubes, 0, 10);
 
         cols = Mathf.Clamp(cols, MinGridSize, MaxGridSize);
-        rows = Mathf.Clamp(rows, MinGridSize, MaxGridSize+30);
+        rows = Mathf.Clamp(rows, MinGridSize, MaxGridSize + 30);
 
         if (cols % 2 != 0) cols++;
         if (rows % 2 != 0) rows++;
 
-        // ✅ Compare directly with current level, not _prev
         bool sizeChanged = (cols != _level.Columns || rows != _level.Rows);
 
         if (sizeChanged)
         {
-            //if (!EditorUtility.DisplayDialog("Resize Grid?",
-            //    "Changing grid size will CLEAR existing level data. Do you want to continue?",
-            //    "Yes - Resize and Clear", "No - Cancel"))
-            //{
-            //    return;
-            //}
-
             _level.Columns = cols;
             _level.Rows = rows;
 
@@ -399,40 +478,12 @@ public class LevelDataEditorWindow : EditorWindow
             EditorSceneManager.MarkSceneDirty(EditorSceneManager.GetActiveScene());
         }
 
-        // ✅ Safe camera repositioning
-        if (_level.useAutoCameraPositioning)
-        {
-            var cam = Camera.main != null ? Camera.main : _gameManager.Camera.GetComponent<Camera>();
-            if (cam != null)
-            {
-                cam.orthographic = true;
-
-                if (ColumnToCamOrtho.TryGetValue(_level.Columns, out Vector3 orthoData))
-                {
-                    cam.orthographicSize = orthoData.x;
-
-                    Vector3 camPos = cam.transform.position;
-                    camPos.y = orthoData.y;
-                    camPos.z = orthoData.z ;
-                    cam.transform.position = camPos;
-
-                    _level.cameraYPosition = orthoData.y;
-                    _level.cameraZPosition = orthoData.z;
-
-                    EditorUtility.SetDirty(cam);
-                    if (_gameManager.Camera != null)
-                        EditorUtility.SetDirty(_gameManager.Camera.gameObject);
-                }
-                else
-                {
-                    Debug.LogWarning($"No orthographic camera settings defined for column count: {_level.Columns}");
-                }
-            }
-        }
+        //SetCamera();
 
         SyncSceneGridAndBackground();
     }
-    
+
+
 
 
     private void UpdateCubeMaterialTiling(int cols, int rows)
@@ -1230,7 +1281,7 @@ public class LevelDataEditorWindow : EditorWindow
         var gm = Object.FindFirstObjectByType<GridManager>();
         if (gm == null)
         {
-            Debug.LogWarning("[LevelEditor] No GridManager found in scene to sync with!");
+            //Debug.LogWarning("[LevelEditor] No GridManager found in scene to sync with!");
             return;
         }
 
@@ -1245,7 +1296,7 @@ public class LevelDataEditorWindow : EditorWindow
         }
         else
         {
-            Debug.LogWarning("[LevelEditor] No GridBackground component found!");
+            //Debug.LogWarning("[LevelEditor] No GridBackground component found!");
         }
 
         SceneView.RepaintAll();
@@ -1395,13 +1446,17 @@ public class LevelDataEditorWindow : EditorWindow
     private void RefreshSpawnableMap()
     {
         string currentScene = SceneManager.GetActiveScene().name;
+
         _cellSpawnMap = _level.SpwanablesConfigurations
             .Where(cfg => cfg != null)
             .ToDictionary(
                 cfg => new Vector2Int(cfg.row, cfg.col),
                 cfg => cfg
             );
+
+        //Debug.Log($"🟡 Spawnable map refreshed with {_cellSpawnMap.Count} entries.");
     }
+
     private void ApplyEditorColors()
     {
         var player = GameObject.FindWithTag("Player");
@@ -1438,7 +1493,7 @@ public class LevelDataEditorWindow : EditorWindow
         else if (r.sharedMaterial.HasProperty("_Color"))
             block.SetColor("_Color", color);
         else
-            Debug.LogWarning($"{r.gameObject.name} has no _Color or _BaseColor");
+            //Debug.LogWarning($"{r.gameObject.name} has no _Color or _BaseColor");
 
         r.SetPropertyBlock(block);
     }

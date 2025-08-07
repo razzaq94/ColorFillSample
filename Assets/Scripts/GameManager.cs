@@ -67,6 +67,7 @@ public class GameManager : MonoBehaviour
         Instance = this;
         DOTween.Init();
         FillEnemyVariants();
+        SetCamera();
     }
 
     private void Start()
@@ -330,7 +331,6 @@ public class GameManager : MonoBehaviour
     {
         var level = Level;
 
-        // Get the list of exposed cells
         List<Vector2Int> exposedCells = GridManager.Instance.GetExposedGridCells();
 
         foreach (var config in level.SpwanablesConfigurations)
@@ -341,6 +341,7 @@ public class GameManager : MonoBehaviour
             StartCoroutine(SpawnEnemyRoutine(config, exposedCells));
         }
     }
+    private List<Vector3> _usedPickupCells = new(); 
 
 
     public IEnumerator SpawnEnemyRoutine(SpawnableConfig cfg, List<Vector2Int> exposedCells)
@@ -358,7 +359,7 @@ public class GameManager : MonoBehaviour
                 yield return new WaitUntil(() => GridManager.Instance._progress >= threshold);
             }
 
-            Vector3 spawnBasePos;
+            Vector3 spawnBasePos = Vector3.zero; 
 
 
             bool isSmartPickup = cfg.prefab.name.Contains("Timer") ||
@@ -368,10 +369,26 @@ public class GameManager : MonoBehaviour
             if (cfg.enemyType == SpawnablesType.SpikeBall || isSmartPickup)
 
             {
-                int idx = Random.Range(0, available.Count);
-                var cell = available[idx];
-                available.RemoveAt(idx);
-                spawnBasePos = cell.transform.position;
+                Cube cell = null;
+
+                do
+                {
+                    if (available.Count == 0)
+                    {
+                        break;
+                    }
+
+                    int idx = Random.Range(0, available.Count);
+                    cell = available[idx];
+                    available.RemoveAt(idx);
+
+                } while (GameManager.Instance._usedPickupCells.Contains(cell.transform.position)); 
+
+                if (cell != null)
+                {
+                    spawnBasePos = cell.transform.position;
+                    GameManager.Instance._usedPickupCells.Add(spawnBasePos); 
+                }
             }
             else
             {
@@ -575,8 +592,65 @@ public class GameManager : MonoBehaviour
         //print(fx.name + " spawned at " + position);
         Destroy(fx, 2f);
     }
+    public void SetCamera()
+    {
+        if (Level.useAutoCameraPositioning)
+        {
+            var cam = Camera.GetComponent<Camera>();
+            if (cam == null)
+            {
+                return;
+            }
+
+            cam.orthographic = true;
 
 
+
+            float aspect = Screen.safeArea.width / Screen.safeArea.height;
+            float halfWorldWidth = (Level.Columns * Level.cubeSize * 0.5f)  // half grid width
+                                 + (Level.sidePaddingCubes * Level.cubeSize);
+
+            cam.orthographicSize = halfWorldWidth / aspect;
+
+            //Y / Z offsets remain table - driven(ignore X completely)
+            if (ColumnToCamOrtho.TryGetValue(Level.Columns, out var posData))
+            {
+                Vector3 pos = cam.transform.position;
+                pos.y = posData.y;
+                pos.z = posData.z;
+                cam.transform.position = pos;
+
+                Level.cameraYPosition = pos.y;
+                Level.cameraZPosition = pos.z;
+            }
+        }
+
+    }
+    private static readonly Dictionary<int, Vector3> ColumnToCamOrtho = new()
+{
+    { 8,  new Vector3(7f, 10f, -1.5f) },
+    { 10, new Vector3(9.36f, 10f, -1.5f) },
+    { 12, new Vector3(11.67f, 10f, -1f) },
+    { 14, new Vector3(14.04f, 10f, -0.8f) },
+    { 16, new Vector3(16.4f, 10f, -0.5f) },
+    { 18, new Vector3(18.78f, 10f, 0f) },
+    { 20, new Vector3(21.2f, 10f, .5f) },
+    { 22, new Vector3(23.5f, 10f, .5f) },
+    { 24, new Vector3(25.8f, 10f, .5f) },
+    { 26, new Vector3(28.3f, 10f, 1f) },
+    { 28, new Vector3(30.6f, 10f, 1f) },
+    { 30, new Vector3(33f, 10f, 1f) },
+    { 32, new Vector3(35.4f, 10f, 1f) },
+    { 34, new Vector3(37.8f, 15f, 1f) },
+    { 36, new Vector3(40f, 15f, 1f) },
+    { 38, new Vector3(42.5f, 15f, 1f) },
+    { 40, new Vector3(44.8f, 15f, 1f) },
+    { 42, new Vector3(47f, 20f, 1f) },
+    { 44, new Vector3(49.5f, 20f, 1f) },
+    { 46, new Vector3(51.7f, 20f, 1f) },
+    { 48, new Vector3(54f, 20f, 1f) },
+    { 50, new Vector3(56.5f, 20f, 1f) },
+};
 }
 [System.Serializable]
 public class LevelData
@@ -594,6 +668,10 @@ public class LevelData
     public List<PreplacedEnemy> PreplacedEnemies = new List<PreplacedEnemy>();
     public List<Transform> PreplacedSpawnPoints;
     public List<CubeCell> enemyCubeCells = new();
+
+    public float cubeSize = 1f;   // Unity default cube
+    public float sidePaddingCubes = 1f;
+
     public int Columns = 50;
     public int Rows = 50;
     public List<CubeCell> gridCellPositions;

@@ -373,15 +373,12 @@ public class Player : MonoBehaviour
     {
         if (CubeGrid.Instance == null) return;
 
-        // Check if a cube already exists at the last safe position
         Cube existingCube = CubeGrid.Instance.GetCubeAtPosition(lastSafeFilledPosition);
         if (existingCube != null)
         {
-            // If there's already a cube at this position, don't spawn a new one
             return;
         }
 
-        // If no cube exists, spawn a new one
         Cube cube = CubeGrid.Instance.GetCube();
         Vector3 spawnPos = new Vector3(
             Mathf.Round(transform.position.x),
@@ -390,6 +387,7 @@ public class Player : MonoBehaviour
         );
 
         cube.Initalize(spawnPos, false);
+        cube._renderer.material.color = GameManager.Instance.CubeFillColor;
         spawnedCubes.Add(cube);
     }
     public void InvincibleForSeconds(float seconds = 5f)

@@ -25,11 +25,10 @@ public class GameHandler : MonoBehaviour
 
     private void Start()
     {
-        // Sync lives with UIManager if available
         if (UIManager.Instance != null)
         {
             UIManager.Instance.currentLives = CurrentLives;
-            UIManager.Instance.ResetLives(); // updates life icons
+            UIManager.Instance.ResetLives(); 
         }
     }
 

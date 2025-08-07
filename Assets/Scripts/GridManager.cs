@@ -502,7 +502,6 @@ public class GridManager : MonoBehaviour
         ForceFillRemainingVisuals();
     }
     private HashSet<string> _filledPocketHashes = new();
-    private string _lastFilledHash = "";
     private string GetPocketHash(List<Point> pocket)
     {
         pocket.Sort((a, b) =>
@@ -658,7 +657,21 @@ public class GridManager : MonoBehaviour
 
         return exposedCells;
     }
+    private void MakeCubes(List<Point> pointList)
+    {
+        foreach (Point point in pointList)
+        {
+            Vector2Int pos = new Vector2Int(point.X, point.Y);
 
+            if (GetCubeAtPosition(pos) != null)
+                continue; 
+
+            Vector3 repCubePos = FindTransformFromPoint(point);
+            Cube cube = CubeGrid.Instance.GetCube();
+            cube.Initalize(repCubePos, true);
+            cube.FillCube(); 
+        }
+    }
 
 
     private bool[,] FloodFill(bool[,] _grid, bool[,] gridCopySecond)
@@ -726,22 +739,6 @@ public class GridManager : MonoBehaviour
         if (secondTryPointList.Count > 0)
             MakeCubes(secondTryPointList);
         return gridCopySecond;
-    }
-
-    private void MakeCubes(List<Point> pointList)
-    {
-        foreach (Point point in pointList)
-        {
-            Vector2Int pos = new Vector2Int(point.X, point.Y);
-
-            if (GetCubeAtPosition(pos) != null)
-                continue; 
-
-            Vector3 repCubePos = FindTransformFromPoint(point);
-            Cube cube = CubeGrid.Instance.GetCube();
-            cube.Initalize(repCubePos, true);
-            cube.FillCube(); 
-        }
     }
 
 
@@ -822,7 +819,7 @@ public class GridManager : MonoBehaviour
     private void FillFullyEnclosedPockets()
     {
 
-        print("LastFill");
+        //print("LastFill");
         int cols = _gridColumns;
         int rows = _gridRows;
 
@@ -942,7 +939,6 @@ public class GridManager : MonoBehaviour
     }
 
 
-
     private void FillRemainingUnfilledCells()
     {
         int cols = _gridColumns;
@@ -966,6 +962,7 @@ public class GridManager : MonoBehaviour
             }
         }
     }
+
     public void ForceFillRemainingVisuals()
     {
         for (int x = 0; x < _gridColumns; x++)

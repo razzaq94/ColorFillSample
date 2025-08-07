@@ -8,8 +8,8 @@ public class Cube : MonoBehaviour
     [Title("CUBE", null, titleAlignment: TitleAlignments.Centered)]
     [DisplayAsString] public bool IsFilled = false;
     [DisplayAsString] public bool CanHarm = false;
-
-    private Renderer _renderer;
+    
+    public Renderer _renderer;
     private void Awake()
     {
         _renderer = GetComponent<Renderer>();

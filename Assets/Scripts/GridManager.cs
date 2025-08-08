@@ -521,7 +521,7 @@ public class GridManager : MonoBehaviour
 
         if (newPockets.Count > 0)
         {
-            Debug.Log($"🟢 Found {newPockets.Count} new enclosed pocket(s).");
+            //Debug.Log($"🟢 Found {newPockets.Count} new enclosed pocket(s).");
             FillOnlyNewPockets(newPockets);
         }
 
@@ -530,12 +530,12 @@ public class GridManager : MonoBehaviour
 
         if (afterFilled > beforeFilled)
         {
-            Debug.Log("✅ Pocket formed and filled. Auto-filled " + (afterFilled - beforeFilled) + " cells.");
+            //Debug.Log("✅ Pocket formed and filled. Auto-filled " + (afterFilled - beforeFilled) + " cells.");
             lastPocketFilled = true;
         }
         else
         {
-            Debug.Log("No pocket formed. Skipping auto-fill.");
+            //Debug.Log("No pocket formed. Skipping auto-fill.");
             lastPocketFilled = false;
         }
     }

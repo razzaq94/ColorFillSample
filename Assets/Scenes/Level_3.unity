@@ -38711,6 +38711,8 @@ MonoBehaviour:
     - row: 3
       col: 2
       type: 0
+    cubeSize: 1
+    sidePaddingCubes: 1
     Columns: 16
     Rows: 26
     gridCellPositions:
@@ -44686,7 +44688,7 @@ Camera:
   far clip plane: 1000
   field of view: 20
   orthographic: 1
-  orthographic size: 16.4
+  orthographic size: 17.768692
   m_Depth: -1
   m_CullingMask:
     serializedVersion: 2

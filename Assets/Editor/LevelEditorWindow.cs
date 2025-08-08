@@ -189,6 +189,7 @@ public class LevelDataEditorWindow : EditorWindow
     private void DrawGeneralTab()
     {
         EditorGUILayout.LabelField("General Settings", EditorStyles.boldLabel);
+
         EditorGUILayout.BeginVertical("box");
         {
             _level.LevelObject = (GameObject)EditorGUILayout.ObjectField(
@@ -385,10 +386,7 @@ public class LevelDataEditorWindow : EditorWindow
         DrawSelectionTypePopup();
         DrawGridCells();
         SetCamera();
-        if (GUI.changed)
-        {
-            ApplyEditorColors();
-        }
+            //ApplyEditorColors();
             EditorGUILayout.EndVertical();
     }
 
@@ -523,7 +521,7 @@ public class LevelDataEditorWindow : EditorWindow
 
     private void DrawGridCells()
     {
-        const float viewSize = 700f;
+        const float viewSize = 650f;
         float cellSize = Mathf.Min(
             viewSize / _level.Columns,
             viewSize / _level.Rows
@@ -549,6 +547,8 @@ public class LevelDataEditorWindow : EditorWindow
         }
 
         EditorGUILayout.EndScrollView();
+
+        GUILayout.Space(50);
     }
 
     private void EnsureEnemyTypeColors()
@@ -1492,9 +1492,8 @@ public class LevelDataEditorWindow : EditorWindow
             block.SetColor("_BaseColor", color);
         else if (r.sharedMaterial.HasProperty("_Color"))
             block.SetColor("_Color", color);
-        else
+        //else
             //Debug.LogWarning($"{r.gameObject.name} has no _Color or _BaseColor");
-
         r.SetPropertyBlock(block);
     }
 

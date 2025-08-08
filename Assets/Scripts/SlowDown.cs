@@ -13,9 +13,9 @@ public class SlowDown : MonoBehaviour
     {
         if (collision.gameObject.CompareTag("Player"))
         {
-            var enemies = FindObjectsOfType<EnemyBehaviors>();
-            var cubeEaters = FindObjectsOfType<CubeEater>();
-            var rigidbodies = FindObjectsOfType<Rigidbody>(); 
+            var enemies = FindObjectsByType<EnemyBehaviors>(FindObjectsSortMode.None);
+            var cubeEaters = FindObjectsByType<CubeEater>(FindObjectsSortMode.None);
+            var rigidbodies = FindObjectsByType<Rigidbody>(FindObjectsSortMode.None);
 
             foreach (var enemy in enemies)
             {

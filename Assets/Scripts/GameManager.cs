@@ -242,6 +242,7 @@ public class GameManager : MonoBehaviour
         {
             Player.InvincibleForSeconds(3);
         }
+        shake = false; // Reset camera shake flag
         //print(Player.lastSafeFilledPosition + " after revive");
     }
 
@@ -300,13 +301,20 @@ public class GameManager : MonoBehaviour
     //        }
     //    }
     //}
+
+    bool shake = false;
     public void CameraShake(float duration = 0.5f, float magnitude = 0.2f)
     {
-        StartCoroutine(DoShake(duration, magnitude));
+        if (!shake)
+        {
+            shake = true; // Set the flag to true to prevent multiple shakes
+           StartCoroutine(DoShake(duration, magnitude));
+        }
     }
 
     private IEnumerator DoShake(float duration, float magnitude)
     {
+        print("Camera Shake started with duration: " + duration + " and magnitude: " + magnitude);
         Transform cam = Camera.transform;
         Vector3 originalPos = cam.localPosition;
 

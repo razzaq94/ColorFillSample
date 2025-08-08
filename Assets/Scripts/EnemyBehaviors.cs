@@ -113,11 +113,11 @@ public class EnemyBehaviors : MonoBehaviour
     {
         if (collision.gameObject.TryGetComponent<Cube>(out Cube cube))
         {
-            if (enemyType == SpawnablesType.SolidBall)
+            if (enemyType == SpawnablesType.SolidBall && cube.IsFilled)
             {
                 BounceOffNormal(collision.contacts[0].normal);
             }
-            if (enemyType == SpawnablesType.MultiColoredBall && cube.IsFilled && Time.frameCount != _lastDestroyFrame)
+            else if (enemyType == SpawnablesType.MultiColoredBall && cube.IsFilled && Time.frameCount != _lastDestroyFrame)
             {
                 gridManager.RemoveCubeAt(cube);  
                 BounceOffNormal(collision.contacts[0].normal);

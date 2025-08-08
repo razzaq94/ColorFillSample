@@ -13181,9 +13181,9 @@ MonoBehaviour:
   - columnSize: 10
     CameraAngle: {x: -0.5, y: 18.2, z: 0}
   deathParticlePrefab: {fileID: 2228351022732385094, guid: 58dd7827383c09c4884d09216a516bcb, type: 3}
-  WallColor: {r: 1, g: 1, b: 1, a: 1}
-  PlayerColor: {r: 1, g: 0.9490197, b: 0.59607846, a: 1}
-  CubeFillColor: {r: 1, g: 0.9450981, b: 0.3921569, a: 1}
+  WallColor: {r: 0.6698113, g: 0.33806515, b: 0.33806515, a: 1}
+  PlayerColor: {r: 1, g: 1, b: 1, a: 1}
+  CubeFillColor: {r: 0.8396226, g: 0.7859276, b: 0.2811944, a: 1}
   BackgroundColor: {r: 0.32941177, g: 0.31764707, b: 0.31764707, a: 1}
   EnemyCubeColor: {r: 1, g: 0.5921569, b: 0.80392164, a: 1}
   StartLevel: 1
@@ -13710,6 +13710,8 @@ MonoBehaviour:
     - row: 3
       col: 2
       type: 0
+    cubeSize: 1
+    sidePaddingCubes: 1
     Columns: 14
     Rows: 22
     gridCellPositions:
@@ -16532,7 +16534,7 @@ Camera:
   far clip plane: 600
   field of view: 20
   orthographic: 1
-  orthographic size: 14.04
+  orthographic size: 10.666667
   m_Depth: -1
   m_CullingMask:
     serializedVersion: 2

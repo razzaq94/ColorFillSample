@@ -53,7 +53,7 @@ public class Cube : MonoBehaviour
 
         if (!force && GridManager.Instance.IsFilled(index))
         {
-            Debug.LogWarning($"Duplicate cube fill attempt at {index} from {name}");
+            //Debug.LogWarning($"Duplicate cube fill attempt at {index} from {name}");
             IsFilled = true;
             return;
         }

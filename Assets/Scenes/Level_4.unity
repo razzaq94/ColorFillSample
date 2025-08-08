@@ -43890,6 +43890,8 @@ MonoBehaviour:
     - row: 3
       col: 2
       type: 0
+    cubeSize: 1
+    sidePaddingCubes: 1
     Columns: 16
     Rows: 26
     gridCellPositions:

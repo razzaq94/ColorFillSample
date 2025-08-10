@@ -267,15 +267,13 @@ public class GameManager : MonoBehaviour
         AudioManager.instance?.PlayBGMusic(0);
     }
 
-    private bool hasTriggeredLose = false;
+    public bool hasTriggeredLose = false;
     public void LevelLose()
     {
-        if (loosed || hasTriggeredLose)
-            return;
-
         hasTriggeredLose = true; 
         loosed = true;
         Player.enabled = _gameRunning = false;
+        print("Level Lose Triggered");
         Invoke(nameof(HandleLevelLoseCrash), 0.5f);
         AudioManager.instance?.BGAudioSource.Stop();
     }
@@ -305,6 +303,7 @@ public class GameManager : MonoBehaviour
     bool shake = false;
     public void CameraShake(float duration = 0.5f, float magnitude = 0.2f)
     {
+        loosed = true;
         if (!shake)
         {
             shake = true; // Set the flag to true to prevent multiple shakes

@@ -137,7 +137,7 @@ public class GameLoseScreen : MonoBehaviour
             ClosePanael();
             //print("AdLoaded ");
             GameManager.Instance.ReviveFromLife();
-            UIManager.Instance.GainLife();
+            //UIManager.Instance.GainLife();
         });
         //if(Time.timeScale == 0)
         //    Time.timeScale = 1.0f;  

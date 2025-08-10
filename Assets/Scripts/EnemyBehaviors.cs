@@ -174,6 +174,11 @@ public class EnemyBehaviors : MonoBehaviour
 
     private void HandleHarmfulCollision()
     {
+        if (GameManager.Instance.loosed || GameManager.Instance.hasTriggeredLose)
+        {
+            return;
+        }
+
         AudioManager.instance?.PlaySFXSound(3);
         Haptics.Generate(HapticTypes.HeavyImpact);
         GameManager.Instance.CameraShake(0.35f, 0.15f);

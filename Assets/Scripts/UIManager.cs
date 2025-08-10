@@ -125,17 +125,14 @@ public class UIManager : MonoBehaviour
     {
         Player.Instance.collisionCollider.enabled = false;
 
-
         AudioManager.instance?.PlaySFXSound(1);
-
-        if (currentLives > 1)
+        print("Player Crashed");
+        if (currentLives > 0)
         {
             LoseLife();
         }
         else
         {
-            LoseLife();
-
             StartCoroutine(ShowGameLoseUICrashAfterDelay());
         }
     }
@@ -223,7 +220,7 @@ public class UIManager : MonoBehaviour
         Player.Instance.gameObject.SetActive(false);
         currentLives--;
         GameHandler.Instance.LoseLife();
-        if (currentLives <= 0)
+        if (currentLives < 0)
         {
             GameManager.Instance.loosed = false;
             Time.timeScale = 1f;

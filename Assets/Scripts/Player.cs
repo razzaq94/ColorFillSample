@@ -250,52 +250,48 @@ public class Player : MonoBehaviour
                 cube.CanHarm = true;
         }
     }
+    [SerializeField] private int swipeThreshold = 35; 
+    [SerializeField] private float maxSwipeTime = 0.5f; 
+    [SerializeField] private bool useKeyboard = true;
+
+
+    private bool _swipeDetected;
+
     private void DetectInput()
     {
         _direction = Direction.None;
 
-        if (Input.touches.Length > 0)
+        if (Input.touchCount > 0)
         {
             Touch t = Input.GetTouch(0);
+
             if (t.phase == TouchPhase.Began)
             {
-                _startPos2 = new Vector2(t.position.x / (float)Screen.width, t.position.y / (float)Screen.width); // normalize position according to screen width.
+                _startPos2 = t.position;
                 _startTime = Time.time;
+                _swipeDetected = false;
             }
-            if (t.phase == TouchPhase.Ended)
+            else if (t.phase == TouchPhase.Moved && !_swipeDetected)
             {
-                if (Time.time - _startTime > MaxSwipeTime) 
-                    return;
+                Vector2 swipe = t.position - _startPos2;
 
-                Vector2 endPos = new Vector2(t.position.x / (float)Screen.width, t.position.y / (float)Screen.width);
-
-                Vector2 swipe = new Vector2(endPos.x - _startPos2.x, endPos.y - _startPos2.y);
-
-                if (swipe.magnitude < MinSwipeDistance) 
-                    return;
-
-                if (Mathf.Abs(swipe.x) > Mathf.Abs(swipe.y))
+                if (swipe.magnitude >= swipeThreshold)
                 {
-                    if (swipe.x > 0)
-                        _direction = Direction.Right;
-                    // swipeRight = true;
+                    if (Mathf.Abs(swipe.x) > Mathf.Abs(swipe.y))
+                        _direction = swipe.x > 0 ? Direction.Right : Direction.Left;
                     else
-                        _direction = Direction.Left;
-                    // swipeLeft = true;
+                        _direction = swipe.y > 0 ? Direction.Up : Direction.Down;
+
+                    _swipeDetected = true; 
                 }
-                else
-                {
-                    if (swipe.y > 0)
-                        _direction = Direction.Up;
-                    // swipeUp = true;
-                    else
-                        _direction = Direction.Down;
-                    // swipeDown = true;
-                }
+            }
+            else if (t.phase == TouchPhase.Ended)
+            {
+                // Optional: reset or handle quick taps
             }
         }
 
-        if (_useKeyboard)
+        if (useKeyboard)
         {
             if (Input.GetKeyDown(KeyCode.W))
                 _direction = Direction.Up;

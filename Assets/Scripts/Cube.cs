@@ -8,7 +8,8 @@ public class Cube : MonoBehaviour
     [Title("CUBE", null, titleAlignment: TitleAlignments.Centered)]
     [DisplayAsString] public bool IsFilled = false;
     [DisplayAsString] public bool CanHarm = false;
-    
+    public float stuckTime = 0f;
+    private float stuckCheckInterval = 0.5f;
     public Renderer _renderer;
     private void Awake()
     {
@@ -20,7 +21,15 @@ public class Cube : MonoBehaviour
         {
             transform.DOMoveY(0.5f, 0.15f);
         }
-    }
+        stuckTime += Time.deltaTime;
+        if (stuckTime >= stuckCheckInterval)
+        {
+            if(IsFilled)
+            {
+                _renderer.material.color = GameManager.Instance.CubeFillColor;
+            }
+        }
+        }
     public void ResetCube()
     {
         IsFilled = false;

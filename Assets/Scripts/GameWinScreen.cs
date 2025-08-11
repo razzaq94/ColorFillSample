@@ -31,6 +31,7 @@ public class GameWinScreen : MonoBehaviour
         int first = GameManager.Instance.firstLevelBuildIndex;
         int total = GameManager.Instance.TotalLevels;
         int last = first + total - 1;
+        GameHandler.Instance.adCount = 0;
 
         if (current < last)
         {
@@ -44,7 +45,7 @@ public class GameWinScreen : MonoBehaviour
     public void RestartButton() 
     {
         AudioManager.instance?.PlayUISound(0);
-
+        AdManager_Admob.instance.ShowInterstitialAd();
         SceneManager.LoadScene(SceneManager.GetActiveScene().buildIndex);
         if (Time.timeScale == 0)
             Time.timeScale = 1.0f;

@@ -33,11 +33,11 @@ public class GameManager : MonoBehaviour
 
     [Header("Level Info")]
     public int StartLevel = 0;
-    public int CurrentLevel = 1;
+    
     public int firstLevelBuildIndex = 1;
     public int TotalLevels => SceneManager.sceneCountInBuildSettings - firstLevelBuildIndex;
     public int LevelToUse = 1;
-    public int GetCurrentLevel => CurrentLevel;
+    public int GetCurrentLevel => GameHandler.Instance.CurrentLevel;
 
     [Header("Fall Speed")]
     [Tooltip("If false will spawn from mid camera position")]
@@ -61,7 +61,6 @@ public class GameManager : MonoBehaviour
     private bool isGameOver = false;
     public bool loosed = false;
     public bool reviveUsed = false;
-
     private void Awake()
     {
         Instance = this;
@@ -254,7 +253,7 @@ public class GameManager : MonoBehaviour
         //if (isGameOver) return; 
 
         Player.enabled = _gameRunning = false;
-        CurrentLevel++;
+        GameHandler.Instance.CurrentLevel++;
         LevelToUse++;
         UIManager.Instance.LevelComplete();
         MarkLevelCompleted(SceneManager.GetActiveScene().buildIndex);

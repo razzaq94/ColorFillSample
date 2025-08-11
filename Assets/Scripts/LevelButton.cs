@@ -29,6 +29,7 @@ public class LevelButton : MonoBehaviour
         if(Time.timeScale == 0)
             Time.timeScale = 1; 
         if (!button.interactable) return;
+        GameHandler.Instance.adCount = 0;
         SceneManager.LoadScene(buildIndex);
     }
 }

@@ -1884,6 +1884,9 @@ MonoBehaviour:
   material: {fileID: 2100000, guid: 38a5ea855e8c2a949b24cf1254b22dbc, type: 2}
   _direction: 0
   collisionCollider: {fileID: 0}
+  swipeThreshold: 35
+  maxSwipeTime: 0.5
+  useKeyboard: 1
 --- !u!1 &1269584715
 GameObject:
   m_ObjectHideFlags: 0
@@ -2321,6 +2324,7 @@ MonoBehaviour:
   enemyVariantGroups: []
   loosed: 0
   reviveUsed: 0
+  hasTriggeredLose: 0
   playerParticlePrefab: {fileID: 1350945476068147629, guid: 76a2627f85dd0384ba9bccc3960c663d, type: 3}
 --- !u!4 &1425309783
 Transform:
@@ -2709,6 +2713,7 @@ MonoBehaviour:
   m_EditorClassIdentifier: 
   TotalDiamonds: 0
   CurrentLives: 3
+  adCount: 1
 --- !u!4 &1567790139
 Transform:
   m_ObjectHideFlags: 0

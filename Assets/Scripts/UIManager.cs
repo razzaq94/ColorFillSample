@@ -83,7 +83,7 @@ public class UIManager : MonoBehaviour
         RandomTextSpawner.SpawnRandomText();
         line.transform.SetParent(GameObject.FindGameObjectWithTag("MainCanvas").transform, false);
         Confetti.transform.SetParent(confettiHolder);
-       
+        NextLevelText.text = (GameManager.Instance.GetCurrentLevel + 1).ToString();
         Invoke(nameof(ShowGamWinUI), 1f);
         Destroy(line, 1.6f);
         Destroy(Confetti, 1.6f);

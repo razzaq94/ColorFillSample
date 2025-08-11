@@ -104,12 +104,29 @@ public class GameLoseScreen : MonoBehaviour
 
     public void OnClick_ReplayLevel()
     {
-        if(countdownCoroutine != null)
-        {
+        if (countdownCoroutine != null)
             StopCoroutine(countdownCoroutine);
-        }
-        AdManager_Admob.instance.ShowInterstitialAd();
+        
         GameManager.Instance.Replay();
+    }
+
+
+
+    public void OnClick_CrashRestart()
+    {
+        if (countdownCoroutine != null)
+            StopCoroutine(countdownCoroutine);
+
+        if (GameHandler.Instance.adCount == 0)
+        {
+            AdManager_Admob.instance.ShowInterstitialAd();
+            GameHandler.Instance.adCount = 1;
+        }
+
+        GameManager.Instance.Replay();
+
+        if (Time.timeScale == 0)
+            Time.timeScale = 1f;
     }
 
     public void OnClick_SkipLevel()
@@ -141,19 +158,6 @@ public class GameLoseScreen : MonoBehaviour
         });
         //if(Time.timeScale == 0)
         //    Time.timeScale = 1.0f;  
-    }
-
-    public void OnClick_CrashRestart()
-    {
-        if (countdownCoroutine != null)
-        {
-            StopCoroutine(countdownCoroutine);
-        }
-        AdManager_Admob.instance.ShowInterstitialAd();
-
-        GameManager.Instance.Replay();
-        if (Time.timeScale == 0)
-            Time.timeScale = 1.0f;
     }
 
     public void OnClick_CrashSkip()

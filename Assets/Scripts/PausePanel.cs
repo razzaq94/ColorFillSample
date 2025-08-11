@@ -43,9 +43,20 @@ public class PausePanel : MonoBehaviour
     {
         AudioManager.instance?.PlayUISound(0);
 
-        if(Time.timeScale == 0)
-            Time.timeScale = 1.0f; 
+        const int MaxAdsPerLevel = 1;
+        var scene = SceneManager.GetActiveScene();
+        string key = $"CrashRestartAds_{scene.buildIndex}_{scene.name}";
+
+        int shown = PlayerPrefs.GetInt(key, 0);
+        if (shown < MaxAdsPerLevel)
+        {
+            AdManager_Admob.instance?.ShowInterstitialAd();
+            PlayerPrefs.SetInt(key, shown + 1);
+            PlayerPrefs.Save();
+        }
         SceneManager.LoadScene(SceneManager.GetActiveScene().buildIndex);
+        if (Time.timeScale == 0)
+            Time.timeScale = 1.0f; 
 
     }
     public void QuitGame()

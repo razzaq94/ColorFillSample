@@ -8,7 +8,8 @@ public class GameHandler : MonoBehaviour
     public int TotalDiamonds = 0;
     public int CurrentLives = 3;
     private const int MaxLives = 3;
-
+    public int adCount = 1;
+    public int CurrentLevel = 1;
     private void Awake()
     {
         if (Instance == null)

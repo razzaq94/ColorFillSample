@@ -17,22 +17,40 @@ public class EnemyBehaviors : MonoBehaviour
     private GridManager gridManager;
     private Rigidbody rb;
     private Vector3 dir;
-
+    public Vector3 lastPosition;
     private int _lastDestroyFrame = -1;
-
+    public float stuckTime = 0f;
+    private float stuckCheckInterval = 2f; 
+    private float stuckDistanceThreshold = 1f;
     void Start()
     {
         rb = GetComponent<Rigidbody>();
         gridManager = GridManager.Instance;
-
+        lastPosition = transform.position;
         rb.useGravity = false;
         rb.angularDamping = 0f;
         rb.linearDamping = 0f;
 
         dir = PickRandomXZDirection(minInitial);
-        rb.linearVelocity = dir * speed;  
+        rb.linearVelocity = dir * speed;
     }
+    private void Update()
+    {
+        stuckTime += Time.deltaTime;
+        if (stuckTime >= stuckCheckInterval)
+        {
+            float dist = Vector3.Distance(transform.position, lastPosition);
+            if (dist < stuckDistanceThreshold)
+            {
+            print(dist);
+                dir = PickRandomXZDirection(minInitial);
+                rb.linearVelocity = dir * speed;
+            }
 
+            lastPosition = transform.position;
+            stuckTime = 0f;
+        }
+    }
     void FixedUpdate()
     {
         if (enemyType == SpawnablesType.SpikeBall)
@@ -47,7 +65,11 @@ public class EnemyBehaviors : MonoBehaviour
             }
 
             rb.linearVelocity = dir.normalized * speed;
+            
+
         }
+
+        
     }
 
 

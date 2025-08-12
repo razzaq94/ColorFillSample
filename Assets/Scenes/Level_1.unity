@@ -13209,7 +13209,7 @@ MonoBehaviour:
     - {fileID: 0}
     - {fileID: 0}
     SpwanablesConfigurations:
-    - sceneName: 
+    - sceneName: Level_1
       enemyType: 1
       prefab: {fileID: 5659256095017627701, guid: 782f990439ac48348914309a13bcb2f3, type: 3}
       progressThreshold: 0.39999998
@@ -13221,7 +13221,7 @@ MonoBehaviour:
       moveSpeed: 2
       row: 6
       col: 6
-    - sceneName: 
+    - sceneName: Level_1
       enemyType: 5
       prefab: {fileID: 7101016809528862508, guid: cb7a60b38c01b9c4781338ff872dc19f, type: 3}
       progressThreshold: 0.19999999
@@ -13233,7 +13233,7 @@ MonoBehaviour:
       moveSpeed: 2
       row: 6
       col: 1
-    - sceneName: 
+    - sceneName: Level_1
       enemyType: 5
       prefab: {fileID: 5665365635048418455, guid: e42d5148988d32e41a2eb81aba4dfc1f, type: 3}
       progressThreshold: 0.11
@@ -13245,7 +13245,7 @@ MonoBehaviour:
       moveSpeed: 2
       row: 4
       col: 12
-    - sceneName: 
+    - sceneName: Level_1
       enemyType: 5
       prefab: {fileID: 7322854741125154121, guid: e7273ceb86bdd754abd7b548b4a19997, type: 3}
       progressThreshold: 0.14999999

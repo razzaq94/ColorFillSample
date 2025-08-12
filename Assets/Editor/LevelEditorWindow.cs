@@ -1541,8 +1541,8 @@ public class LevelDataEditorWindow : EditorWindow
 
         Repaint();
 
-        _refreshDelayTime = EditorApplication.timeSinceStartup + 1f; // 1 second later
-        EditorApplication.update += WaitAndRefreshAll;
+        //_refreshDelayTime = EditorApplication.timeSinceStartup + 1f; // 1 second later
+        //EditorApplication.update += WaitAndRefreshAll;
     }
 
 

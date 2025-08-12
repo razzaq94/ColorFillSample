@@ -20354,6 +20354,9 @@ MonoBehaviour:
   material: {fileID: 2100000, guid: 38a5ea855e8c2a949b24cf1254b22dbc, type: 2}
   _direction: 0
   collisionCollider: {fileID: 1251781438}
+  swipeThreshold: 35
+  maxSwipeTime: 0.5
+  useKeyboard: 1
 --- !u!1 &1251783487
 GameObject:
   m_ObjectHideFlags: 0
@@ -23529,7 +23532,6 @@ MonoBehaviour:
   BackgroundColor: {r: 0.32941177, g: 0.31764707, b: 0.31764707, a: 1}
   EnemyCubeColor: {r: 1, g: 0.9450981, b: 0.3921569, a: 1}
   StartLevel: 1
-  CurrentLevel: 0
   firstLevelBuildIndex: 1
   LevelToUse: 1
   FallStraight: 1
@@ -24008,6 +24010,8 @@ MonoBehaviour:
     - row: 3
       col: 2
       type: 0
+    cubeSize: 1
+    sidePaddingCubes: 1
     Columns: 14
     Rows: 24
     gridCellPositions:
@@ -24294,6 +24298,7 @@ MonoBehaviour:
     - {fileID: 8646658354723206513, guid: d9de78c04fe63534b8c6d2d3e17a99cb, type: 3}
   loosed: 0
   reviveUsed: 0
+  hasTriggeredLose: 0
   playerParticlePrefab: {fileID: 1350945476068147629, guid: 76a2627f85dd0384ba9bccc3960c663d, type: 3}
 --- !u!4 &1425309783
 Transform:
@@ -28620,7 +28625,7 @@ Camera:
   far clip plane: 600
   field of view: 20
   orthographic: 1
-  orthographic size: 14.04
+  orthographic size: 16.444445
   m_Depth: -1
   m_CullingMask:
     serializedVersion: 2

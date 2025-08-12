@@ -65,43 +65,38 @@ public class Cube : MonoBehaviour
             IsFilled = true;
             return;
         }
+        IsFilled = true;
+
 
         _renderer.material.color = GameManager.Instance.CubeFillColor;
         Illuminate(0.5f);
 
         GridManager.Instance.ChangeValue(transform.position.x, transform.position.z);
         GridManager.Instance._trueCount++;
-
         transform.position = new Vector3(transform.position.x, 0.3f, transform.position.z);
-        kill = true;
         transform.DOMoveY(0.5f, 0.15f);
         transform.DOScale(Vector3.one, 0.1f);
-        Invoke(nameof(ResetKill), 0.15f);
-    }
 
-    void ResetKill()
-    {
-        kill = false;
-        IsFilled = true;
-    }
+        Vector3 origin = transform.position + Vector3.up * 3f;
+        Ray ray = new Ray(origin, Vector3.down);
+        Debug.DrawRay(origin, Vector3.down * 6f, Color.red, 1f);
 
-    bool kill = false;
-
-    private void OnTriggerStay(Collider other)
-    {
-        if (kill && !IsFilled)
+        if (Physics.Raycast(ray, out var hit, 6f, ~0, QueryTriggerInteraction.Ignore))
         {
-            if (other.CompareTag("Enemy"))
+            if (hit.collider.CompareTag("Enemy"))
             {
-                var renderer = other.GetComponent<Renderer>();
+                Debug.Log($"Hit enemy below: {hit.collider.name} at {hit.point}");
+                var renderer = hit.collider.GetComponent<Renderer>();
                 AudioManager.instance?.PlaySFXSound(2);
                 if (renderer)
-                    GameManager.Instance.SpawnDeathParticles(other.gameObject, renderer.material.color);
-                Destroy(other.gameObject);
+                    GameManager.Instance.SpawnDeathParticles(hit.collider.gameObject, renderer.material.color);
+                Destroy(hit.collider.gameObject);
+
             }
         }
     }
-    
+
+
     public void SetTiling(int gridCols, int gridRows)
     {
         Renderer r = GetComponent<Renderer>();

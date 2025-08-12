@@ -2233,7 +2233,7 @@ MonoBehaviour:
   m_PrefabInstance: {fileID: 0}
   m_PrefabAsset: {fileID: 0}
   m_GameObject: {fileID: 1425309781}
-  m_Enabled: 1
+  m_Enabled: 0
   m_EditorHideFlags: 0
   m_Script: {fileID: 11500000, guid: 39f3f8aab6589cb47a2be044d92e84a4, type: 3}
   m_Name: 
@@ -2252,7 +2252,6 @@ MonoBehaviour:
   BackgroundColor: {r: 1, g: 1, b: 1, a: 1}
   EnemyCubeColor: {r: 1, g: 0, b: 0, a: 1}
   StartLevel: 1
-  CurrentLevel: 0
   firstLevelBuildIndex: 1
   LevelToUse: 1
   FallStraight: 1
@@ -2714,6 +2713,7 @@ MonoBehaviour:
   TotalDiamonds: 0
   CurrentLives: 3
   adCount: 1
+  CurrentLevel: 0
 --- !u!4 &1567790139
 Transform:
   m_ObjectHideFlags: 0

@@ -79,7 +79,7 @@ public class CubeEater : MonoBehaviour
             bool blocked = false;
             foreach (var hit in hits)
             {
-                if (hit.CompareTag("Boundary") || hit.CompareTag("Obstacle") || hit.CompareTag("Enemy") || hit.CompareTag("EnemyGroup"))
+                if (hit.CompareTag("Boundary") || hit.CompareTag("Obstacle") || hit.CompareTag("Enemy") || hit.CompareTag("EnemyGroup") || hit.CompareTag("Diamond"))
                 {
                     currentDir = PickRandomDirection(excludeOpposite: true);
                     blocked = true;

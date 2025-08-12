@@ -23,7 +23,6 @@ public class PausePanel : MonoBehaviour
 
             instance = obj.GetComponent<PausePanel>();
         }
-
         return instance;
     }
     public void ResumeGame()

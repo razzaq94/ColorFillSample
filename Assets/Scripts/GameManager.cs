@@ -37,7 +37,6 @@ public class GameManager : MonoBehaviour
     public int firstLevelBuildIndex = 1;
     public int TotalLevels => SceneManager.sceneCountInBuildSettings - firstLevelBuildIndex;
     public int LevelToUse = 1;
-    public int GetCurrentLevel => GameHandler.Instance.CurrentLevel;
 
     [Header("Fall Speed")]
     [Tooltip("If false will spawn from mid camera position")]
@@ -67,6 +66,10 @@ public class GameManager : MonoBehaviour
         DOTween.Init();
         FillEnemyVariants();
         SetCamera();
+        if (SceneManager.GetActiveScene().name != "_MainMenuScene")
+        {
+            GameHandler.Instance.CurrentLevel = SceneManager.GetActiveScene().buildIndex;
+        }
     }
 
     private void Start()

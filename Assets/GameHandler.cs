@@ -1,4 +1,5 @@
 using UnityEngine;
+using UnityEngine.SceneManagement;
 
 public class GameHandler : MonoBehaviour
 {
@@ -9,7 +10,7 @@ public class GameHandler : MonoBehaviour
     public int CurrentLives = 3;
     private const int MaxLives = 3;
     public int adCount = 1;
-    public int CurrentLevel = 1;
+    public int CurrentLevel;
     private void Awake()
     {
         if (Instance == null)
@@ -29,7 +30,7 @@ public class GameHandler : MonoBehaviour
         if (UIManager.Instance != null)
         {
             UIManager.Instance.currentLives = CurrentLives;
-            UIManager.Instance.ResetLives(); 
+            UIManager.Instance.ResetLives();
         }
     }
 

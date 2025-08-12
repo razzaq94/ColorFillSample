@@ -57,8 +57,8 @@ public class UIManager : MonoBehaviour
         }
 
         Fill.fillAmount = 0f;
-        NextLevelText.text = (GameManager.Instance.GetCurrentLevel + 1).ToString();
-        CurrentLevelText.text = GameManager.Instance.GetCurrentLevel.ToString();
+        NextLevelText.text = (GameHandler.Instance.CurrentLevel + 1).ToString();
+        CurrentLevelText.text = GameHandler.Instance.CurrentLevel.ToString();
         ResetLives();
         Invoke(nameof(StartTextDelay), 0.7f);
     }
@@ -83,7 +83,7 @@ public class UIManager : MonoBehaviour
         RandomTextSpawner.SpawnRandomText();
         line.transform.SetParent(GameObject.FindGameObjectWithTag("MainCanvas").transform, false);
         Confetti.transform.SetParent(confettiHolder);
-        NextLevelText.text = (GameManager.Instance.GetCurrentLevel + 1).ToString();
+        NextLevelText.text = (GameHandler.Instance.CurrentLevel + 1).ToString();
         Invoke(nameof(ShowGamWinUI), 1f);
         Destroy(line, 1.6f);
         Destroy(Confetti, 1.6f);

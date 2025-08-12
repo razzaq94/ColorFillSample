@@ -1,5 +1,6 @@
 ﻿
 using System.Collections.Generic;
+using System.Drawing.Printing;
 using System.Linq;
 using UnityEditor;
 using UnityEditor.SceneManagement;
@@ -118,8 +119,7 @@ public class LevelDataEditorWindow : EditorWindow
         EditorApplication.playModeStateChanged += OnPlayModeStateChanged;
         _cubeMapDirty = true;
 
-        _refreshDelayTime = EditorApplication.timeSinceStartup + 1f; // 1 second later
-        EditorApplication.update += WaitAndRefreshAll;
+        
     }
 
     private void WaitAndRefreshAll()
@@ -168,7 +168,10 @@ public class LevelDataEditorWindow : EditorWindow
             if (GUILayout.Button("Refresh"))
             {
                 _gameManager = FindFirstObjectByType<GameManager>();
-                RefreshSpawnableMap();
+                RefreshAll();
+                _refreshDelayTime = EditorApplication.timeSinceStartup + 1f; // 1 second later
+                EditorApplication.update += WaitAndRefreshAll;
+                //RefreshSpawnableMap();
             }
 
             return;
@@ -426,9 +429,9 @@ public class LevelDataEditorWindow : EditorWindow
         // Force a full resync/redraw right now
         RefreshEnemyCubeMap();
         RefreshPreplacedEnemyMap();
-        RefreshSpawnableMap();
         SyncSceneGridAndBackground();
         ApplyEditorColors();
+        RefreshSpawnableMap();
         SetCamera();
         Repaint();
     }
@@ -1540,9 +1543,6 @@ public class LevelDataEditorWindow : EditorWindow
         }
 
         Repaint();
-
-        //_refreshDelayTime = EditorApplication.timeSinceStartup + 1f; // 1 second later
-        //EditorApplication.update += WaitAndRefreshAll;
     }
 
 
@@ -1649,8 +1649,6 @@ internal class MoveDistancePopup : EditorWindow
             Close();
         EditorGUILayout.EndHorizontal();
     }
-    
-
 }
 
 
@@ -1672,6 +1670,7 @@ internal class SpawnableCellPopup : EditorWindow
 
     void OnGUI()
     {
+
         EditorGUILayout.LabelField(
             $"Cell ({cfg.row},{cfg.col}) → {cfg.enemyType}",
             EditorStyles.boldLabel

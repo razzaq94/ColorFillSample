@@ -44,8 +44,7 @@ public class Cube : MonoBehaviour
         gameObject.SetActive(true);
         var renderer = GetComponent<Renderer>();
         ApplyTrailColorFromLevel();
-        //if (renderer)
-        //    renderer.material.color = GameManager.Instance.CubeFillColor;
+        
 
         IsFilled = false; // always start clean
 
@@ -75,8 +74,32 @@ public class Cube : MonoBehaviour
         GridManager.Instance._trueCount++;
 
         transform.position = new Vector3(transform.position.x, 0.3f, transform.position.z);
+        kill = true;
         transform.DOMoveY(0.5f, 0.15f);
         transform.DOScale(Vector3.one, 0.1f);
+        Invoke(nameof(ResetKill), 0.2f);
+        //
+    }
+
+    void ResetKill()
+    {
+               kill = false;
+    }
+
+    bool kill = false;
+    private void OnTriggerEnter(Collider other)
+    {
+        if (kill)
+        {
+            if (other.CompareTag("Enemy"))
+            {
+                var renderer = other.GetComponent<Renderer>();
+                AudioManager.instance?.PlaySFXSound(2);
+                if (renderer)
+                    GameManager.Instance.SpawnDeathParticles(other.gameObject, renderer.material.color);
+                Destroy(other.gameObject);
+            }
+        }
     }
     public void SetTiling(int gridCols, int gridRows)
     {

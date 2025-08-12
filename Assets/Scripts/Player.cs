@@ -180,38 +180,22 @@ public class Player : MonoBehaviour
                 GridManager.Instance.PerformFloodFill();
             }
         }
-        if (collision.gameObject.TryGetComponent<EnemyCube>(out EnemyCube enemyCube))
-        {
-            //IsMoving = false;
-            //transform.position = RoundPos();
-            //Haptics.Generate(HapticTypes.HeavyImpact);
-            //GameManager.Instance.SpawnDeathParticles(transform.gameObject, material.color);
-            //GameManager.Instance.CameraShake(0.35f, 0.15f);
-            //gameObject.SetActive(false);
-            //collisionCollider.enabled = false;
-            //this.enabled = false; // Disable player movement script
-            //ClearUnfilledTrail();
-            //enemyCube.collided = true;
-            //AudioManager.instance?.PlaySFXSound(3);
-            //Invoke(nameof(enemyCube.HandleLevelLoseCrash), 0.3f);
-        }
     }
     
-    private void HandleLevelLose()
-    {
-        GameManager.Instance.LevelLose();
-    }
+   
     private void OnTriggerEnter(Collider other)
     {
-       
-
         if (other.TryGetComponent<Cube>(out Cube cube))
         {
             if (cube.IsFilled)
             {
+
                 FillCubes();
                 if (_spawnCubes)
+                {
+                    print("lllll");
                     GridManager.Instance.PerformFloodFill();
+                }
             }
             else
             {
@@ -223,12 +207,7 @@ public class Player : MonoBehaviour
                 }
             }
         }
-        //else if (other.TryGetComponent<EnemyCube>(out EnemyCube enemyCube))
-        //{
-        //    IsMoving = false;
-        //    transform.position = RoundPos();
-        //    GameManager.Instance.LevelLose();
-        //}
+        
     }
 
     private void OnTriggerStay(Collider other)
@@ -250,10 +229,13 @@ public class Player : MonoBehaviour
                 cube.CanHarm = true;
         }
     }
+
+
+
+
     [SerializeField] private int swipeThreshold = 35; 
     [SerializeField] private float maxSwipeTime = 0.5f; 
     [SerializeField] private bool useKeyboard = true;
-
 
     private bool _swipeDetected;
 

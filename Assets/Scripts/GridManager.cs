@@ -283,10 +283,11 @@ public class GridManager : MonoBehaviour
     }
     public void FillHoles()
     {
+        print("clear0");
+
         _areas = new Dictionary<int, List<Vector2Int>>();
         int[,] regionMap = new int[_gridColumns, _gridRows];
 
-        // Step 1: Translate _grid to 0 (empty) and 1 (filled/obstacle)
         for (int x = 0; x < _gridColumns; x++)
         {
             for (int y = 0; y < _gridRows; y++)
@@ -295,8 +296,7 @@ public class GridManager : MonoBehaviour
             }
         }
 
-        // Step 2: Find regions (connected 0s)
-        _regionCounter = 2; // Start at 2 to differentiate from 0 and 1
+        _regionCounter = 2; 
         for (int x = 0; x < _gridColumns; x++)
         {
             for (int y = 0; y < _gridRows; y++)
@@ -310,27 +310,37 @@ public class GridManager : MonoBehaviour
             }
         }
 
-        // Step 3: Find largest area (we'll consider this the "outside")
+
         var largestArea = _areas.OrderByDescending(a => a.Value.Count).FirstOrDefault();
 
-        // Step 4: Fill all other enclosed regions
+        print("clear1");
         foreach (var region in _areas)
         {
+            print("clear1.5");
+
             if (region.Key == largestArea.Key)
                 continue;
 
+            print("clear2");
+
             foreach (var pos in region.Value)
             {
+                print("clear3");
+
                 if (!_grid[pos.x, pos.y])
                 {
-                    // ✅ Kill enemies BEFORE filling
                     Vector3 worldPos = GridToWorld(pos) + Vector3.up * 0.1f;
                     var hits = Physics.OverlapBox(worldPos, new Vector3(0.4f, 0.5f, 0.4f), Quaternion.identity);
+                    print("clear4");
 
                     foreach (var hit in hits)
                     {
+                        print("clear5");
+
                         if (hit.CompareTag("Enemy"))
                         {
+                            print("clear6");
+
                             var renderer = hit.GetComponent<Renderer>();
                             AudioManager.instance?.PlaySFXSound(2);
                             if (renderer)
@@ -349,15 +359,14 @@ public class GridManager : MonoBehaviour
 
                     }
 
-                    // ✅ Fill the cube
                     if (GetCubeAtPosition(pos) == null)
                     {
                         Cube cube = CubeGrid.Instance.GetCube();
                         cube.Initalize(GridToWorld(pos), true);
-                        cube.FillCube(); // grid mark + visuals
+                        cube.FillCube(); 
                     }
 
-                    _grid[pos.x, pos.y] = true; // update logical grid
+                    _grid[pos.x, pos.y] = true; 
                 }
             }
         }

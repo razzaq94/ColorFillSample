@@ -72,22 +72,35 @@ public class UIManager : MonoBehaviour
 
     //public void StartGame() => StartScreen.DOFade(0.0f, 0.5f).OnComplete(() => StartScreen.gameObject.SetActive(false));
 
-    public void LevelComplete()
+    public void LevelComplete(string msg)
     {
         if (Time.timeScale == 0)
             Time.timeScale = 1.0f;
         AudioManager.instance?.PlaySFXSound(0);
         deleteenemies();
-        GameObject line = Instantiate(LinePrefab, GameObject.FindGameObjectWithTag("MainCanvas").transform.position, LinePrefab.transform.rotation);
-        GameObject Confetti = Instantiate(confetti, confettiHolder.position, Quaternion.identity);
-        RandomTextSpawner.SpawnRandomText();
-        line.transform.SetParent(GameObject.FindGameObjectWithTag("MainCanvas").transform, false);
-        Confetti.transform.SetParent(confettiHolder);
+
+        if (msg.Contains("Congrat"))
+        {
+            GameObject line = Instantiate(LinePrefab, GameObject.FindGameObjectWithTag("MainCanvas").transform.position, LinePrefab.transform.rotation);
+            GameObject Confetti = Instantiate(confetti, confettiHolder.position, Quaternion.identity);
+            RandomTextSpawner.SpawnRandomText();
+            line.transform.SetParent(GameObject.FindGameObjectWithTag("MainCanvas").transform, false);
+            Confetti.transform.SetParent(confettiHolder);
+            Destroy(line, 1.6f);
+            Destroy(Confetti, 1.6f);
+        }
         NextLevelText.text = (GameHandler.Instance.CurrentLevel + 1).ToString();
-        Invoke(nameof(ShowGamWinUI), 1f);
-        Destroy(line, 1.6f);
-        Destroy(Confetti, 1.6f);
+        StartCoroutine(WaitNPerform(1, () =>
+        {
+            ShowGamWinUI(msg);
+        }));
     }
+    IEnumerator WaitNPerform(float time, System.Action act)
+    {
+        yield return new WaitForSeconds(time);
+        act?.Invoke();
+    }
+
     public void deleteenemies()
     {
         var enemyBehaviors = FindObjectsByType<EnemyBehaviors>(FindObjectsSortMode.None);
@@ -158,9 +171,9 @@ public class UIManager : MonoBehaviour
         GameLoseScreen.ShowUI();
         GameLoseScreen.instance.ShowCrashOptions();
     }
-    private void ShowGamWinUI()
+    private void ShowGamWinUI(string msg)
     {
-        GameWinScreen.ShowUI();
+        GameWinScreen.ShowUI(msg);
     }
 
 

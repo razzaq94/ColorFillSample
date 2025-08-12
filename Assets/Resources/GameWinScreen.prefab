@@ -955,7 +955,9 @@ MonoBehaviour:
   m_OnCullStateChanged:
     m_PersistentCalls:
       m_Calls: []
-  m_text: Conratulations                            You have done a great job !
+  m_text: 'Conratulations
+
+    You have done a great job !'
   m_isRightToLeft: 0
   m_fontAsset: {fileID: 11400000, guid: 271670df27c06534aa93146859191070, type: 2}
   m_sharedMaterial: {fileID: 336712022586095441, guid: 271670df27c06534aa93146859191070, type: 2}
@@ -1248,3 +1250,4 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: e408ca769a0440b4cacf2511f6d016f6, type: 3}
   m_Name: 
   m_EditorClassIdentifier: 
+  completText: {fileID: 6485722551391837512}

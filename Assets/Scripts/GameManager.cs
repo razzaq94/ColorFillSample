@@ -254,14 +254,14 @@ public class GameManager : MonoBehaviour
 
 
 
-    public void LevelComplete()
+    public void LevelComplete(string msg)
     {
         //if (isGameOver) return; 
 
         Player.enabled = _gameRunning = false;
         GameHandler.Instance.CurrentLevel++;
         LevelToUse++;
-        UIManager.Instance.LevelComplete();
+        UIManager.Instance.LevelComplete(msg);
         MarkLevelCompleted(SceneManager.GetActiveScene().buildIndex);
     }
     public void ResumeAfterAd()

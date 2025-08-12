@@ -86,7 +86,8 @@ public class Cube : MonoBehaviour
     }
 
     bool kill = false;
-    private void OnTriggerEnter(Collider other)
+
+    private void OnTriggerStay(Collider other)
     {
         if (kill && !IsFilled)
         {
@@ -100,6 +101,7 @@ public class Cube : MonoBehaviour
             }
         }
     }
+    
     public void SetTiling(int gridCols, int gridRows)
     {
         Renderer r = GetComponent<Renderer>();

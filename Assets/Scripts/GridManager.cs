@@ -136,9 +136,9 @@ public class GridManager : MonoBehaviour
     private IEnumerator DelayedLevelWin()
     {
         yield return new WaitForEndOfFrame(); // let cube visuals render
-        yield return new WaitForSeconds(0.1f); // optional buffer
+        yield return new WaitForSeconds(0.05f); // optional buffer
         ForceFillEveryUnfilledCell();
-        GameManager.Instance.LevelComplete();
+        GameManager.Instance.LevelComplete("Conratulations\nYou have done a great job !");
     }
 
 

@@ -26,7 +26,7 @@ public class GameLoseScreen : MonoBehaviour
         }
         if (!AdManager_Admob.instance.IsRewardedAdLoaded())
         {
-            reviveBTN.gameObject.SetActive(false);
+            //reviveBTN.gameObject.SetActive(false);
         }
         countdownCoroutine = StartCoroutine(CountdownRoutine());
 
@@ -136,7 +136,7 @@ public class GameLoseScreen : MonoBehaviour
         }
         AdManager_Admob.instance.ShowRewardedVideoAd(() =>
         {
-            GameManager.Instance.LevelComplete();
+            GameManager.Instance.LevelComplete("Level Skipped !\nYou can play next level");
         });
     }
     public void OnClick_Revive()
@@ -167,7 +167,7 @@ public class GameLoseScreen : MonoBehaviour
         }
         AdManager_Admob.instance.ShowRewardedVideoAd(() =>
         {
-            GameManager.Instance.LevelComplete();
+            GameManager.Instance.LevelComplete("Level Skipped !\nYou can play next level");
         });
     }
 

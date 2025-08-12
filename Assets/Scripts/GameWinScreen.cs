@@ -1,16 +1,17 @@
 using UnityEngine;
 using UnityEngine.SceneManagement;
 using DG.Tweening;
+using TMPro;
 
 public class GameWinScreen : MonoBehaviour
 {
     public static GameWinScreen instance;
-
+    public TextMeshProUGUI completText;
     private void Awake()
     {
         instance = this;
     }
-    public static GameWinScreen ShowUI()
+    public static GameWinScreen ShowUI(string msg)
     {
         if (instance == null)
         {
@@ -19,6 +20,7 @@ public class GameWinScreen : MonoBehaviour
             obj.gameObject.transform.SetParent(GameObject.FindGameObjectWithTag("MainCanvas").transform, false);
 
             instance = obj.GetComponent<GameWinScreen>();
+            instance.completText.text = msg;
         }
 
         return instance;

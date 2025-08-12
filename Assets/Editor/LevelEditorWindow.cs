@@ -1445,15 +1445,12 @@ public class LevelDataEditorWindow : EditorWindow
 
     private void RefreshSpawnableMap()
     {
-        string currentScene = SceneManager.GetActiveScene().name;
-
         _cellSpawnMap = _level.SpwanablesConfigurations
             .Where(cfg => cfg != null)
             .ToDictionary(
                 cfg => new Vector2Int(cfg.row, cfg.col),
                 cfg => cfg
             );
-
         //Debug.Log($"🟡 Spawnable map refreshed with {_cellSpawnMap.Count} entries.");
     }
 

@@ -22,7 +22,7 @@ public class GameLoseScreen : MonoBehaviour
         Time.timeScale = 0;
         if (GameManager.Instance.reviveUsed)
         {
-            reviveBTN.interactable = false;
+            //reviveBTN.interactable = false;
         }
         if (!AdManager_Admob.instance.IsRewardedAdLoaded())
         {
@@ -59,7 +59,6 @@ public class GameLoseScreen : MonoBehaviour
             GameManager.Instance.Replay();
         }
 
-        Destroy(gameObject);
     }
 
     public void ShowCrashOptions()
@@ -82,7 +81,7 @@ public class GameLoseScreen : MonoBehaviour
         }
         AudioManager.instance?.PlayUISound(0);
 
-        SceneManager.LoadScene(SceneManager.GetActiveScene().buildIndex);
+        SceneManager.LoadScene(SceneManager.GetActiveScene().name);
         if (Time.timeScale == 0)
             Time.timeScale = 1.0f;
 

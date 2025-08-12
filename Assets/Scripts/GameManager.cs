@@ -6,6 +6,7 @@ using System.Collections;
 using Sirenix.OdinInspector;
 using UnityEngine.SceneManagement;
 using UnityEngine.UI;
+using UnityEngine.Rendering;
 [HideMonoScript]
 public class GameManager : MonoBehaviour
 {
@@ -63,6 +64,8 @@ public class GameManager : MonoBehaviour
     private void Awake()
     {
         Instance = this;
+        Time.timeScale = 1.0f;
+
         DOTween.Init();
         FillEnemyVariants();
         SetCamera();
@@ -530,20 +533,30 @@ public class GameManager : MonoBehaviour
 
     public void Replay()
     {
-        StartCoroutine(RestartWithDelay());
+        print("a");
+        StartCoroutine(WaitNPerform(0.2f,()=>
+        {
+            print("b");
+
+            SceneManager.LoadScene(SceneManager.GetActiveScene().name);
+        }));
     }
 
-    private IEnumerator RestartWithDelay()
+    //private IEnumerator RestartWithDelay()
+    //{
+    //    GameLoseScreen.instance?.ClosePanael();
+    //    if (Time.timeScale == 0)
+    //        Time.timeScale = 1.0f;
+    //    SceneManager.LoadScene(SceneManager.GetActiveScene().name);
+    //    if (Time.timeScale == 0)
+    //        Time.timeScale = 1.0f;
+    //}
+
+    IEnumerator WaitNPerform(float time,System.Action act)
     {
-
-        GameLoseScreen.instance?.ClosePanael();
-        yield return new WaitForSeconds(0.2f);
-        SceneManager.LoadScene(SceneManager.GetActiveScene().buildIndex);
-        if (Time.timeScale == 0)
-            Time.timeScale = 1.0f;
+        yield return new WaitForSeconds(time);
+        act?.Invoke();
     }
-
-
 
     public bool IsLevelCompleted(int buildIndex)
     {

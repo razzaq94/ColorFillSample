@@ -77,7 +77,7 @@ public class Cube : MonoBehaviour
         kill = true;
         transform.DOMoveY(0.5f, 0.15f);
         transform.DOScale(Vector3.one, 0.1f);
-        Invoke(nameof(ResetKill), 0.2f);
+        Invoke(nameof(ResetKill), 0.1f);
         //
     }
 
@@ -89,7 +89,7 @@ public class Cube : MonoBehaviour
     bool kill = false;
     private void OnTriggerEnter(Collider other)
     {
-        if (kill)
+        if (kill && !IsFilled)
         {
             if (other.CompareTag("Enemy"))
             {

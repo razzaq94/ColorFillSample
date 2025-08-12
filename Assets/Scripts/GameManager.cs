@@ -534,7 +534,7 @@ public class GameManager : MonoBehaviour
     public void Replay()
     {
         print("a");
-        Time.timeScale = 1.0f;
+        //Time.timeScale = 1.0f;
         StartCoroutine(WaitNPerform(0.2f,()=>
         {
             print("b");
@@ -649,6 +649,45 @@ public class GameManager : MonoBehaviour
         }
 
     }
+    private float slowdownFactor = 0.5f;
+
+
+
+    public void ResetSlowDown()
+    {
+        StartCoroutine(ResetSlowDownEffect(10f));
+    }
+    public IEnumerator ResetSlowDownEffect(float delay)
+    {
+        yield return new WaitForSecondsRealtime(delay);
+
+        var enemies = FindObjectsOfType<EnemyBehaviors>();
+        var cubeEaters = FindObjectsOfType<CubeEater>();
+        var rigidbodies = FindObjectsOfType<Rigidbody>();
+
+        foreach (var enemy in enemies)
+        {
+            enemy.speed /= slowdownFactor;
+        }
+
+        foreach (var cubeEater in cubeEaters)
+        {
+            cubeEater.speed /= slowdownFactor;
+        }
+
+        foreach (var rb in rigidbodies)
+        {
+            if (rb.CompareTag("Player"))
+            {
+                continue;
+            }
+
+            rb.linearVelocity /= slowdownFactor;
+        }
+    }
+
+
+
     private static readonly Dictionary<int, Vector3> ColumnToCamOrtho = new()
 {
     { 8,  new Vector3(7f, 10f, -1.5f) },

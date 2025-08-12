@@ -37,38 +37,11 @@ public class SlowDown : MonoBehaviour
                 rb.linearVelocity *= slowdownFactor;
             }
 
-            StartCoroutine(ResetSlowDownEffect(15f));
+            GameManager.Instance.ResetSlowDown();
 
             Destroy(gameObject);
         }
     }
 
-    private IEnumerator ResetSlowDownEffect(float delay)
-    {
-        yield return new WaitForSecondsRealtime(delay);
-
-        var enemies = FindObjectsOfType<EnemyBehaviors>();
-        var cubeEaters = FindObjectsOfType<CubeEater>();
-        var rigidbodies = FindObjectsOfType<Rigidbody>();
-
-        foreach (var enemy in enemies)
-        {
-            enemy.speed /= slowdownFactor; 
-        }
-
-        foreach (var cubeEater in cubeEaters)
-        {
-            cubeEater.speed /= slowdownFactor; 
-        }
-
-        foreach (var rb in rigidbodies)
-        {
-            if (rb.CompareTag("Player"))
-            {
-                continue; 
-            }
-
-            rb.linearVelocity /= slowdownFactor;  
-        }
-    }
+    
 }

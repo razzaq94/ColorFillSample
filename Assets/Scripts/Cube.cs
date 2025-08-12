@@ -1,6 +1,7 @@
 ﻿using UnityEngine;
 using DG.Tweening;
 using Sirenix.OdinInspector;
+using System.Collections.Generic;
 
 [HideMonoScript]
 public class Cube : MonoBehaviour
@@ -11,13 +12,15 @@ public class Cube : MonoBehaviour
     public float stuckTime = 0f;
     private float stuckCheckInterval = 0.5f;
     public Renderer _renderer;
+
+    public List<Collider> colliders = new List<Collider>();
     private void Awake()
     {
         _renderer = GetComponent<Renderer>();
     }
     private void Update()
     {
-        if (IsFilled)
+        if (IsFilled && transform.position.y != 0.5f)
         {
             transform.DOMoveY(0.5f, 0.15f);
         }
@@ -66,7 +69,7 @@ public class Cube : MonoBehaviour
             return;
         }
         IsFilled = true;
-
+        CanHarm = false;
 
         _renderer.material.color = GameManager.Instance.CubeFillColor;
         Illuminate(0.5f);
@@ -77,13 +80,14 @@ public class Cube : MonoBehaviour
         transform.DOMoveY(0.5f, 0.15f);
         transform.DOScale(Vector3.one, 0.1f);
 
+       
         Vector3 origin = transform.position + Vector3.up * 3f;
         Ray ray = new Ray(origin, Vector3.down);
         Debug.DrawRay(origin, Vector3.down * 6f, Color.red, 1f);
 
         if (Physics.Raycast(ray, out var hit, 6f, ~0, QueryTriggerInteraction.Ignore))
         {
-            if (hit.collider.CompareTag("Enemy"))
+            if (hit.collider.CompareTag("Enemy") || hit.collider.TryGetComponent<EnemyBehaviors>(out EnemyBehaviors cube))
             {
                 Debug.Log($"Hit enemy below: {hit.collider.name} at {hit.point}");
                 var renderer = hit.collider.GetComponent<Renderer>();
@@ -92,6 +96,13 @@ public class Cube : MonoBehaviour
                     GameManager.Instance.SpawnDeathParticles(hit.collider.gameObject, renderer.material.color);
                 Destroy(hit.collider.gameObject);
 
+            }
+        }
+        for (int i = 0;i<colliders.Count; i++)
+        {
+            if (colliders[i] != null)
+            {
+                colliders[i].enabled = true; // Enable the collider
             }
         }
     }
@@ -111,7 +122,6 @@ public class Cube : MonoBehaviour
    
     public void Illuminate(float duration = 0.5f)
     {
-        print("flash");
         if (!TryGetComponent<Renderer>(out Renderer renderer)) return;
 
         Material mat = renderer.material;

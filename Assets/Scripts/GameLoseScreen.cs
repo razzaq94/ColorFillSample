@@ -82,8 +82,8 @@ public class GameLoseScreen : MonoBehaviour
         AudioManager.instance?.PlayUISound(0);
 
         SceneManager.LoadScene(SceneManager.GetActiveScene().name);
-        if (Time.timeScale == 0)
-            Time.timeScale = 1.0f;
+        //if (Time.timeScale == 0)
+        //    Time.timeScale = 1.0f;
 
     }
     public void OnClick_AddExtraMinute()
@@ -115,7 +115,8 @@ public class GameLoseScreen : MonoBehaviour
     {
         if (countdownCoroutine != null)
             StopCoroutine(countdownCoroutine);
-
+        if (Time.timeScale == 0)
+            Time.timeScale = 1f;
         if (GameHandler.Instance.adCount == 0)
         {
             AdManager_Admob.instance.ShowInterstitialAd();
@@ -124,8 +125,7 @@ public class GameLoseScreen : MonoBehaviour
 
         GameManager.Instance.Replay();
 
-        if (Time.timeScale == 0)
-            Time.timeScale = 1f;
+        
     }
 
     public void OnClick_SkipLevel()

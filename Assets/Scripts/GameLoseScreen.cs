@@ -173,6 +173,12 @@ public class GameLoseScreen : MonoBehaviour
 
     public void ClosePanael()
     {
+        Time.timeScale = 1;
         Destroy(gameObject);
+    }
+
+    private void OnDestroy()
+    {
+        Time.timeScale = 1;
     }
 }

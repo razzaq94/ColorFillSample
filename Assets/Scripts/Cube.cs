@@ -66,7 +66,6 @@ public class Cube : MonoBehaviour
             return;
         }
 
-        IsFilled = true;
         _renderer.material.color = GameManager.Instance.CubeFillColor;
         Illuminate(0.5f);
 
@@ -77,13 +76,13 @@ public class Cube : MonoBehaviour
         kill = true;
         transform.DOMoveY(0.5f, 0.15f);
         transform.DOScale(Vector3.one, 0.1f);
-        Invoke(nameof(ResetKill), 0.1f);
-        //
+        Invoke(nameof(ResetKill), 0.15f);
     }
 
     void ResetKill()
     {
-               kill = false;
+        kill = false;
+        IsFilled = true;
     }
 
     bool kill = false;

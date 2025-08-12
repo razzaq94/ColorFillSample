@@ -534,6 +534,7 @@ public class GameManager : MonoBehaviour
     public void Replay()
     {
         print("a");
+        Time.timeScale = 1.0f;
         StartCoroutine(WaitNPerform(0.2f,()=>
         {
             print("b");

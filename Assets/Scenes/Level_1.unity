@@ -13192,7 +13192,6 @@ MonoBehaviour:
   BackgroundColor: {r: 0.32941177, g: 0.31764707, b: 0.31764707, a: 1}
   EnemyCubeColor: {r: 1, g: 0.5921569, b: 0.80392164, a: 1}
   StartLevel: 1
-  CurrentLevel: 0
   firstLevelBuildIndex: 1
   LevelToUse: 1
   FallStraight: 1
@@ -16540,7 +16539,7 @@ Camera:
   far clip plane: 600
   field of view: 20
   orthographic: 1
-  orthographic size: 15.794393
+  orthographic size: 16.444445
   m_Depth: -1
   m_CullingMask:
     serializedVersion: 2

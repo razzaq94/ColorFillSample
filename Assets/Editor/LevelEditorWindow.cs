@@ -39,7 +39,7 @@ public class LevelDataEditorWindow : EditorWindow
         wnd.titleContent = new GUIContent("Level Editor");
         wnd.Show();
     }
-
+    private double _refreshDelayTime = 1.5f;
     private void OnEnable()
     {
         _gameManager = Object.FindFirstObjectByType<GameManager>();
@@ -117,6 +117,18 @@ public class LevelDataEditorWindow : EditorWindow
 
         EditorApplication.playModeStateChanged += OnPlayModeStateChanged;
         _cubeMapDirty = true;
+
+        _refreshDelayTime = EditorApplication.timeSinceStartup + 1f; // 1 second later
+        EditorApplication.update += WaitAndRefreshAll;
+    }
+
+    private void WaitAndRefreshAll()
+    {
+        if (EditorApplication.timeSinceStartup >= _refreshDelayTime)
+        {
+            EditorApplication.update -= WaitAndRefreshAll;
+            RefreshAll();
+        }
     }
     private void EnsureSpawnableSceneNames()
     {
@@ -409,11 +421,32 @@ public class LevelDataEditorWindow : EditorWindow
     // Tab 1: Grid (Columns, Rows, simple grid info)
     // ─────────────────────────────────────────────────────────
 
-
+    void RefreshAll()
+    {
+        // Force a full resync/redraw right now
+        RefreshEnemyCubeMap();
+        RefreshPreplacedEnemyMap();
+        RefreshSpawnableMap();
+        SyncSceneGridAndBackground();
+        ApplyEditorColors();
+        SetCamera();
+        Repaint();
+    }
     private void DrawGridTab()
     {
         EditorGUILayout.LabelField("Grid Layout", EditorStyles.boldLabel);
         EditorGUILayout.BeginVertical("box");
+
+        // ── Quick Actions ────────────────────────────────────────────────
+        EditorGUILayout.BeginHorizontal();
+        if (GUILayout.Button("Refresh", GUILayout.Width(90)))
+        {
+            RefreshAll();
+        }
+        GUILayout.FlexibleSpace();
+        EditorGUILayout.EndHorizontal();
+        EditorGUILayout.Space();
+        // ─────────────────────────────────────────────────────────────────
 
         DrawGridSizeControls();
         DrawFillClearButtons();
@@ -421,9 +454,10 @@ public class LevelDataEditorWindow : EditorWindow
         DrawSelectionTypePopup();
         DrawGridCells();
         SetCamera();
-            //ApplyEditorColors();
-            EditorGUILayout.EndVertical();
+
+        EditorGUILayout.EndVertical();
     }
+
 
     public void SetCamera()
     {
@@ -1506,6 +1540,9 @@ public class LevelDataEditorWindow : EditorWindow
         }
 
         Repaint();
+
+        _refreshDelayTime = EditorApplication.timeSinceStartup + 1f; // 1 second later
+        EditorApplication.update += WaitAndRefreshAll;
     }
 
 

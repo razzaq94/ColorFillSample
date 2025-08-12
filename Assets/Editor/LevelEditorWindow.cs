@@ -46,6 +46,13 @@ public class LevelDataEditorWindow : EditorWindow
         if (_gameManager != null)
             _level = _gameManager.Level;
 
+        if (_level != null)
+        {
+            if (_level.SpwanablesConfigurations == null)
+                _level.SpwanablesConfigurations = new List<SpawnableConfig>();
+
+            EnsureSpawnableSceneNames();
+        }
 
         RefreshSpawnableMap();
 
@@ -110,6 +117,34 @@ public class LevelDataEditorWindow : EditorWindow
 
         EditorApplication.playModeStateChanged += OnPlayModeStateChanged;
         _cubeMapDirty = true;
+    }
+    private void EnsureSpawnableSceneNames()
+    {
+        if (_level.SpwanablesConfigurations == null)
+            _level.SpwanablesConfigurations = new List<SpawnableConfig>();
+
+        string active = SceneManager.GetActiveScene().name;
+        bool changed = false;
+
+        foreach (var cfg in _level.SpwanablesConfigurations)
+        {
+            if (cfg == null) continue;
+
+            // Backward-compat: if missing, stamp with current scene
+            if (string.IsNullOrEmpty(cfg.sceneName))
+            {
+                cfg.sceneName = active;
+                changed = true;
+            }
+        }
+
+#if UNITY_EDITOR
+        if (changed)
+        {
+            EditorUtility.SetDirty(_gameManager);
+            EditorSceneManager.MarkSceneDirty(_gameManager.gameObject.scene);
+        }
+#endif
     }
 
 
@@ -685,7 +720,11 @@ public class LevelDataEditorWindow : EditorWindow
 
         if (_cellSpawnMap != null && _cellSpawnMap.TryGetValue(key, out var cfg))
         {
-            if (cfg.sceneName == UnityEngine.SceneManagement.SceneManager.GetActiveScene().name)
+            bool drawForThisScene =
+                string.IsNullOrEmpty(cfg.sceneName) ||
+                cfg.sceneName == SceneManager.GetActiveScene().name;
+
+            if (drawForThisScene)
             {
                 var overlay = cfg.enemyType == SpawnablesType.SpikeBall
                     ? new Color(1f, 1f, 0f, 0.3f)
@@ -694,7 +733,6 @@ public class LevelDataEditorWindow : EditorWindow
                 EditorGUI.DrawRect(r, overlay);
             }
         }
-
     }
 
     private void DrawMovementArrow(Rect r, Vector2Int key)
@@ -1404,6 +1442,7 @@ public class LevelDataEditorWindow : EditorWindow
         _cubeMapDirty = true;
         RefreshEnemyCubeMap();
         RefreshPreplacedEnemyMap();
+        RefreshSpawnableMap();
     }
 
     private void OnPlayModeStateChanged(PlayModeStateChange state)
@@ -1413,6 +1452,7 @@ public class LevelDataEditorWindow : EditorWindow
             _cubeMapDirty = true;
             RefreshEnemyCubeMap();
             RefreshPreplacedEnemyMap();
+            RefreshSpawnableMap();
         }
     }
 
@@ -1445,14 +1485,29 @@ public class LevelDataEditorWindow : EditorWindow
 
     private void RefreshSpawnableMap()
     {
-        _cellSpawnMap = _level.SpwanablesConfigurations
-            .Where(cfg => cfg != null)
-            .ToDictionary(
-                cfg => new Vector2Int(cfg.row, cfg.col),
-                cfg => cfg
-            );
-        //Debug.Log($"🟡 Spawnable map refreshed with {_cellSpawnMap.Count} entries.");
+        _cellSpawnMap = new Dictionary<Vector2Int, SpawnableConfig>();
+
+        if (_level?.SpwanablesConfigurations == null) return;
+
+        string active = SceneManager.GetActiveScene().name;
+
+        foreach (var cfg in _level.SpwanablesConfigurations)
+        {
+            if (cfg == null) continue;
+
+            // Only draw configs for this scene. (Empty or null are treated as this scene for safety.)
+            if (!string.IsNullOrEmpty(cfg.sceneName) && cfg.sceneName != active)
+                continue;
+
+            var key = new Vector2Int(cfg.row, cfg.col);
+
+            // If multiples exist for same cell, prefer the last one in the list
+            _cellSpawnMap[key] = cfg;
+        }
+
+        Repaint();
     }
+
 
     private void ApplyEditorColors()
     {

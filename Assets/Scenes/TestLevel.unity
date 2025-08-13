@@ -7881,6 +7881,7 @@ MonoBehaviour:
   speed: 1
   rb: {fileID: 0}
   defaultSpeed: 2
+  defaultRenderer: {fileID: 0}
   bounceAngle: 4
   minInitial: 0.3
   lastPosition: {x: 0, y: 0, z: 0}
@@ -13875,7 +13876,7 @@ MonoBehaviour:
     - {fileID: 0}
     - {fileID: 0}
     SpwanablesConfigurations:
-    - sceneName: Level_6 1
+    - sceneName: TestLevel
       enemyType: 3
       prefab: {fileID: 5477331046307045709, guid: 22fa9643d76ca01429835df395960400, type: 3}
       progressThreshold: 0.11
@@ -13887,7 +13888,7 @@ MonoBehaviour:
       moveSpeed: 1
       row: 3
       col: 7
-    - sceneName: Level_6 1
+    - sceneName: TestLevel
       enemyType: 5
       prefab: {fileID: 5665365635048418455, guid: e42d5148988d32e41a2eb81aba4dfc1f, type: 3}
       progressThreshold: 0.099999994

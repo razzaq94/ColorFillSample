@@ -98,50 +98,49 @@ public class Cube : MonoBehaviour
 
         float distance = 6f;
         float halfSweep = distance * 0.5f;
-        Vector3 origin = b.center - Vector3.up * halfSweep;
         Vector3 dir = Vector3.up;
+        Vector3 origin = b.center - dir * halfSweep;
 
-        Vector3 halfExtents = new Vector3(b.extents.x * 0.98f, 0.05f, b.extents.z * 0.98f);
+        Vector3 halfExtentsThin = new Vector3(b.extents.x * 0.98f, 0.05f, b.extents.z * 0.98f);
+        Quaternion rot = Quaternion.identity;
 
-        // assumes: origin, dir, distance, halfExtents already computed
         Debug.DrawRay(origin, dir * distance, Color.red, 5f);
         Physics.SyncTransforms();
 
-        Quaternion rot = Quaternion.identity;
+        // 1) Column overlap: catch enemies *already somewhere inside the swept column*
+        Vector3 columnCenter = origin + dir * halfSweep; // middle of the column
+        Vector3 columnHalfExtents = new Vector3(halfExtentsThin.x, halfSweep + halfExtentsThin.y, halfExtentsThin.z);
 
-        // 1) Overlap at start position (catch contained enemies)
-        overlaps = Physics.OverlapBox(
-            origin,
-            halfExtents,
+        Collider[] overlaps = Physics.OverlapBox(
+            columnCenter,
+            columnHalfExtents,
             rot,
-            ~0,                               // all layers
-            QueryTriggerInteraction.Collide   // include triggers
+            ~0,
+            QueryTriggerInteraction.Collide
         );
 
-        collCount = overlaps.Length;
-
+        // Prefer tag on root if children have colliders
         for (int i = 0; i < overlaps.Length; i++)
         {
             var c = overlaps[i];
-            // if tag might be on root instead of child, use: c.transform.root.CompareTag("Enemy")
-            if (c.CompareTag("Enemy"))
+            Transform root = c.transform.root;
+            if (root.CompareTag("Enemy"))
             {
-                // your same handling:
-                if (c.TryGetComponent<AEnemy>(out var enemy) && enemy.enemyType != SpawnablesType.FlyingHoop)
+                if (root.TryGetComponent<AEnemy>(out var enemy) && enemy.enemyType != SpawnablesType.FlyingHoop)
                 {
                     var renderer = enemy.defaultRenderer;
                     AudioManager.instance?.PlaySFXSound(2);
-                    if (renderer) GameManager.Instance.SpawnDeathParticles(c.gameObject, renderer.material.color);
-                    Destroy(c.gameObject);
-                    // optionally return here if one hit is enough
+                    if (renderer) GameManager.Instance.SpawnDeathParticles(root.gameObject, renderer.material.color);
+                    Object.Destroy(root.gameObject);
+                    // if only one kill per fill, you can return here
                 }
             }
         }
 
-        // 2) Sweep to catch enemies along the path
+        // 2) Thin BoxCast: catch enemies you intersect *during the upward sweep*
         if (Physics.BoxCast(
                 origin,
-                halfExtents,
+                halfExtentsThin,
                 dir,
                 out var hit,
                 rot,
@@ -149,15 +148,16 @@ public class Cube : MonoBehaviour
                 ~0,
                 QueryTriggerInteraction.Collide))
         {
-            if (hit.collider.CompareTag("Enemy"))
+            Transform root = hit.collider.transform.root;
+            if (root.CompareTag("Enemy"))
             {
-                if (hit.collider.TryGetComponent<AEnemy>(out var enemy) && enemy.enemyType != SpawnablesType.FlyingHoop)
+                if (root.TryGetComponent<AEnemy>(out var enemy) && enemy.enemyType != SpawnablesType.FlyingHoop)
                 {
-                    Debug.Log($"Enemy in centered sweep (boxcast): {hit.collider.name} at {hit.point}");
+                    Debug.Log($"Enemy in centered sweep (boxcast): {root.name} at {hit.point}");
                     var renderer = enemy.defaultRenderer;
                     AudioManager.instance?.PlaySFXSound(2);
-                    if (renderer) GameManager.Instance.SpawnDeathParticles(hit.collider.gameObject, renderer.material.color);
-                    Destroy(hit.collider.gameObject);
+                    if (renderer) GameManager.Instance.SpawnDeathParticles(root.gameObject, renderer.material.color);
+                    Object.Destroy(root.gameObject);
                 }
             }
         }
@@ -170,6 +170,7 @@ public class Cube : MonoBehaviour
             }
         }
     }
+
 
 
     public void SetTiling(int gridCols, int gridRows)

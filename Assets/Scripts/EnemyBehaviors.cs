@@ -4,26 +4,24 @@ using System.Linq;
 using Sirenix.OdinInspector;
 
 [HideMonoScript]
-public class EnemyBehaviors : MonoBehaviour
+public class EnemyBehaviors : AEnemy
 {
     [Title("ENEMY-BEHAVIORS", null, titleAlignment: TitleAlignments.Centered)]
 
-    [DisplayAsString]
-    public float speed = 5f;
-    [SerializeField, DisplayAsString] SpawnablesType enemyType;
     [SerializeField, DisplayAsString] float bounceAngle = 3f;
     [SerializeField, DisplayAsString] float minInitial = 0.3f;
 
     private GridManager gridManager;
-    private Rigidbody rb;
     private Vector3 dir;
     public Vector3 lastPosition;
     private int _lastDestroyFrame = -1;
     public float stuckTime = 0f;
     private float stuckCheckInterval = 2f; 
     private float stuckDistanceThreshold = 1f;
-    void Start()
+
+    public override void Start()
     {
+        base.Start();
         rb = GetComponent<Rigidbody>();
         gridManager = GridManager.Instance;
         lastPosition = transform.position;
@@ -33,6 +31,7 @@ public class EnemyBehaviors : MonoBehaviour
 
         dir = PickRandomXZDirection(minInitial);
         rb.linearVelocity = dir * speed;
+
     }
     private void Update()
     {

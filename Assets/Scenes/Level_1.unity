@@ -6502,8 +6502,10 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: e6d6a88ce065f204780c275b364dcc89, type: 3}
   m_Name: 
   m_EditorClassIdentifier: 
-  speed: 5
   enemyType: 4
+  speed: 2
+  rb: {fileID: 0}
+  defaultSpeed: 2
   bounceAngle: 4
   minInitial: 0.3
   lastPosition: {x: 0, y: 0, z: 0}
@@ -13978,8 +13980,11 @@ MonoBehaviour:
     - {fileID: 8646658354723206513, guid: d9de78c04fe63534b8c6d2d3e17a99cb, type: 3}
   loosed: 0
   reviveUsed: 0
+  levelEnemies: []
   hasTriggeredLose: 0
   playerParticlePrefab: {fileID: 1350945476068147629, guid: 76a2627f85dd0384ba9bccc3960c663d, type: 3}
+  enemiesAreSlowed: 0
+  slowdownFactor: 0.5
 --- !u!4 &1425309783
 Transform:
   m_ObjectHideFlags: 0
@@ -16539,7 +16544,7 @@ Camera:
   far clip plane: 600
   field of view: 20
   orthographic: 1
-  orthographic size: 16.444445
+  orthographic size: 15.794393
   m_Depth: -1
   m_CullingMask:
     serializedVersion: 2
@@ -16864,8 +16869,10 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: e6d6a88ce065f204780c275b364dcc89, type: 3}
   m_Name: 
   m_EditorClassIdentifier: 
-  speed: 5
   enemyType: 2
+  speed: 5
+  rb: {fileID: 0}
+  defaultSpeed: 2
   bounceAngle: 4
   minInitial: 0.3
   lastPosition: {x: 0, y: 0, z: 0}

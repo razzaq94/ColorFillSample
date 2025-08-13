@@ -1709,10 +1709,11 @@ internal class SpawnableCellPopup : EditorWindow
 
         if (cfg.prefab != null && cfg.enemyType == SpawnablesType.CubeEater)
         {
-            var cubeEater = cfg.prefab.GetComponent<CubeEater>();
-            if (cubeEater != null)
+            var enemy = cfg.prefab.GetComponent<AEnemy>();
+            if (enemy != null)
             {
-                cubeEater.speed = newSpeed; 
+                enemy.speed = newSpeed; 
+                enemy.defaultSpeed = newSpeed; 
             }
         }
 
@@ -1758,14 +1759,9 @@ internal class PreplacedSpeedPopup : EditorWindow
         var wnd = CreateInstance<PreplacedSpeedPopup>();
         wnd._target = enemy;
 
-        if (enemy.TryGetComponent<EnemyBehaviors>(out var eb))
+        if (enemy.TryGetComponent<AEnemy>(out var eb))
         {
             wnd._serializedObject = new SerializedObject(eb);
-            wnd._speedProperty = wnd._serializedObject.FindProperty("speed");
-        }
-        else if (enemy.TryGetComponent<CubeEater>(out var ce))
-        {
-            wnd._serializedObject = new SerializedObject(ce);
             wnd._speedProperty = wnd._serializedObject.FindProperty("speed");
         }
 

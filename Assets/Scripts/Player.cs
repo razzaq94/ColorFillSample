@@ -128,15 +128,16 @@ public class Player : MonoBehaviour
     private void MakeCube()
     {
         spawnedCubes.Add(CubeGrid.Instance.GetCube());
-        spawnedCubes[spawnedCubes.Count - 1].Initalize(new Vector3((float)Mathf.Round(transform.position.x), transform.position.y - 0.7f, (float)Mathf.Round(transform.position.z)));
+        
+        spawnedCubes[spawnedCubes.Count - 1].SetTrail(new Vector3((float)Mathf.Round(transform.position.x), transform.position.y - 0.7f, (float)Mathf.Round(transform.position.z)));
         spawnedCubes[spawnedCubes.Count - 1].ApplyTrailColorFromLevel();
-
     }
 
     private void FillCubes()
     {
         for (int i = 0; i < spawnedCubes.Count; i++)
         {
+            
             spawnedCubes[i].FillCube();
             spawnedCubes[i].Illuminate(0.5f); 
             GridManager.Instance.ChangeValue(spawnedCubes[i].transform.position.x, spawnedCubes[i].transform.position.z);
@@ -364,7 +365,7 @@ public class Player : MonoBehaviour
             Mathf.Round(transform.position.z)
         );
 
-        cube.Initalize(spawnPos, false);
+        cube.SetTrail(spawnPos, false);
         cube._renderer.material.color = GameManager.Instance.CubeFillColor;
         spawnedCubes.Add(cube);
     }

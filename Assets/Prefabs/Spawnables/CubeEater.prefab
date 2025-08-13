@@ -683,7 +683,11 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: dc08480a6875632448999a51e907ce13, type: 3}
   m_Name: 
   m_EditorClassIdentifier: 
+  enemyType: 0
   speed: 5
+  rb: {fileID: 0}
+  defaultSpeed: 2
+  defaultRenderer: {fileID: 5241217160654864490}
   gridSize: 1
 --- !u!1 &7291433522725176585
 GameObject:

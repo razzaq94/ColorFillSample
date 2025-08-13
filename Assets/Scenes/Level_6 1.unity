@@ -7877,8 +7877,10 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: e6d6a88ce065f204780c275b364dcc89, type: 3}
   m_Name: 
   m_EditorClassIdentifier: 
-  speed: 1
   enemyType: 2
+  speed: 1
+  rb: {fileID: 0}
+  defaultSpeed: 2
   bounceAngle: 4
   minInitial: 0.3
   lastPosition: {x: 0, y: 0, z: 0}
@@ -13885,6 +13887,18 @@ MonoBehaviour:
       moveSpeed: 1
       row: 3
       col: 7
+    - sceneName: Level_6 1
+      enemyType: 5
+      prefab: {fileID: 5665365635048418455, guid: e42d5148988d32e41a2eb81aba4dfc1f, type: 3}
+      progressThreshold: 0.099999994
+      spawnCount: 1
+      subsequentProgressThresholds: []
+      yOffset: 1.4
+      initialSpawnHeight: 35
+      usePhysicsDrop: 1
+      moveSpeed: 2
+      row: 23
+      col: 1
     PreplacedEnemies:
     - prefab: {fileID: 6209682811672984589, guid: 70240ae9307d17d49bba5cacd302b5a3, type: 3}
       row: 0
@@ -14622,8 +14636,11 @@ MonoBehaviour:
     - {fileID: 8646658354723206513, guid: d9de78c04fe63534b8c6d2d3e17a99cb, type: 3}
   loosed: 0
   reviveUsed: 0
+  levelEnemies: []
   hasTriggeredLose: 0
   playerParticlePrefab: {fileID: 1350945476068147629, guid: 76a2627f85dd0384ba9bccc3960c663d, type: 3}
+  enemiesAreSlowed: 0
+  slowdownFactor: 0.5
 --- !u!4 &1425309783
 Transform:
   m_ObjectHideFlags: 0

@@ -2,10 +2,8 @@
 using System.Collections;
 
 [RequireComponent(typeof(Rigidbody))]
-public class CubeEater : MonoBehaviour
+public class CubeEater : AEnemy
 {
-    [Tooltip("Cells per second")]
-    public float speed = 2f;
     [Tooltip("Distance between grid cells")]
     public float gridSize = 1f;
     GridManager gridManager;
@@ -19,19 +17,11 @@ public class CubeEater : MonoBehaviour
 
     private Vector3 currentDir;
 
-    void Start()
+    public override void Start()
     {
-        //gridManager = GridManager.Instance; 
-        //Vector3 p = transform.position;
-        //transform.position = new Vector3(
-        //    Mathf.Round(p.x / gridSize) * gridSize,
-        //    p.y,
-        //    Mathf.Round(p.z / gridSize) * gridSize
-        //);
+        base.Start();
+        enemyType = SpawnablesType.CubeEater;
 
-        //currentDir = PickRandomDirection(excludeOpposite: false);
-        //StartCoroutine(GridMove());
-        //InvokeRepeating(nameof(ChangeDirection), 3f, 3f);
     }
     public void Init(float speedFromCfg)
     {

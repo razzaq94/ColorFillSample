@@ -1,7 +1,9 @@
-﻿using UnityEngine;
-using DG.Tweening;
+﻿using DG.Tweening;
 using Sirenix.OdinInspector;
 using System.Collections.Generic;
+using UnityEngine;
+using UnityEngine.UI;
+using static UnityEditor.ShaderGraph.Internal.KeywordDependentCollection;
 
 [HideMonoScript]
 public class Cube : MonoBehaviour
@@ -41,20 +43,30 @@ public class Cube : MonoBehaviour
         gameObject.SetActive(false);
     }
 
-    public void Initalize(Vector3 pos, bool isFilled = false)
+    public void SetTrail(Vector3 pos, bool isFilled = false)
     {
         transform.position = pos;
         gameObject.SetActive(true);
         var renderer = GetComponent<Renderer>();
         ApplyTrailColorFromLevel();
-        
 
         IsFilled = false; // always start clean
 
         if (isFilled)
+        {
             FillCube();
+        }
+        else
+        {
+            for (int i = 0; i < colliders.Count; i++)
+            {
+                colliders[i].enabled = true;
+            }
+        }
     }
 
+    public int collCount = 0;
+    public Collider[] overlaps;
     public void FillCube(bool force = false)
     {
         if (!gameObject.activeSelf)
@@ -70,7 +82,6 @@ public class Cube : MonoBehaviour
         }
         IsFilled = true;
         CanHarm = false;
-
         _renderer.material.color = GameManager.Instance.CubeFillColor;
         Illuminate(0.5f);
 
@@ -80,25 +91,78 @@ public class Cube : MonoBehaviour
         transform.DOMoveY(0.5f, 0.15f);
         transform.DOScale(Vector3.one, 0.1f);
 
-       
-        Vector3 origin = transform.position + Vector3.up * 3f;
-        Ray ray = new Ray(origin, Vector3.down);
-        Debug.DrawRay(origin, Vector3.down * 6f, Color.red, 1f);
+        var rend = _renderer;
+        var col = colliders[0];
 
-        if (Physics.Raycast(ray, out var hit, 6f, ~0, QueryTriggerInteraction.Ignore))
+        Bounds b = rend ? rend.bounds : (col ? col.bounds : new Bounds(transform.position, Vector3.one));
+
+        float distance = 6f;
+        float halfSweep = distance * 0.5f;
+        Vector3 origin = b.center - Vector3.up * halfSweep;
+        Vector3 dir = Vector3.up;
+
+        Vector3 halfExtents = new Vector3(b.extents.x * 0.98f, 0.05f, b.extents.z * 0.98f);
+
+        // assumes: origin, dir, distance, halfExtents already computed
+        Debug.DrawRay(origin, dir * distance, Color.red, 5f);
+        Physics.SyncTransforms();
+
+        Quaternion rot = Quaternion.identity;
+
+        // 1) Overlap at start position (catch contained enemies)
+        overlaps = Physics.OverlapBox(
+            origin,
+            halfExtents,
+            rot,
+            ~0,                               // all layers
+            QueryTriggerInteraction.Collide   // include triggers
+        );
+
+        collCount = overlaps.Length;
+
+        for (int i = 0; i < overlaps.Length; i++)
         {
-            if (hit.collider.CompareTag("Enemy") || hit.collider.TryGetComponent<EnemyBehaviors>(out EnemyBehaviors cube))
+            var c = overlaps[i];
+            // if tag might be on root instead of child, use: c.transform.root.CompareTag("Enemy")
+            if (c.CompareTag("Enemy"))
             {
-                Debug.Log($"Hit enemy below: {hit.collider.name} at {hit.point}");
-                var renderer = hit.collider.GetComponent<Renderer>();
-                AudioManager.instance?.PlaySFXSound(2);
-                if (renderer)
-                    GameManager.Instance.SpawnDeathParticles(hit.collider.gameObject, renderer.material.color);
-                Destroy(hit.collider.gameObject);
-
+                // your same handling:
+                if (c.TryGetComponent<AEnemy>(out var enemy) && enemy.enemyType != SpawnablesType.FlyingHoop)
+                {
+                    var renderer = enemy.defaultRenderer;
+                    AudioManager.instance?.PlaySFXSound(2);
+                    if (renderer) GameManager.Instance.SpawnDeathParticles(c.gameObject, renderer.material.color);
+                    Destroy(c.gameObject);
+                    // optionally return here if one hit is enough
+                }
             }
         }
-        for (int i = 0;i<colliders.Count; i++)
+
+        // 2) Sweep to catch enemies along the path
+        if (Physics.BoxCast(
+                origin,
+                halfExtents,
+                dir,
+                out var hit,
+                rot,
+                distance,
+                ~0,
+                QueryTriggerInteraction.Collide))
+        {
+            if (hit.collider.CompareTag("Enemy"))
+            {
+                if (hit.collider.TryGetComponent<AEnemy>(out var enemy) && enemy.enemyType != SpawnablesType.FlyingHoop)
+                {
+                    Debug.Log($"Enemy in centered sweep (boxcast): {hit.collider.name} at {hit.point}");
+                    var renderer = enemy.defaultRenderer;
+                    AudioManager.instance?.PlaySFXSound(2);
+                    if (renderer) GameManager.Instance.SpawnDeathParticles(hit.collider.gameObject, renderer.material.color);
+                    Destroy(hit.collider.gameObject);
+                }
+            }
+        }
+
+        for (int i = 0; i < colliders.Count; i++)
         {
             if (colliders[i] != null)
             {

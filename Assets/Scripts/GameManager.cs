@@ -61,6 +61,9 @@ public class GameManager : MonoBehaviour
     private bool isGameOver = false;
     public bool loosed = false;
     public bool reviveUsed = false;
+
+    public List<AEnemy> levelEnemies = new List<AEnemy>();
+
     private void Awake()
     {
         Instance = this;
@@ -427,14 +430,11 @@ public class GameManager : MonoBehaviour
             {
                 RandomizeColor(enemy);
             }
-            if (enemy.TryGetComponent<EnemyBehaviors>(out var eb))
+            if (enemy.TryGetComponent<AEnemy>(out var eb))
             {
                 eb.speed = cfg.moveSpeed;
+                eb.defaultSpeed = cfg.moveSpeed;
                 
-            }
-            else if (enemy.TryGetComponent<CubeEater>(out var ce))
-            {
-                ce.speed = cfg.moveSpeed;
             }
         }
     }
@@ -649,44 +649,31 @@ public class GameManager : MonoBehaviour
         }
 
     }
-    private float slowdownFactor = 0.5f;
 
+    public bool enemiesAreSlowed = false; 
+    public float slowdownFactor = 0.5f;
 
-
-    public void ResetSlowDown()
+    public void SlowEnemies(float _slowdownFactor,float effectTime)
     {
-        StartCoroutine(ResetSlowDownEffect(10f));
-    }
-    public IEnumerator ResetSlowDownEffect(float delay)
-    {
-        yield return new WaitForSecondsRealtime(delay);
+        slowdownFactor = _slowdownFactor;
+        enemiesAreSlowed = true;
 
-        var enemies = FindObjectsOfType<EnemyBehaviors>();
-        var cubeEaters = FindObjectsOfType<CubeEater>();
-        var rigidbodies = FindObjectsOfType<Rigidbody>();
-
-        foreach (var enemy in enemies)
+        for (int i = 0; i < levelEnemies.Count; i++)
         {
-            enemy.speed /= slowdownFactor;
+            levelEnemies[i].SlowDown(slowdownFactor);
         }
 
-        foreach (var cubeEater in cubeEaters)
+        StartCoroutine(WaitNPerform(effectTime, () =>
         {
-            cubeEater.speed /= slowdownFactor;
-        }
+            enemiesAreSlowed = false;
 
-        foreach (var rb in rigidbodies)
-        {
-            if (rb.CompareTag("Player"))
+            for (int i = 0; i < levelEnemies.Count; i++)
             {
-                continue;
+                levelEnemies[i].NormalSpeed();
             }
+        }));
 
-            rb.linearVelocity /= slowdownFactor;
-        }
     }
-
-
 
     private static readonly Dictionary<int, Vector3> ColumnToCamOrtho = new()
 {

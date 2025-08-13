@@ -363,7 +363,7 @@ public class GridManager : MonoBehaviour
                     if (GetCubeAtPosition(pos) == null)
                     {
                         Cube cube = CubeGrid.Instance.GetCube();
-                        cube.Initalize(GridToWorld(pos), true);
+                        cube.SetTrail(GridToWorld(pos), true);
                         cube.FillCube(); 
                     }
 
@@ -416,7 +416,7 @@ public class GridManager : MonoBehaviour
                 if (!hasVisual)
                 {
                     Cube cube = CubeGrid.Instance.GetCube();
-                    cube.Initalize(GridToWorld(pos), true);
+                    cube.SetTrail(GridToWorld(pos), true);
                     cube.FillCube();
                 }
 
@@ -440,7 +440,7 @@ public class GridManager : MonoBehaviour
                 if (GetCubeAtPosition(pos) == null)
                 {
                     Cube cube = CubeGrid.Instance.GetCube();
-                    cube.Initalize(GridToWorld(pos), true);
+                    cube.SetTrail(GridToWorld(pos), true);
                     cube.FillCube();
                     _grid[x, y] = true;
                 }
@@ -501,7 +501,7 @@ public class GridManager : MonoBehaviour
                     if (GetCubeAtPosition(pos) == null)
                     {
                         Cube cube = CubeGrid.Instance.GetCube();
-                        cube.Initalize(GridToWorld(pos), true);
+                        cube.SetTrail(GridToWorld(pos), true);
                         cube.FillCube();
                     }
                     _grid[pos.x, pos.y] = true;
@@ -618,7 +618,7 @@ public class GridManager : MonoBehaviour
                 if (GetCubeAtPosition(pos) == null)
                 {
                     Cube cube = CubeGrid.Instance.GetCube();
-                    cube.Initalize(GridToWorld(pos), true);
+                    cube.SetTrail(GridToWorld(pos), true);
                     cube.FillCube();
                 }
 
@@ -678,7 +678,7 @@ public class GridManager : MonoBehaviour
 
             Vector3 repCubePos = FindTransformFromPoint(point);
             Cube cube = CubeGrid.Instance.GetCube();
-            cube.Initalize(repCubePos, true);
+            cube.SetTrail(repCubePos, true);
             cube.FillCube(); 
         }
     }
@@ -935,7 +935,7 @@ public class GridManager : MonoBehaviour
                 if (GetCubeAtPosition(pos) == null)
                 {
                     Cube cube = CubeGrid.Instance.GetCube();
-                    cube.Initalize(GridToWorld(pos), true);
+                    cube.SetTrail(GridToWorld(pos), true);
                     cube.FillCube(); // grid mark + visuals
                 }
 
@@ -964,7 +964,7 @@ public class GridManager : MonoBehaviour
                     if (GetCubeAtPosition(pos) == null)
                     {
                         Cube cube = CubeGrid.Instance.GetCube();
-                        cube.Initalize(GridToWorld(pos), true);
+                        cube.SetTrail(GridToWorld(pos), true);
                         cube.FillCube();
                     }
                     // handles grid mark + visual
@@ -987,12 +987,12 @@ public class GridManager : MonoBehaviour
                     if (existing == null)
                     {
                         Cube cube = CubeGrid.Instance.GetCube();
-                        cube.Initalize(GridToWorld(pos), true);
+                        cube.SetTrail(GridToWorld(pos), true);
                         cube.FillCube(true);
                     }
                     else if (!existing.IsFilled || !existing.gameObject.activeInHierarchy)
                     {
-                        existing.Initalize(GridToWorld(pos), true);
+                        existing.SetTrail(GridToWorld(pos), true);
                         existing.FillCube(true);
                     }
                 }
@@ -1045,11 +1045,16 @@ public class GridManager : MonoBehaviour
             _trueCount = Mathf.Max(0, _trueCount - 1);
         }
 
-        //print(cube.gameObject.name);
-        cube.IsFilled = false; // always reset
+        cube.IsFilled = false; 
         cube.CanHarm = false;
         cube.gameObject.SetActive(false);
-
+        for (int i = 0; i < cube.colliders.Count; i++)
+        {
+            if (cube.colliders[i] != null)
+            {
+                cube.colliders[i].enabled = false; 
+            }
+        }
         CubeGrid.Instance.PutBackInQueue(cube);
     }
 
@@ -1080,7 +1085,7 @@ public class GridManager : MonoBehaviour
                     if (GetCubeAtPosition(pos) == null)
                     {
                         Cube cube = CubeGrid.Instance.GetCube();
-                        cube.Initalize(GridToWorld(pos), true);
+                        cube.SetTrail(GridToWorld(pos), true);
                         cube.FillCube();
                     }
 

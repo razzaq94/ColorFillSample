@@ -2320,8 +2320,11 @@ MonoBehaviour:
   enemyVariantGroups: []
   loosed: 0
   reviveUsed: 0
+  levelEnemies: []
   hasTriggeredLose: 0
   playerParticlePrefab: {fileID: 1350945476068147629, guid: 76a2627f85dd0384ba9bccc3960c663d, type: 3}
+  enemiesAreSlowed: 0
+  slowdownFactor: 0.5
 --- !u!4 &1425309783
 Transform:
   m_ObjectHideFlags: 0

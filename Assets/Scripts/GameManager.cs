@@ -248,7 +248,7 @@ public class GameManager : MonoBehaviour
         Player.ForceInitialCube();
         if (reviveUsed)
         {
-            Player.InvincibleForSeconds(3);
+            Player.InvincibleForSeconds(GameHandler.Instance.reviveCount);
         }
         shake = false; // Reset camera shake flag
         //print(Player.lastSafeFilledPosition + " after revive");

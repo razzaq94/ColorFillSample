@@ -7,7 +7,7 @@ public class EnemyCubeGroup : MonoBehaviour
 {
     [Title("ENEMY-CUBE-GROUP", null, titleAlignment: TitleAlignments.Centered)]
     public EnemyCube[] Cubes = null;
-    public bool returnOnEnemyCollision = false;
+    [DisplayAsString, ReadOnly] public bool returnOnEnemyCollision = false;
     [DisplayAsString]
     public int Detected = 0;
 
@@ -38,7 +38,6 @@ public class EnemyCubeGroup : MonoBehaviour
             //Debug.LogWarning("Static group or no movement direction set; disabling mover.");
             return;
         }
-
         SetNextTarget();
     }
 

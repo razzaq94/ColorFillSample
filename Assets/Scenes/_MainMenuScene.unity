@@ -2714,6 +2714,7 @@ MonoBehaviour:
   CurrentLives: 3
   adCount: 1
   CurrentLevel: 0
+  reviveCount: 1
 --- !u!4 &1567790139
 Transform:
   m_ObjectHideFlags: 0

@@ -11,6 +11,7 @@ public class GameHandler : MonoBehaviour
     private const int MaxLives = 3;
     public int adCount = 1;
     public int CurrentLevel;
+    public int reviveCount;
     private void Awake()
     {
         if (Instance == null)

@@ -375,7 +375,7 @@ public class Player : MonoBehaviour
         cube._renderer.material.color = GameManager.Instance.CubeFillColor;
         spawnedCubes.Add(cube);
     }
-    public void InvincibleForSeconds(float seconds = 5f)
+    public void InvincibleForSeconds(int seconds = 5)
     {
         if (invincibilityRoutine != null)
             StopCoroutine(invincibilityRoutine);
@@ -383,7 +383,7 @@ public class Player : MonoBehaviour
         invincibilityRoutine = StartCoroutine(InvincibilityRoutine(seconds));
     }
 
-    private IEnumerator InvincibilityRoutine(float duration)
+    private IEnumerator InvincibilityRoutine(int duration)
     {
         if (triggerCollider != null) triggerCollider.enabled = false;
         if (collisionCollider != null) collisionCollider.enabled = false;
@@ -397,7 +397,7 @@ public class Player : MonoBehaviour
 
         UIManager.Instance.countDown.gameObject.SetActive(true);
 
-        for (int i = 3; i > 0; i--)
+        for (int i = duration; i > 0; i--)
         {
             UIManager.Instance.countDown.text = i.ToString("00");
 

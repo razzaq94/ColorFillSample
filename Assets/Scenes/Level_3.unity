@@ -813,7 +813,11 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: a9974a74025a1404389ba9ad5c63948a, type: 3}
   m_Name: 
   m_EditorClassIdentifier: 
-  SpawnablesType: 6
+  enemyType: 0
+  speed: 2
+  rb: {fileID: 0}
+  defaultSpeed: 2
+  defaultRenderer: {fileID: 0}
 --- !u!4 &34116666
 Transform:
   m_ObjectHideFlags: 0
@@ -3131,6 +3135,7 @@ MonoBehaviour:
   m_EditorClassIdentifier: 
   Cubes:
   - {fileID: 274875246}
+  returnOnEnemyCollision: 0
   Detected: 0
   moveDirection: 3
   isStatic: 0
@@ -22738,6 +22743,7 @@ MonoBehaviour:
   - {fileID: 1806879993}
   - {fileID: 2072907832}
   - {fileID: 1049553850}
+  returnOnEnemyCollision: 0
   Detected: 0
   moveDirection: 4
   isStatic: 0
@@ -39373,8 +39379,11 @@ MonoBehaviour:
     - {fileID: 8646658354723206513, guid: d9de78c04fe63534b8c6d2d3e17a99cb, type: 3}
   loosed: 0
   reviveUsed: 0
+  levelEnemies: []
   hasTriggeredLose: 0
   playerParticlePrefab: {fileID: 1350945476068147629, guid: 76a2627f85dd0384ba9bccc3960c663d, type: 3}
+  enemiesAreSlowed: 0
+  slowdownFactor: 0.5
 --- !u!4 &1425309783
 Transform:
   m_ObjectHideFlags: 0
@@ -44691,7 +44700,7 @@ Camera:
   far clip plane: 1000
   field of view: 20
   orthographic: 1
-  orthographic size: 18.5
+  orthographic size: 17.768692
   m_Depth: -1
   m_CullingMask:
     serializedVersion: 2
@@ -50591,8 +50600,11 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: e6d6a88ce065f204780c275b364dcc89, type: 3}
   m_Name: 
   m_EditorClassIdentifier: 
-  speed: 5
   enemyType: 4
+  speed: 5
+  rb: {fileID: 0}
+  defaultSpeed: 2
+  defaultRenderer: {fileID: 0}
   bounceAngle: 4
   minInitial: 0.3
   lastPosition: {x: 0, y: 0, z: 0}
@@ -57459,6 +57471,7 @@ MonoBehaviour:
   m_EditorClassIdentifier: 
   Cubes:
   - {fileID: 2091575049}
+  returnOnEnemyCollision: 0
   Detected: 0
   moveDirection: 4
   isStatic: 0

@@ -289,7 +289,7 @@ public class UIManager : MonoBehaviour
         GameManager.Instance.ReviveFromLife();
 
         // Countdown loop
-        for (int i = 3; i > 0; i--)
+        for (int i = GameHandler.Instance.reviveCount; i > 0; i--)
         {
             countDown.text = i.ToString("00");
             yield return new WaitForSecondsRealtime(1f);

@@ -2,41 +2,70 @@
 using Sirenix.OdinInspector;
 using System.Collections.Generic;
 using UnityEngine;
-using UnityEngine.UI;
-using static UnityEditor.ShaderGraph.Internal.KeywordDependentCollection;
 
 [HideMonoScript]
 public class Cube : MonoBehaviour
 {
     [Title("CUBE", null, titleAlignment: TitleAlignments.Centered)]
     [DisplayAsString] public bool IsFilled = false;
-    [DisplayAsString] public bool onPlayer = false;
-
     [DisplayAsString] public bool CanHarm = false;
-    public float stuckTime = 0f;
-    private float stuckCheckInterval = 0.5f;
+    [DisplayAsString] public bool onPlayer = false;
+    
+    [Header("Visual Settings")]
     public Renderer _renderer;
-
     public List<Collider> colliders = new List<Collider>();
+    
+    [Header("Animation Settings")]
+    public float stuckCheckInterval = 0.5f;
+    public float fillAnimationDuration = 0.15f;
+    public float illuminateDuration = 0.5f;
+    
+    private float stuckTime = 0f;
+    private const float FILLED_Y_POSITION = 0.5f;
+    private const float FILL_START_Y_POSITION = 0.3f;
+    private const float ENEMY_DETECTION_DISTANCE = 6f;
+    private const float COLOR_BRIGHTENING_FACTOR = 0.3f;
+    private const float EMISSION_MULTIPLIER = 1.5f;
+
     private void Awake()
     {
-        _renderer = GetComponent<Renderer>();
+        InitializeComponents();
     }
+    
+    private void InitializeComponents()
+    {
+        if (_renderer == null)
+            _renderer = GetComponent<Renderer>();
+    }
+    
     private void Update()
     {
-        if (IsFilled && transform.position.y != 0.5f)
-        {
-            transform.DOMoveY(0.5f, 0.15f);
-        }
+        UpdateStuckTime();
+        UpdateFilledPosition();
+        UpdateFilledColor();
+    }
+    
+    private void UpdateStuckTime()
+    {
         stuckTime += Time.deltaTime;
-        if (stuckTime >= stuckCheckInterval)
+    }
+    
+    private void UpdateFilledPosition()
+    {
+        if (IsFilled && transform.position.y != FILLED_Y_POSITION)
         {
-            if(IsFilled)
-            {
-                _renderer.material.color = GameManager.Instance.CubeFillColor;
-            }
+            transform.DOMoveY(FILLED_Y_POSITION, fillAnimationDuration);
         }
+    }
+    
+    private void UpdateFilledColor()
+    {
+        if (stuckTime >= stuckCheckInterval && IsFilled)
+        {
+            ApplyFilledColor();
         }
+    }
+
     public void ResetCube()
     {
         IsFilled = false;
@@ -49,8 +78,7 @@ public class Cube : MonoBehaviour
     {
         transform.position = pos;
         gameObject.SetActive(true);
-        var renderer = GetComponent<Renderer>();
-        ApplyTrailColorFromLevel();
+        ApplyTrailColor();
 
         IsFilled = false; // always start clean
 
@@ -60,15 +88,10 @@ public class Cube : MonoBehaviour
         }
         else
         {
-            for (int i = 0; i < colliders.Count; i++)
-            {
-                colliders[i].enabled = true;
-            }
+            EnableColliders();
         }
     }
 
-    public int collCount = 0;
-    public Collider[] overlaps;
     public void FillCube(bool force = false)
     {
         if (!gameObject.activeSelf)
@@ -78,125 +101,146 @@ public class Cube : MonoBehaviour
 
         if (!force && GridManager.Instance.IsFilled(index))
         {
-            //Debug.LogWarning($"Duplicate cube fill attempt at {index} from {name}");
             IsFilled = true;
             return;
         }
+        
+        DetectAndDestroyEnemies();
+        PerformFill();
+        EnableColliders();
+    }
+    
+    private void PerformFill()
+    {
         IsFilled = true;
         CanHarm = false;
-        _renderer.material.color = GameManager.Instance.CubeFillColor;
-        Illuminate(0.5f);
-
+        
+        ApplyFilledColor();
+        Illuminate();
+        
+        // Update grid and animate
         GridManager.Instance.ChangeValue(transform.position.x, transform.position.z);
         GridManager.Instance._trueCount++;
-        transform.position = new Vector3(transform.position.x, 0.3f, transform.position.z);
-        transform.DOMoveY(0.5f, 0.15f);
+        
+        AnimateFill();
+    }
+    
+    private void AnimateFill()
+    {
+        transform.position = new Vector3(transform.position.x, FILL_START_Y_POSITION, transform.position.z);
+        transform.DOMoveY(FILLED_Y_POSITION, fillAnimationDuration);
         transform.DOScale(Vector3.one, 0.1f);
-
-        var rend = _renderer;
-        var col = colliders[0];
-
-        Bounds b = rend ? rend.bounds : (col ? col.bounds : new Bounds(transform.position, Vector3.one));
-
-        float distance = 6f;
-        float halfSweep = distance * 0.5f;
-        Vector3 dir = Vector3.up;
-        Vector3 origin = b.center - dir * halfSweep;
-
-        Vector3 halfExtentsThin = new Vector3(b.extents.x * 0.98f, 0.05f, b.extents.z * 0.98f);
-        Quaternion rot = Quaternion.identity;
-
-        Debug.DrawRay(origin, dir * distance, Color.red, 5f);
-        Physics.SyncTransforms();
-
-        // 1) Column overlap: catch enemies *already somewhere inside the swept column*
-        Vector3 columnCenter = origin + dir * halfSweep; // middle of the column
-        Vector3 columnHalfExtents = new Vector3(halfExtentsThin.x, halfSweep + halfExtentsThin.y, halfExtentsThin.z);
-
-        Collider[] overlaps = Physics.OverlapBox(
+    }
+    
+    private void DetectAndDestroyEnemies()
+    {
+        if (CanHarm)
+        {
+            return;
+        }
+        var enemiesInColumn = DetectEnemiesInColumn();
+        //var enemiesInSweep = DetectEnemiesInSweep();
+        
+        DestroyEnemies(enemiesInColumn);
+        //DestroyEnemies(enemiesInSweep);
+    }
+    
+    private Collider[] DetectEnemiesInColumn()
+    {
+        Bounds bounds = GetBounds();
+        Vector3 columnCenter = bounds.center;
+        Vector3 columnHalfExtents = new Vector3(bounds.extents.x * 0.98f, ENEMY_DETECTION_DISTANCE * 0.5f, bounds.extents.z * 0.98f);
+        
+        return Physics.OverlapBox(
             columnCenter,
             columnHalfExtents,
-            rot,
+            Quaternion.identity,
             ~0,
             QueryTriggerInteraction.Collide
         );
-
-        // Prefer tag on root if children have colliders
-        for (int i = 0; i < overlaps.Length; i++)
+    }
+    
+    //private RaycastHit? DetectEnemiesInSweep()
+    //{
+    //    Bounds bounds = GetBounds();
+    //    Vector3 origin = bounds.center - Vector3.up * ENEMY_DETECTION_DISTANCE * 0.5f;
+    //    Vector3 halfExtents = new Vector3(bounds.extents.x * 0.98f, 0.05f, bounds.extents.z * 0.98f);
+        
+    //    if (Physics.BoxCast(origin, halfExtents, Vector3.up, out RaycastHit hit, Quaternion.identity, ENEMY_DETECTION_DISTANCE, ~0, QueryTriggerInteraction.Collide))
+    //    {
+    //        return hit;
+    //    }
+        
+    //    return null;
+    //}
+    
+    private Bounds GetBounds()
+    {
+        if (_renderer != null)
+            return _renderer.bounds;
+        if (colliders.Count > 0 && colliders[0] != null)
+            return colliders[0].bounds;
+        return new Bounds(transform.position, Vector3.one);
+    }
+    
+    private void DestroyEnemies(Collider[] colliders)
+    {
+        foreach (var collider in colliders)
         {
-            var c = overlaps[i];
-            Transform root = c.transform.root;
-            if (root.CompareTag("Enemy"))
-            {
-                if (root.TryGetComponent<AEnemy>(out var enemy) && enemy.enemyType != SpawnablesType.FlyingHoop)
-                {
-                    var renderer = enemy.defaultRenderer;
-                    AudioManager.instance?.PlaySFXSound(2);
-                    if (renderer) GameManager.Instance.SpawnDeathParticles(root.gameObject, renderer.material.color);
-                    Object.Destroy(root.gameObject);
-                    // if only one kill per fill, you can return here
-                }
-            }
+            DestroyEnemy(collider.transform.root);
         }
-
-        // 2) Thin BoxCast: catch enemies you intersect *during the upward sweep*
-        if (Physics.BoxCast(
-                origin,
-                halfExtentsThin,
-                dir,
-                out var hit,
-                rot,
-                distance,
-                ~0,
-                QueryTriggerInteraction.Collide))
+    }
+    
+    private void DestroyEnemies(RaycastHit? hit)
+    {
+        if (hit.HasValue)
         {
-            Transform root = hit.collider.transform.root;
-            if (root.CompareTag("Enemy"))
-            {
-                if (root.TryGetComponent<AEnemy>(out var enemy) && enemy.enemyType != SpawnablesType.FlyingHoop)
-                {
-                    Debug.Log($"Enemy in centered sweep (boxcast): {root.name} at {hit.point}");
-                    var renderer = enemy.defaultRenderer;
-                    AudioManager.instance?.PlaySFXSound(2);
-                    if (renderer) GameManager.Instance.SpawnDeathParticles(root.gameObject, renderer.material.color);
-                    Object.Destroy(root.gameObject);
-                }
-            }
+            DestroyEnemy(hit.Value.collider.transform.root);
         }
-
-        for (int i = 0; i < colliders.Count; i++)
+    }
+    
+    private void DestroyEnemy(Transform enemyRoot)
+    {
+        if (!enemyRoot.CompareTag("Enemy"))
+            return;
+            
+        if (enemyRoot.TryGetComponent<AEnemy>(out var enemy) && enemy.enemyType != SpawnablesType.FlyingHoop)
         {
-            if (colliders[i] != null)
-            {
-                colliders[i].enabled = true; // Enable the collider
-            }
+            PlayEnemyDestructionEffects(enemy);
+            Destroy(enemyRoot.gameObject);
+        }
+    }
+    
+    private void PlayEnemyDestructionEffects(AEnemy enemy)
+    {
+        AudioManager.instance?.PlaySFXSound(2);
+        
+        if (enemy.defaultRenderer != null)
+        {
+            GameManager.Instance.SpawnDeathParticles(enemy.gameObject, enemy.defaultRenderer.material.color);
         }
     }
 
-
-
     public void SetTiling(int gridCols, int gridRows)
     {
-        Renderer r = GetComponent<Renderer>();
-        if (r != null)
+        if (_renderer != null)
         {
-            Material mat = r.material; 
+            Material mat = _renderer.material; 
             mat.mainTextureScale = new Vector2(gridCols / 5f, gridRows / 5f);
         }
     }
 
-
-   
     public void Illuminate(float duration = 0.5f)
     {
-        if (!TryGetComponent<Renderer>(out Renderer renderer)) return;
+        if (!TryGetComponent<Renderer>(out Renderer renderer)) 
+            return;
 
         Material mat = renderer.material;
-        if (!mat.HasProperty("_EmissionColor")) return;
+        if (!mat.HasProperty("_EmissionColor")) 
+            return;
 
         Color baseColor = GameManager.Instance.CubeFillColor; 
-
-        Color glow = baseColor * 1.5f; 
+        Color glow = baseColor * EMISSION_MULTIPLIER; 
 
         if (!mat.IsKeywordEnabled("_EMISSION"))
             mat.EnableKeyword("_EMISSION");
@@ -210,53 +254,41 @@ public class Cube : MonoBehaviour
                    duration);
     }
 
-
-
-    public void ApplyTrailColorFromLevel()
+    public void ApplyTrailColor()
     {
         if (_renderer == null)
             _renderer = GetComponent<Renderer>();
 
         Color baseColor = GameManager.Instance.CubeFillColor;
-        Color lighterColor = new Color(
-            Mathf.Clamp01(baseColor.r + 0.3f),
-            Mathf.Clamp01(baseColor.g + 0.3f),
-            Mathf.Clamp01(baseColor.b + 0.3f)
-        );
-
+        Color lighterColor = CreateLighterColor(baseColor);
         _renderer.material.color = lighterColor;
     }
 
-
-
-
     private void ApplyFilledColor()
     {
-        if (_renderer == null) return;
+        if (_renderer == null) 
+            return;
 
-        Color baseColor = Player.Instance.GetPlayerColor();
-        Color vividColor = ComputeVividVersion(baseColor);
-        _renderer.material.color = vividColor;
+        _renderer.material.color = GameManager.Instance.CubeFillColor;
     }
 
-   
-    private void ApplyUnfilledColor()
+    private Color CreateLighterColor(Color baseColor)
     {
-        if (_renderer == null) return;
-
-        Color baseColor = Player.Instance.GetPlayerColor();
-        _renderer.material.color = baseColor;
+        return new Color(
+            Mathf.Clamp01(baseColor.r + COLOR_BRIGHTENING_FACTOR),
+            Mathf.Clamp01(baseColor.g + COLOR_BRIGHTENING_FACTOR),
+            Mathf.Clamp01(baseColor.b + COLOR_BRIGHTENING_FACTOR)
+        );
     }
-
     
-    private Color ComputeVividVersion(Color baseColor)
+    private void EnableColliders()
     {
-        Color.RGBToHSV(baseColor, out float H, out float S, out float V);
-
-        S = Mathf.Min(1f, S * 1.5f);
-        V = 1f;
-
-        return Color.HSVToRGB(H, S, V);
+        foreach (var collider in colliders)
+        {
+            if (collider != null)
+            {
+                collider.enabled = true;
+            }
+        }
     }
-
 }

@@ -7,7 +7,7 @@ public class EnemyCubeGroup : MonoBehaviour
 {
     [Title("ENEMY-CUBE-GROUP", null, titleAlignment: TitleAlignments.Centered)]
     public EnemyCube[] Cubes = null;
-
+    public bool returnOnEnemyCollision = false;
     [DisplayAsString]
     public int Detected = 0;
 
@@ -111,21 +111,21 @@ public class EnemyCubeGroup : MonoBehaviour
 
     private void OnTriggerEnter(Collider other)
     {
-        if (other.CompareTag("Obstacle") ||
+        if ((other.CompareTag("Obstacle") ||
             other.CompareTag("Boundary") ||
-            other.CompareTag("EnemyGroup"))
+            other.CompareTag("EnemyGroup"))||(returnOnEnemyCollision && other.CompareTag("Enemy")))
         {
-            if (hit) return;
-            hit = true;
-            Invoke(nameof(HitReset), HitResetTime);
-            ReverseDirection();
-            SetNextTarget();
+            Return();
         }
+    }
 
-        if (other.TryGetComponent<Cube>(out Cube cube) && cube.IsFilled)
-        {
-            // Handle Cube hit if needed
-        }
+    void Return()
+    {
+        if (hit) return;
+        hit = true;
+        Invoke(nameof(HitReset), HitResetTime);
+        ReverseDirection();
+        SetNextTarget();
     }
 
     private void OnTriggerStay(Collider other)

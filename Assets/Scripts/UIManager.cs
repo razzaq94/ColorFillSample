@@ -287,7 +287,10 @@ public class UIManager : MonoBehaviour
         Time.timeScale = 0f;
 
         GameManager.Instance.ReviveFromLife();
-
+        if (GameHandler.Instance.reviveCount < 1)
+        {
+            GameHandler.Instance.reviveCount = 1;
+        }
         // Countdown loop
         for (int i = GameHandler.Instance.reviveCount; i > 0; i--)
         {

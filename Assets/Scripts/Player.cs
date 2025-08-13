@@ -377,6 +377,10 @@ public class Player : MonoBehaviour
     }
     public void InvincibleForSeconds(int seconds = 5)
     {
+        if(seconds < 1)
+        {
+            seconds = 1;
+        }
         if (invincibilityRoutine != null)
             StopCoroutine(invincibilityRoutine);
 

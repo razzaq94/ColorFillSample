@@ -10,6 +10,8 @@ public class Cube : MonoBehaviour
 {
     [Title("CUBE", null, titleAlignment: TitleAlignments.Centered)]
     [DisplayAsString] public bool IsFilled = false;
+    [DisplayAsString] public bool onPlayer = false;
+
     [DisplayAsString] public bool CanHarm = false;
     public float stuckTime = 0f;
     private float stuckCheckInterval = 0.5f;

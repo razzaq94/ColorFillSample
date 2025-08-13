@@ -2,16 +2,15 @@ using Sirenix.OdinInspector;
 using UnityEngine;
 
 [HideMonoScript]
-public class RotatingMine : MonoBehaviour
+public class RotatingMine : AEnemy
 {
     [Title("RotatingMine", null, titleAlignment: TitleAlignments.Centered)]
 
-    public SpawnablesType SpawnablesType;
-
     bool gotHit = false;
-    private void Start()
+    protected override void Start()
     {
-        SpawnablesType = SpawnablesType.RotatingMine;   
+        base.Start();
+        enemyType = SpawnablesType.RotatingMine;   
     }
     private void OnCollisionEnter(Collision collision)
     {

@@ -216,7 +216,10 @@ public class Player : MonoBehaviour
         if (other.TryGetComponent<Cube>(out Cube cube))
         {
             if (cube.IsFilled)
+            {
+                cube.onPlayer = true;
                 _spawnCubes = false;
+            }
         }
     }
 
@@ -225,7 +228,10 @@ public class Player : MonoBehaviour
         if (other.TryGetComponent<Cube>(out Cube cube))
         {
             if (cube.IsFilled)
+            {
                 _spawnCubes = true;
+                cube.onPlayer = false;
+            }
             else
                 cube.CanHarm = true;
         }

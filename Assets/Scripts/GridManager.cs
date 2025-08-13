@@ -1036,6 +1036,10 @@ public class GridManager : MonoBehaviour
 
     public void RemoveCubeAt(Cube cube)
     {
+        if(cube.onPlayer)
+        {
+            return;
+        }
         Vector2Int idx = WorldToGrid(cube.transform.position);
 
 

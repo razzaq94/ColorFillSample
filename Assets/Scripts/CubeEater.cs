@@ -17,7 +17,7 @@ public class CubeEater : AEnemy
 
     private Vector3 currentDir;
 
-    public override void Start()
+    protected override void Start()
     {
         base.Start();
         enemyType = SpawnablesType.CubeEater;

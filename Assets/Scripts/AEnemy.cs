@@ -9,7 +9,7 @@ public abstract class AEnemy : MonoBehaviour
     [ReadOnly]
     public float defaultSpeed = 2f;
     public Renderer defaultRenderer;
-    public virtual void Start()
+    protected virtual void Start()
     {
         defaultSpeed = speed;
         GameManager.Instance.levelEnemies.Add(this);

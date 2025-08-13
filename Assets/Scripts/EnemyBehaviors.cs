@@ -19,7 +19,7 @@ public class EnemyBehaviors : AEnemy
     private float stuckCheckInterval = 2f; 
     private float stuckDistanceThreshold = 1f;
 
-    public override void Start()
+    protected override void Start()
     {
         base.Start();
         rb = GetComponent<Rigidbody>();
